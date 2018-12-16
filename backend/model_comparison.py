@@ -28,7 +28,7 @@ from sklearn.externals import joblib
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import ParameterGrid
 
-
+# Name of directory to store temporary results.
 TMP_RESULTS_DIR = 'tmp_model_comparison'
 
 
@@ -50,8 +50,7 @@ def model_comparison(
         path_to_results,
         estimators, estimator_params,
         selectors=None, selector_params=None,
-        verbose=1, score_func=None, n_jobs=None,
-        comparison='mean'
+        verbose=1, score_func=None, score_metric=None, n_jobs=None
     ):
     """Compare model performances with optional feature selection.
 
@@ -88,7 +87,6 @@ def model_comparison(
 
         # Setup hyperparameter grid.
         hparam_grid = ParameterGrid(estimator_params[estimator_name])
-
         # Skipping feature selection.
         if selectors is None:
             results.extend(
@@ -103,8 +101,9 @@ def model_comparison(
                         estimator, hparam_grid,
                         selector=None,
                         n_jobs=n_jobs, verbose=verbose,
-                        score_func=score_func, comparison=comparison
-                    ) for random_state in random_states
+                        score_func=score_func, score_metric=score_metric
+                    )
+                    for random_state in random_states
                 )
             )
         # Including feature selection.
@@ -127,8 +126,9 @@ def model_comparison(
                             estimator, hparam_grid,
                             selector=selector,
                             n_jobs=n_jobs, verbose=verbose,
-                            score_func=score_func, comparison=comparison
-                        ) for random_state in random_states
+                            score_func=score_func, score_metric=score_metric
+                        )
+                        for random_state in random_states
                     )
                 )
         # Tear down temporary dirs after succesfully written results to disk.

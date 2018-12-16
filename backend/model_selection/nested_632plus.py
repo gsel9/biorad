@@ -32,20 +32,12 @@ def nested_point632plus(
         n_splits,
         random_state,
         path_tmp_results,
-        estimator, hparam_grid,
-        selector=None,
-        n_jobs=1, verbose=0, score_func=None, comparison='mean'
+        estimator, hparam_grid, selector,
+        n_jobs=1, verbose=0, score_func=None, score_metric=None
     ):
     """
 
     """
-    if comparison == 'mean':
-        gen_score = np.mean
-    elif comparison == 'median':
-        gen_score = np.median
-    else:
-        raise ValueError('Invalid metric {}. Should be `mean` or `median`.'
-                         ''.format(comparison))
     # Setup:
     path_case_file = os.path.join(
         path_tempdir, '{}_{}_{}'.format(
@@ -73,9 +65,8 @@ def _nested_point632plus(
         n_splits,
         random_state,
         path_tmp_results,
-        estimator, hparam_grid,
-        selector,
-        n_jobs, verbose, score_func, gen_performance
+        estimator, hparam_grid, selector,
+        n_jobs, verbose, score_func, score_metric
     ):
     # Worker function for the nested .632+ Out-of-Bag model comparison scheme.
 
@@ -96,10 +87,9 @@ def _nested_point632plus(
             X_train, y_train
             n_splits,
             random_state,
-            estimator, hparam_grid,
-            selector,
+            estimator, hparam_grid, selector,
             n_jobs=n_jobs, verbose=verbose,
-            score_func=score_func, gen_performance=gen_performance
+            score_func=score_func, score_metric=score_metric
         )
         # In case of error:
         if best_model is None and best_support is None:
@@ -112,7 +102,7 @@ def _nested_point632plus(
             )
             train_score, test_score = utils.scale_fit_predict632(
                 best_model, X_train[:, best_support], X_test[:, best_support],
-                y_train, y_test, score_func=score_func, gen_performance
+                y_train, y_test, score_func=score_func, score_metric
             )
             train_scores.append(train_score), test_scores.append(test_score)
             # Bookeeping of best feature subset and hparams in each fold.
@@ -133,11 +123,9 @@ def _nested_point632plus(
         results,
         path_tempdir,
         random_state,
-        estimator,
-        selector,
-        best_model_hparams,
-        gen_performance(test_scores), gen_performance(train_scores),
-        best_support
+        estimator, best_model_hparams,
+        selector, best_support,
+        score_metric(test_scores), score_metric(train_scores)
     )
     return end_results
 
@@ -150,7 +138,7 @@ def oob_exhaustive_search(
         estimator, hparam_grid,
         selector,
         n_jobs=n_jobs, verbose=verbose,
-        score_func=score_func, gen_performance=gen_performance
+        score_func=score_func, score_metric=score_metric
     ):
     oob_sampler = utils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
@@ -175,6 +163,7 @@ def oob_exhaustive_search(
             model = _check_estimator(
                 np.size(support), hparams, estimator, random_state=random_state
             )
+            # NOTE: An error may occur during training.
             train_score, test_score = utils.scale_fit_predict632(
                 model, X_train_sub, X_test_sub, y_train, y_test,
                 score_func=score_func
@@ -183,12 +172,13 @@ def oob_exhaustive_search(
             features[support] += 1
             train_scores.append(train_score), test_scores.append(test_score)
 
-        # Median or mean of scores.
-        if gen_performance(test_scores) > best_test_score:
-            best_test_score = gen_performance(test_scores)
+        # Generalize test scores.
+        current_score = score_metric(test_scores)
+        if current_score > best_test_score:
+            best_test_score = current_score
             # Retain features of max activations.
             best_support = np.squeeze(np.where(features == np.max(features)))
-            #Re-instantiate a new untrained model.
+            # Re-instantiate a new untrained model.
             best_model = _check_estimator(
                 np.size(support), hparams, estimator, random_state=random_state
             )
