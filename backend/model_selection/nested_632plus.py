@@ -26,6 +26,7 @@ from collections import OrderedDict
 from sklearn.externals import joblib
 
 
+# NOTE: In need of error handling?
 def nested_point632plus(
         X, y,
         n_splits,
@@ -66,6 +67,7 @@ def nested_point632plus(
     return results
 
 
+# NOTE: In need of error handling?
 def _nested_point632plus(
         X, y,
         n_splits,
@@ -99,37 +101,48 @@ def _nested_point632plus(
             n_jobs=n_jobs, verbose=verbose,
             score_func=score_func, gen_performance=gen_performance
         )
-        best_model = _check_estimator(
-            np.size(best_support), best_model.get_params(), estimator,
-            random_state=random_state
-        )
-        train_score, test_score = utils.scale_fit_predict632(
-            best_model, X_train[:, best_support], X_test[:, best_support],
-            y_train, y_test, score_func=score_func, gen_performance
-        )
-        train_scores.append(train_score), test_scores.append(test_score)
-        # Bookeeping of best feature subset and hparams in each fold.
-        features[best_support] += 1
-        opt_hparams.append(best_model.get_params())
+        # In case of error:
+        if best_model is None and best_support is None:
+            train_scores.append(None), test_scores.append(None)
+            opt_hparams.append(None)
+        else:
+            best_model = _check_estimator(
+                np.size(best_support), best_model.get_params(), estimator,
+                random_state=random_state
+            )
+            train_score, test_score = utils.scale_fit_predict632(
+                best_model, X_train[:, best_support], X_test[:, best_support],
+                y_train, y_test, score_func=score_func, gen_performance
+            )
+            train_scores.append(train_score), test_scores.append(test_score)
+            # Bookeeping of best feature subset and hparams in each fold.
+            features[best_support] += 1
+            opt_hparams.append(best_model.get_params())
 
-    # NOTE: Selecting mode of hparams as opt hparam settings.
-    try:
-        best_model_hparams = max(opt_hparams, key=opt_hparams.count)
-    # NOTE: In case all hparams have equal votes.
-    except:
-        best_model_hparams = opt_hparams
+        # NOTE: Selecting mode of hparams as opt hparam settings.
+        try:
+            best_model_hparams = max(opt_hparams, key=opt_hparams.count)
+        # NOTE: In case all hparams have equal votes.
+        except:
+            best_model_hparams = opt_hparams
 
-    # Retain features with max activations.
-    best_support = np.squeeze(np.where(features == np.max(features)))
+        # Retain features with max activations.
+        best_support = np.squeeze(np.where(features == np.max(features)))
 
     end_results = _update_prelim_results(
-        results, path_tempdir, random_state, estimator, selector,
-        best_model_hparams, np.mean(test_scores), np.mean(train_scores),
+        results,
+        path_tempdir,
+        random_state,
+        estimator,
+        selector,
+        best_model_hparams,
+        gen_performance(test_scores), gen_performance(train_scores),
         best_support
     )
     return end_results
 
 
+# NOTE: In need of error handling?
 def oob_exhaustive_search(
         X_train, y_train
         n_splits,
@@ -147,7 +160,6 @@ def oob_exhaustive_search(
     best_model, best_support = [], []
     for combo_num, hparams in enumerate(hparam_grid):
 
-        # Setup:
         features = np.zeros(X.shape[1], dtype=int)
 
         train_scores, test_scores = [], []
