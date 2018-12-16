@@ -2,14 +2,10 @@
 #
 # model_selection.py
 #
-# TODO:
-# * Optional feature selection
-# * Select from median (not mean)
-# * Default mechanism to return None if error occurs.
-# * Separate directoris with model copmarison schemes. One module per scheme.
 
 """
-Frameworks for performing model selection.
+Model selection according to the nested .632+ nested bootstrap method developed
+by Efron and Tibhirani.
 """
 
 __author__ = 'Severin Langberg'
@@ -93,10 +89,15 @@ def _nested_point632plus(
 
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
-
+        # Perform exhaustive hyperparameter search.
         best_model, best_support = oob_exhaustive_search(
-            estimator, hparam_grid, selector, X_train, y_train, n_splits,
-            random_state, verbose=verbose, score_func=score_func, n_jobs=n_jobs
+            X_train, y_train
+            n_splits,
+            random_state,
+            estimator, hparam_grid,
+            selector,
+            n_jobs=n_jobs, verbose=verbose,
+            score_func=score_func, gen_performance=gen_performance
         )
         best_model = _check_estimator(
             np.size(best_support), best_model.get_params(), estimator,
@@ -130,13 +131,14 @@ def _nested_point632plus(
 
 
 def oob_exhaustive_search(
-        *args, verbose=1, score_func=None, n_jobs=1, gen_performance
+        X_train, y_train
+        n_splits,
+        random_state,
+        estimator, hparam_grid,
+        selector,
+        n_jobs=n_jobs, verbose=verbose,
+        score_func=score_func, gen_performance=gen_performance
     ):
-
-    (
-        estimator, hparam_grid, selector, X, y, n_splits, random_state
-    ) = args
-
     oob_sampler = utils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
     )
