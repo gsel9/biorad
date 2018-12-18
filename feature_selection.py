@@ -233,7 +233,7 @@ def _check_feature_subset(X_train, X_test, support):
     )
 
 
-# https://www.uio.no/studier/emner/matnat/math/STK1000/h17/wilcoxon-rank-sum-test.pdf
+# https://machinelearningmastery.com/nonparametric-statistical-significance-tests-in-python/
 def wilcoxon_signed_rank(X, y, thresh=0.05):
     """A nonparametric test to determine whether two dependent samples were
     selected from populations having the same distribution.
@@ -241,13 +241,12 @@ def wilcoxon_signed_rank(X, y, thresh=0.05):
     """
     _, ncols = np.shape(X)
 
-    # (H0): The difference between pairs is symmetrically distributted around
-    # zero. A p_value < 0.05 => (H1).
+    # H0: Difference between pairs is symmetrically distributted around zero.
     support = []
     for num in range(ncols):
         _, pval = stats.wilcoxon(X[:, num], y)
-        # NOTE: Bonferroni correction.
-        if pval <= thresh / ncols:
+        # NOTE: Bonferroni correction for multiple copmarison.
+        if pval > thresh / ncols:
             support.append(num)
 
     return np.zeros(support, dtype = int)
