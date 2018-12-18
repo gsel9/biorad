@@ -22,6 +22,7 @@ from multiprocessing import cpu_count
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import matthews_corrcoef
+from model_selection import permutation_test_score
 from sklearn.ensemble import RandomForestClassifier
 
 from mlxtend.feature_selection import SequentialFeatureSelector
@@ -110,6 +111,24 @@ def forward_floating(data, scoring=None, model=None, k=3, cv=10):
     support = _check_support(selector.k_feature_idx_, X_train_std)
 
     return _check_feature_subset(X_train_std, X_test_std, support)
+
+
+def permutation_test_score(
+        estimator,
+        X, y,
+        n_permutations, n_splits=10, random_state=None, n_jobs=1, scoring=None,
+    ):
+    """Evaluate the significance of an Out-of-Bag validated score with
+    permutations.
+
+    """
+    sampler = utils.BootstrapOutOfBag(
+        n_splits=n_splits, random_state=random_state
+    )
+    _, scores, pval = permutation_test_score(
+        estimator, X, y, cv=sampler, scoring=scoring
+    )
+    return scores, pval
 
 
 def _feature_importance_permutation(X, y, model, score_func, num_rounds, seed):
@@ -213,26 +232,22 @@ def _check_feature_subset(X_train, X_test, support):
     )
 
 
+# https://www.uio.no/studier/emner/matnat/math/STK1000/h17/wilcoxon-rank-sum-test.pdf
 def wilcoxon_signed_rank(X, y, thresh=0.05):
-    """A non-parametric univariate test which is an alternative to the
-    dependent t-test
+    """A nonparametric test to determine whether two dependent samples were
+    selected from populations having the same distribution.
 
     """
     _, ncols = np.shape(X)
 
-    # (H0): The difference between the pairs follows a symmetric distribution
-    # around zero.
-    # p_value < 0.05 => (H1).
+    # (H0): The difference between pairs is symmetrically distributted around
+    # zero. A p_value < 0.05 => (H1).
 
-    # Assumptions:
-    # * Samples must be continuous which is measured on an ordinal or
-    #   continuous scale.
-    # * The paired observations come from the same population.
-    # * The paired observations are randomly and independently drawn.
     support = []
     for num in range(ncols):
         _, pval = stats.wilcoxon(X[:, num], y)
-        if pval > thresh:
+        # NOTE: Bonferroni correction.
+        if pval <= thresh / ncols:
             support.append(num)
 
     return np.zeros(support, dtype = int)
