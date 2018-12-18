@@ -22,6 +22,17 @@ from sklearn.preprocessing import StandardScaler
 
 
 def listdir(path_to_dir, skip_tail=('.csv'), skip_head=('.')):
+    """Filter and list directory contents.
+
+    Args:
+        path_to_dir (str): Referance to direcotry disk location.
+        skip_tail (str): 
+        skip_head (str):
+
+    Returns:
+        (list): Names of items in directory.
+
+    """
 
     labels = []
     for label in os.listdir(path_to_dir):
@@ -52,13 +63,30 @@ def train_test_z_scores(X_train, X_test):
 
 
 class BootstrapOutOfBag:
+    """Bootstrap Out-of-Bag resampling generator.
+
+    Args:
+        n_splits (int):
+        random_state (int):
+
+    """
 
     def __init__(self, n_splits=10, random_state=None):
 
         self.n_splits = n_splits
         self.random_state = random_state
 
-    def split(self, X, y, **kwargs):
+    def split(self, X, y):
+        """Generate bootstrap Out-of-Bag samples.
+
+        Args:
+            X (array-like): Predictor matrix.
+            y (array-like): Target vector.
+
+        Returns:
+            (generator): Iterable tuples of training and test data.
+
+        """
 
         rand_gen = np.random.RandomState(self.random_state)
 
@@ -75,6 +103,15 @@ class BootstrapOutOfBag:
 
 
 def check_support(support):
+    """Feature indicator formatting mechanism.
+
+    Args:
+        support (array-like): Feature indicators.
+
+    Returns:
+        (array-like): Feature indicators.
+
+    """
 
     if np.ndim(support) > 1:
         return np.squeeze(support)
@@ -101,12 +138,20 @@ def relative_overfit_rate(train_score, test_score, gamma):
         return 0
 
 
-# NOTE: Need only use sum(y_) if y_ is binary.
 def no_info_rate(y_true, y_pred):
+    """Compute no information rate according to .632+ method.
 
+    Args:
+        y_true (array-like):
+        y_test (array-like):
+
+    Returns:
+        (float):
+
+    """
     # NB: Only applicable to a dichotomous classification problem.
-    p_one = np.sum(y_true == 1) / np.size(y_true)
-    q_one = np.sum(y_pred == 1) / np.size(y_pred)
+    p_one = np.sum(y_true) / np.size(y_true)
+    q_one = np.sum(y_pred) / np.size(y_pred)
 
     return p_one * (1 - q_one) + (1 - p_one) * q_one
 
@@ -118,34 +163,51 @@ def point632plus_score(y_true, y_pred, train_score, test_score):
     # in which case R can fall outside of [0, 1].
     test_score_marked = min(test_score, gamma)
 
-    # Adjusted R.
+    # Adjusted relative overfit rate.
     r_marked = relative_overfit_rate(train_score, test_score, gamma)
 
     # Compute .632+ train score.
     return point632plus(train_score, test_score, r_marked, test_score_marked)
 
 
-def scale_fit_predict632(*args, score_func=None, **kwargs):
+def scale_fit_predict632(model, X_train, X_test, y_train, y_test, score_func):
+    """Apply Z score transformation to predictors, train and test model.
 
-    model, X_train, X_test, y_train, y_test = args
+    Args:
+        model ():
+        X_train (array-like):
+        X_test (array-like):
+        y_train (array-like):
+        y_test (array-like):
+        score_func ():
 
-    # Compute Z scores.
-    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
+    Returns:
+        (tuple): Training and test score. Default mechanism if unable to
+            generate prediction returns None.
 
-    model.fit(X_train_std, y_train)
+    """
+    # Attempt prediction.
+    try:
+        # Z score transformation.
+        X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
 
-    # Aggregate model predictions.
-    y_train_pred = model.predict(X_train_std)
-    train_score = score_func(y_train, y_train_pred)
+        model.fit(X_train_std, y_train)
 
-    y_test_pred = model.predict(X_test_std)
-    test_score = score_func(y_test, y_test_pred)
+        # Aggregate model train and test predictions.
+        y_train_pred = model.predict(X_train_std)
+        train_score = score_func(y_train, y_train_pred)
+        y_test_pred = model.predict(X_test_std)
+        test_score = score_func(y_test, y_test_pred)
 
-    # Compute train and test .632+ scores.
-    train_632_score = point632plus_score(
-        y_train, y_train_pred, train_score, test_score
-    )
-    test_632_score = point632plus_score(
-        y_test, y_test_pred, train_score, test_score
-    )
-    return train_632_score, test_632_score
+        # Compute train and test .632+ scores.
+        train_632_score = point632plus_score(
+            y_train, y_train_pred, train_score, test_score
+        )
+        test_632_score = point632plus_score(
+            y_test, y_test_pred, train_score, test_score
+        )
+        return train_632_score, test_632_score
+
+    # Failing mechanism.
+    except:
+        return None, None
