@@ -183,18 +183,19 @@ def _check_support(support, X):
     if not isinstance(support, np.ndarray):
         support = np.array(support, dtype=int)
 
-    # NB: Default to include all features if none were selected.
-    if np.size(support) < 1:
+    # NB: Default mechanism includes all features if none were selected.
+    if len(support) < 1:
         support = np.arange(X.shape[1], dtype=int)
     else:
-        # Support is rank 1, otherwise error.
         if np.ndim(support) > 1:
-            if np.ndim(np.squeeze(support)) > 1:
-                raise RuntimeError('Support ndim: {}'.format(np.ndim(support)))
-            else:
-                support = np.squeeze(support)
-
-    return np.array(support, dtype=int)
+            support = np.squeeze(support)
+        if np.ndim(support) < 1:
+            support = support[np.newaxis]
+        if np.ndim(support) != 1:
+            raise RuntimeError(
+                'Invalid dimension {} to support.'.format(np.ndim(support))
+            )
+    return support
 
 
 def _check_feature_subset(X_train, X_test, support):
@@ -242,7 +243,6 @@ def wilcoxon_signed_rank(X, y, thresh=0.05):
 
     # (H0): The difference between pairs is symmetrically distributted around
     # zero. A p_value < 0.05 => (H1).
-
     support = []
     for num in range(ncols):
         _, pval = stats.wilcoxon(X[:, num], y)
