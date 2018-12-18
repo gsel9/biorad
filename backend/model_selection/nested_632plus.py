@@ -26,7 +26,6 @@ from collections import OrderedDict
 from sklearn.externals import joblib
 
 
-# NOTE: In need of error handling?
 def nested_point632plus(
         X, y,
         n_splits,
@@ -35,7 +34,7 @@ def nested_point632plus(
         estimator, hparam_grid, selector,
         n_jobs=1, verbose=0, score_func=None, score_metric=None
     ):
-    """
+    """Model performance evaluation according to the .632+ bootstrap method.
 
     """
     # Setup:
@@ -59,7 +58,6 @@ def nested_point632plus(
     return results
 
 
-# NOTE: In need of error handling?
 def _nested_point632plus(
         X, y,
         n_splits,
@@ -130,7 +128,6 @@ def _nested_point632plus(
     return end_results
 
 
-# NOTE: In need of error handling?
 def oob_exhaustive_search(
         X_train, y_train
         n_splits,
@@ -147,7 +144,7 @@ def oob_exhaustive_search(
     best_test_score = -np.inf
     best_model, best_support = [], []
     for combo_num, hparams in enumerate(hparam_grid):
-
+        #
         features = np.zeros(X.shape[1], dtype=int)
 
         train_scores, test_scores = [], []
@@ -165,8 +162,9 @@ def oob_exhaustive_search(
             )
             # NOTE: An error may occur during training.
             train_score, test_score = utils.scale_fit_predict632(
-                model, X_train_sub, X_test_sub, y_train, y_test,
-                score_func=score_func
+                model,
+                X_train_sub, X_test_sub, y_train, y_test,
+                score_func
             )
             # Bookkeeping of features selected in each fold.
             features[support] += 1
