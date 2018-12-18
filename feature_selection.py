@@ -15,6 +15,7 @@ import utils
 import numpy as np
 import pandas as pd
 
+from scipy import stats
 from ReliefF import ReliefF
 from sklearn import feature_selection
 from multiprocessing import cpu_count
@@ -210,3 +211,31 @@ def _check_feature_subset(X_train, X_test, support):
         np.array(_X_train, dtype=float), np.array(_X_test, dtype=float),
         support
     )
+
+
+def wilcoxon_signed_rank(X, y, thresh=0.05):
+    """A non-parametric univariate test which is an alternative to the
+    dependent t-test
+
+    """
+    _, ncols = np.shape(X)
+
+    # (H0): The difference between the pairs follows a symmetric distribution
+    # around zero.
+    # p_value < 0.05 => (H1).
+
+    # Assumptions:
+    # * Samples must be continuous which is measured on an ordinal or
+    #   continuous scale.
+    # * The paired observations come from the same population.
+    # * The paired observations are randomly and independently drawn.
+    support = []
+    for num in range(ncols):
+        _, pval = stats.wilcoxon(X[:, num], y)
+        if pval > thresh:
+            support.append(num)
+
+    return np.zeros(support, dtype = int)
+
+
+if __name__ == '__main__':
