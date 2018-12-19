@@ -76,10 +76,11 @@ def wilcoxon_rank_sum_test(X, y, thresh=0.05):
     return np.zeros(support, dtype=int)
 
 
+# TODO: Verify correct sorting.
 def mutual_info(
         X_train, X_test, y_train, y_test,
-        num_neighbors,
-        thresh=0.05, random_state=None
+        num_neighbors, num_features,
+        random_state=None
     ):
     """A wrapper of scikit-learn mutual information feature selector.
 
@@ -90,7 +91,6 @@ def mutual_info(
         y_test (array-like): Test target set.
         num_neighbors (int): The number of neighbors to consider when assigning
             feature importance scores.
-        thresh (float):
         random_state (int):
 
     Returns:
@@ -100,12 +100,12 @@ def mutual_info(
     # Z-score transformation.
     X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
 
-    mut_info = feature_selection.mutual_info_classif(
+    info = feature_selection.mutual_info_classif(
         X_train_std, y_train, n_neighbors=num_neighbors,
         random_state=random_state
     )
     # NOTE: Retain features contributing above threshold to model performance.
-    support = _check_support((np.argwhere(mut_info > thresh)), X_train_std)
+    support = _check_support(sorted(info)[:num_features], X_train_std)
 
     return _check_feature_subset(X_train_std, X_test_std, support)
 

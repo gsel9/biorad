@@ -57,6 +57,13 @@ if __name__ == '__main__':
     * Vallieres et al. uses .632+
     * Léger et al. uses .632
 
+    ALGORITHMS:
+    * Zhang et al.
+    * Wu et al.
+    * Griegthuysen et al.
+    * Limkin et al.
+    * Parmar et al.
+
     FEATURE SELECTION:
     * Pass current estimator to permutaiton importance wrapper.
 
@@ -71,33 +78,28 @@ if __name__ == '__main__':
     # Comparing on precision.
     LOSS = precision_recall_fscore_support
 
-    # Mumber of OOB splits.
+    # Mumber of OOB splits per level.
     NUM_REPS = 100
 
     # Number of repeated experiments (40 reps also used in a paper).
     NUM_ROUNDS = 40
 
-    # Classifiers and feature selectors reported by:
-    # - Zhang et al.
-    # - Wu et al.
-    # - Griegthuysen et al.
-    # - Limkin et al.
-    # - Parmar et al.
+    # Classifiers and feature selectors:
     estimators = {
-        'rf': RandomForestClassifier,
-        'svc': SVC,
         'logreg': LogisticRegression,
+        'rf': RandomForestClassifier,
+        'plsr': PLSRegression,
         'nb': GaussianNB,
-        'plsr': PLSRegression
+        'svc': SVC,
     }
     selectors = {
-        'permutation': feature_selection.permutation_importance,
         'wlcx': feature_selection.wilcoxon_selection,
+        'permutation': feature_selection.permutation_importance,
         'relieff_k10': feature_selection.relieff,
         'relieff_k30': feature_selection.relieff,
+        'mutual_info': feature_selection.mutual_info
     }
-
-    hparams = {
+    estimator_params = {
         'rf': {
             'n_estimators': [100, 300, 600, 1000],
             'criterion': ['gini', 'entropy'],
@@ -135,8 +137,14 @@ if __name__ == '__main__':
     selector_params = {
         'permutation_imp': {'model': None, 'num_rounds': 1},
         'wlcx': {'thresh': 0.05},
-        'relieff_k10': {'k': 5, 'n_neighbors': 20},
-        'relieff_k30': {'k': 30, 'n_neighbors': 20},
+        'relieff_k10': {'num_features': 10, 'num_neighbors': 5},
+        'relieff_k30': {'num_features': 30, 'num_neighbors': 5},
+        'relieff_k10': {'num_features': 10, 'num_neighbors': 20},
+        'relieff_k30': {'num_features': 30, 'num_neighbors': 20},
+        'mutual_info_k10': {'num_features': 10, 'num_neighbors': 20},
+        'mutual_info_k30': {'num_features': 30, 'num_neighbors': 20},
+        'mutual_info_k10': {'num_features': 10, 'num_neighbors': 5},
+        'mutual_info_k30': {'num_features': 30, 'num_neighbors': 5},
     }
 
     # Feature data.
@@ -145,17 +153,17 @@ if __name__ == '__main__':
     # Disease-Free Survival.
     y = target('./data/target_dfs.csv')
 
+    # Comparison scheme.
+    comparison_scheme = nested_point632plus
+
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
     random_states = np.random.randint(1000, size=NUM_ROUNDS)
 
-    # Comparison scheme.
-    comparison_scheme = nested_point632plus
-
     _ = model_comparison(
         comparison_scheme,
         X, y,
-        estimators, hparams,
+        estimators, estimator_params,
         selectors, selector_params,
         random_states, NUM_REPS,
         path_to_results='./results_dfs.csv',
