@@ -2,10 +2,6 @@
 #
 # model_comparison_setup.py
 #
-# TODO:
-# * Include Wilcoxon FS
-# * Add n_jobs=-1 to models
-# * Pass current model to permutation importance wrapper
 
 """
 Setup model comparison experiments.
@@ -17,21 +13,6 @@ __email__ = 'langberg91@gmail.com'
 
 import numpy as np
 import pandas as pd
-
-
-def logreg(penalty='l1', seed=None):
-
-    return LogisticRegression(
-        penalty=penalty, class_weight='balanced', random_state=seed,
-        solver='liblinear'
-    )
-
-
-def forest(seed=None):
-
-    return RandomForestClassifier(
-        n_estimators=30, class_weight='balanced', random_state=seed
-    )
 
 
 def target(path_to_target, index_col=0):
@@ -47,26 +28,74 @@ def feature_set(path_to_data, index_col=0):
 
 
 if __name__ == '__main__':
+    import sys
+    # Add backend directory to PATH variable.
+    sys.append('./../backend')
 
     import os
     import feature_selection
 
     from datetime import datetime
+    from model_selection import nested_632plus
     from model_comparison import model_comparison
-    from model_selection import nested_point632plus
 
-    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import precision_recall_fscore_support
 
-    from sklearn.naive_bayes import GaussianNB
+    from sklearn.svm import SVC
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.cross_decomposition import PLSRegression
-    from sklearn.ensemble import AdaBoostClassifier
-    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-    from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-    # Setup: number of target features, random seed, number of OOB splits.
-    K, SEED, N_REPS = 15, 0, 10
+    """SETUP:
+
+    METRIC:
+    * Relapse/not survival are positively labeled classes.
+    * Main focus is the ability to detect correctly positive samples (cancer situations).
+    * Use precision and recall to focus on minority positive class.
+
+    COMPARISON SCHEME:
+    * Vallieres et al. uses .632+
+    * Léger et al. uses .632
+
+    FEATURE SELECTION:
+    * Pass current estimator to permutaiton importance wrapper.
+
+    QUESTIONS:
+    - Wilcoxon test for feature selection?
+        - Remove features with indicated identical distribution to target?
+        - Perform Z-score transformation?
+        - Bonferroni correction?
+
+    """
+
+    # Comparing on precision.
+    LOSS = precision_recall_fscore_support
+
+    # Mumber of OOB splits.
+    N_REPS = 100
+
+    # Number of repeated experiments (40 reps also used in a paper).
+    n_experiments = 40
+
+    # Classifiers and feature selectors reported by:
+    # - Zhang et al.
+    # - Wu et al.
+    # - Griegthuysen et al.
+    # - Limkin et al.
+    # - Parmar et al.
+    estimators = {
+        'rf': RandomForestClassifier,
+        'svc': SVC,
+        'lr': LogisticRegression,
+        'nb': GaussianNB,
+        'plsr': PLSRegression
+    }
+    selectors = {
+        'permutation': feature_selection.permutation_importance,
+        'wlcx': feature_selection.wilcoxon_selection,
+        'relieff_k10': feature_selection.relieff,
+        'relieff_k30': feature_selection.relieff,
+    }
 
     # Shared hyperparameters:
     MAX_ITER = [1500]
@@ -78,65 +107,19 @@ if __name__ == '__main__':
     N_ESTIMATORS = [20, 50, 100, 500, 1000]
     LEARNINGR_RATE = [0.001, 0.05, 0.2, 0.6, 1]
 
-    # Priors for both target variables summing to 1.0.
+    # Priors for both target variables.
     PFS_PRIORS = [0.677, 0.323]
     LRC_PRIORS = [0.753, 0.247]
 
-    # Loss function.
-    SCORE = roc_auc_score
-
-    # Repeatability and reproducibility.
-    np.random.seed(SEED)
-
-    # Number of repeated experiments.
-    n_experiments = 10
-    random_states = np.random.randint(1000, size=n_experiments)
-
-    # Set comparison procedure.
-    comparison_scheme = nested_point632plus
-
-    # Feature selection algorithms.
-    selectors = {
-        'logregl1_permut_imp': feature_selection.permutation_importance,
-        'logregl2_permut_imp': feature_selection.permutation_importance,
-        'rf_permut_imp': feature_selection.permutation_importance,
-        'var_thresh': feature_selection.variance_threshold,
-        'relieff': feature_selection.relieff,
-        'mutual_info': feature_selection.mutual_info
-    }
-    # Feature selection parameters.
     selector_params = {
-        'logregl1_permut_imp': {
-            'model': logreg(penalty='l1', seed=SEED), 'thresh': 0.0,
-            'nreps': 1
-        },
-        'logregl2_permut_imp': {
-            'model': logreg(penalty='l2', seed=SEED), 'thresh': 0.0,
-            'nreps': 1
-        },
-        'rf_permut_imp': {
-            'model': forest(seed=SEED), 'thresh': 0.0, 'nreps': 1
-        },
-        'mutual_info': {'n_neighbors': 20, 'thresh': 0.05},
-        'relieff': {'k': K, 'n_neighbors': 20},
-        'var_thresh': {'alpha': 0.05},
-    }
-    # Classification algorithms.
-    estimators = {
-        'adaboost': AdaBoostClassifier,
-        'lda': LinearDiscriminantAnalysis,
-        'logreg': LogisticRegression,
-        'gnb': GaussianNB,
-        'pls': PLSRegression,
-        'qda': QuadraticDiscriminantAnalysis,
+        'permutation_imp': {'model': None, 'num_rounds': 1},
+        'wlcx': {'thresh': 0.05},
+        'relieff_k5': {'k': 5, 'n_neighbors': 20},
+        'relieff_k25': {'k': 25, 'n_neighbors': 20},
     }
 
-    # Feature data.
-    X = feature_set('./data/data_to_analysis.csv')
 
-    # PFS target.
-    y_pfs = target('./data/target_dfs.csv')
-    path_to_pfsresults = './results/results_pfs.csv'
+
 
     pfs_hparams = {
         'adaboost': {
@@ -161,15 +144,22 @@ if __name__ == '__main__':
             'class_weight': CLASS_WEIGHT, 'max_iter': MAX_ITER
         },
     }
+
+
+    path_to_results = './results/results_pfs.csv'
+
+    # Feature data.
+    X = feature_set('./data/data_to_analysis.csv')
+
+    # Disease-Free Survival.
+    y = target('./data/target_dfs.csv')
+
+    
     results_pfs = model_comparison(
         comparison_scheme, X, y_pfs, estimators, pfs_hparams, selectors,
         selector_params, random_states, N_REPS, path_to_pfsresults,
         score_func=SCORE
     )
-
-    # LRC target.
-    y_lrc = target('./data/target_lrr.csv')
-    path_to_lrcresults = './results/results_lrr.csv'
 
     lrc_hparams = {
         'adaboost': {
@@ -194,6 +184,13 @@ if __name__ == '__main__':
             'class_weight': CLASS_WEIGHT, 'max_iter': MAX_ITER
         },
     }
+
+    # Generate seeds for pseudo-random generators to use in each experiment.
+    np.random.seed(0)
+    random_states = np.random.randint(1000, size=n_experiments)
+    # Comparison scheme.
+    comparison_scheme = nested_point632plus
+
     results_lrc = model_comparison(
         comparison_scheme, X, y_lrc, estimators, lrc_hparams, selectors,
         selector_params, random_states, N_REPS, path_to_lrcresults,

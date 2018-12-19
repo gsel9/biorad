@@ -84,7 +84,6 @@ def model_comparison(
 
     results = []
     for estimator_name, estimator in estimators.items():
-
         # Setup hyperparameter grid.
         hparam_grid = ParameterGrid(estimator_params[estimator_name])
         # Skipping feature selection.

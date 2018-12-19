@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# model_selection.py
+# nested_632plus.py
 #
 
 """
@@ -31,7 +31,8 @@ def nested_point632plus(
         n_splits,
         random_state,
         path_tmp_results,
-        estimator, hparam_grid, selector,
+        estimator, hparam_grid,
+        selector, support_method
         n_jobs=1, verbose=0, score_func=None, score_metric=None
     ):
     """Model performance evaluation according to the .632+ bootstrap method.
@@ -63,7 +64,8 @@ def _nested_point632plus(
         n_splits,
         random_state,
         path_tmp_results,
-        estimator, hparam_grid, selector,
+        estimator, hparam_grid,
+        selector, support_method,
         n_jobs, verbose, score_func, score_metric
     ):
     # Worker function for the nested .632+ Out-of-Bag model comparison scheme.
@@ -115,17 +117,26 @@ def _nested_point632plus(
             best_model_hparams = opt_hparams
 
         # Retain features with max activations.
-        best_support = np.squeeze(np.where(features == np.max(features)))
+        best_support, metric = _filter_support(features, method=support_method)
 
     end_results = _update_prelim_results(
         results,
         path_tempdir,
         random_state,
         estimator, best_model_hparams,
-        selector, best_support,
+        selector, best_support, metric
         score_metric(test_scores), score_metric(train_scores)
     )
     return end_results
+
+
+def _filter_support(features, method='max', **kwargs):
+
+    # This approach is more robust towards situations where no features are
+    # selected, but may suffer from a very small subset of features selected.
+    if method == 'max':
+        max_counts = np.max(features)
+        return np.squeeze(np.where(features == max_counts)), max_counts
 
 
 def oob_exhaustive_search(
