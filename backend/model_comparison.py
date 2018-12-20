@@ -134,11 +134,3 @@ def model_comparison(
         _cleanup(results, path_to_results)
 
     return None
-
-
-if __name__ == '__main__':
-
-    # TODO:
-    # * Include Wilcoxon FS
-    # * Add n_jobs = -1 to models
-    # * Pass current estimator to permutation importance
