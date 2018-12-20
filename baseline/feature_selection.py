@@ -32,7 +32,6 @@ def wilcoxon_selection(X_train, X_test, y_train, y_test, thresh=0.05):
         thresh (float):
 
     """
-
     # Z-score transformation.
     X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
 

@@ -72,6 +72,8 @@ if __name__ == '__main__':
         - Remove features with indicated identical distribution to target?
         - Perform Z-score transformation?
         - Bonferroni correction?
+    - Random sampling of hparams?
+    - Feature selection across parameter grid and select most stable features?
 
     """
 
@@ -93,11 +95,16 @@ if __name__ == '__main__':
         'svc': SVC,
     }
     selectors = {
-        'wlcx': feature_selection.wilcoxon_selection,
         'permutation': feature_selection.permutation_importance,
-        'relieff_k10': feature_selection.relieff,
-        'relieff_k30': feature_selection.relieff,
-        'mutual_info': feature_selection.mutual_info
+        'wlcx': feature_selection.wilcoxon_selection,
+        'relieff_k10_n5': feature_selection.relieff,
+        'relieff_k30_n5': feature_selection.relieff,
+        'relieff_k10_n20': feature_selection.relieff,
+        'relieff_k30_n20': feature_selection.relieff,
+        'mutual_info_k10_n5': feature_selection.mutual_info,
+        'mutual_info_k30_n5': feature_selection.mutual_info,
+        'mutual_info_k10_n20': feature_selection.mutual_info,
+        'mutual_info_k30_n20': feature_selection.mutual_info
     }
     estimator_params = {
         'rf': {
