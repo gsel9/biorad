@@ -7,6 +7,8 @@
 #   evaluate average performances. Create separate mechanisms at each step and a
 #   evaluation step before toring results checking if anything went wrong (which in case None is passed
 #   as failed experiment).
+# * Confirm permutation selection and Wilcoxon selects properly.
+# * Include grid search in permutation importance selection?
 
 """
 The nested .632+ Out-of-Bag procedure for model selection. The .632+ bootstrap
