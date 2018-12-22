@@ -4,16 +4,12 @@
 #
 
 """
-Utility module for the head and neck project.
+Model comparison backend utility functions.
 """
 
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-
-import os
-import logging
-import radiomics
 
 import numpy as np
 
@@ -21,18 +17,47 @@ from numba import jit
 from sklearn.preprocessing import StandardScaler
 
 
-def listdir(path_to_dir, skip_tail=('.csv'), skip_head=('.')):
-    """Filter and list directory contents.
+class BootstrapOutOfBag:
+    """A bootstrap Out-of-Bag resampler.
 
     Args:
-        path_to_dir (str): Referance to direcotry disk location.
-        skip_tail (str): 
-        skip_head (str):
-
-    Returns:
-        (list): Names of items in directory.
+        n_splits (int): The number of resamplings to perform.
+        random_state (int): Seed for the pseudo-random number generator.
 
     """
+
+    def __init__(self, n_splits=10, random_state=None):
+
+        self.n_splits = n_splits
+        self.random_state = random_state
+
+    def split(self, X, y, **kwargs):
+        """Generates Out-of-Bag (OOB) samples.
+
+        Args:
+            X (array-like): The predictor data.
+            y (array-like): The target data.
+
+        Returns:
+            (genrator): An iterable with OOB samples.
+
+        """
+
+        rand_gen = np.random.RandomState(self.random_state)
+
+        nrows, _ = np.shape(X)
+        sample_indicators = np.arange(nrows)
+        for _ in range(self.n_splits):
+            train_idx = rand_gen.choice(
+                sample_indicators, size=nrows, replace=True
+            )
+            test_idx = np.array(
+                list(set(sample_indicators) - set(train_idx)), dtype=int
+            )
+            yield train_idx, test_idx
+
+
+def listdir(path_to_dir, skip_tail=('.csv'), skip_head=('.')):
 
     labels = []
     for label in os.listdir(path_to_dir):
@@ -62,62 +87,82 @@ def train_test_z_scores(X_train, X_test):
     return X_train_std, X_test_std
 
 
-class BootstrapOutOfBag:
-    """Bootstrap Out-of-Bag resampling generator.
+def scale_fit_predict632(*args, score_func=None, **kwargs):
 
-    Args:
-        n_splits (int):
-        random_state (int):
+    model, X_train, X_test, y_train, y_test = args
 
-    """
+    # Compute Z scores.
+    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
 
-    def __init__(self, n_splits=10, random_state=None):
+    model.fit(X_train_std, y_train)
 
-        self.n_splits = n_splits
-        self.random_state = random_state
+    # Aggregate model predictions.
+    y_train_pred = model.predict(X_train_std)
+    train_score = score_func(y_train, y_train_pred)
 
-    def split(self, X, y):
-        """Generate bootstrap Out-of-Bag samples.
+    y_test_pred = model.predict(X_test_std)
+    test_score = score_func(y_test, y_test_pred)
 
-        Args:
-            X (array-like): Predictor matrix.
-            y (array-like): Target vector.
+    # Compute train and test .632+ scores.
+    train_632_score = point632plus_score(
+        y_train, y_train_pred, train_score, test_score
+    )
+    test_632_score = point632plus_score(
+        y_test, y_test_pred, train_score, test_score
+    )
+    return train_632_score, test_632_score
 
-        Returns:
-            (generator): Iterable tuples of training and test data.
-
-        """
-
-        rand_gen = np.random.RandomState(self.random_state)
-
-        nrows, _ = np.shape(X)
-        sample_indicators = np.arange(nrows)
-        for _ in range(self.n_splits):
-            train_idx = rand_gen.choice(
-                sample_indicators, size=nrows, replace=True
-            )
-            test_idx = np.array(
-                list(set(sample_indicators) - set(train_idx)), dtype=int
-            )
-            yield train_idx, test_idx
 
 
 def check_support(support):
-    """Feature indicator formatting mechanism.
-
-    Args:
-        support (array-like): Feature indicators.
-
-    Returns:
-        (array-like): Feature indicators.
-
-    """
 
     if np.ndim(support) > 1:
         return np.squeeze(support)
 
     if not isinstance(support, np.ndarray):
         return np.array(support, dtype=int)
+
+
+def point632plus_score(y_true, y_pred, train_score, test_score):
+    """Compute .632+ score
+    """
+
+    gamma = _no_info_rate(y_true, y_pred)
+    # To account for gamma <= train_score/train_score < gamma <= test_score
+    # in which case R can fall outside of [0, 1].
+    test_score_marked = min(test_score, gamma)
+
+    # Adjusted relative overfit rate.
+    r_marked = _relative_overfit_rate(train_score, test_score, gamma)
+
+    # Compute .632+ train score.
+    return _point632plus(train_score, test_score, r_marked, test_score_marked)
+
+
+def _no_info_rate(y_true, y_pred):
+    # NB: Only applicable to a dichotomous classification problem.
+    p_one = np.sum(y_true) / np.size(y_true)
+    q_one = np.sum(y_pred) / np.size(y_pred)
+
+    return p_one * (1 - q_one) + (1 - p_one) * q_one
+
+
+@jit
+def _point632plus(train_score, test_score, r_marked, test_score_marked):
+    # Paper implementation of .632+ score.
+    point632 = 0.368 * train_score + 0.632 * test_score
+    frac = (0.368 * 0.632 * r_marked) / (1 - 0.368 * r_marked)
+
+    return point632 + (test_score_marked - train_score) * frac
+
+
+@jit
+def _relative_overfit_rate(train_score, test_score, gamma):
+    # Paper implementation of relative overfitting rate.
+    if test_score > train_score and gamma > train_score:
+        return (test_score - train_score) / (gamma - train_score)
+    else:
+        return 0
 
 
 @jit
@@ -138,20 +183,12 @@ def relative_overfit_rate(train_score, test_score, gamma):
         return 0
 
 
+# NOTE: Need only use sum(y_) if y_ is binary.
 def no_info_rate(y_true, y_pred):
-    """Compute no information rate according to .632+ method.
 
-    Args:
-        y_true (array-like):
-        y_test (array-like):
-
-    Returns:
-        (float):
-
-    """
     # NB: Only applicable to a dichotomous classification problem.
-    p_one = np.sum(y_true) / np.size(y_true)
-    q_one = np.sum(y_pred) / np.size(y_pred)
+    p_one = np.sum(y_true == 1) / np.size(y_true)
+    q_one = np.sum(y_pred == 1) / np.size(y_pred)
 
     return p_one * (1 - q_one) + (1 - p_one) * q_one
 
@@ -163,51 +200,8 @@ def point632plus_score(y_true, y_pred, train_score, test_score):
     # in which case R can fall outside of [0, 1].
     test_score_marked = min(test_score, gamma)
 
-    # Adjusted relative overfit rate.
+    # Adjusted R.
     r_marked = relative_overfit_rate(train_score, test_score, gamma)
 
     # Compute .632+ train score.
     return point632plus(train_score, test_score, r_marked, test_score_marked)
-
-
-def scale_fit_predict632(model, X_train, X_test, y_train, y_test, score_func):
-    """Apply Z score transformation to predictors, train and test model.
-
-    Args:
-        model ():
-        X_train (array-like):
-        X_test (array-like):
-        y_train (array-like):
-        y_test (array-like):
-        score_func ():
-
-    Returns:
-        (tuple): Training and test score. Default mechanism if unable to
-            generate prediction returns None.
-
-    """
-    # Attempt prediction.
-    try:
-        # Z score transformation.
-        X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
-
-        model.fit(X_train_std, y_train)
-
-        # Aggregate model train and test predictions.
-        y_train_pred = model.predict(X_train_std)
-        train_score = score_func(y_train, y_train_pred)
-        y_test_pred = model.predict(X_test_std)
-        test_score = score_func(y_test, y_test_pred)
-
-        # Compute train and test .632+ scores.
-        train_632_score = point632plus_score(
-            y_train, y_train_pred, train_score, test_score
-        )
-        test_632_score = point632plus_score(
-            y_test, y_test_pred, train_score, test_score
-        )
-        return train_632_score, test_632_score
-
-    # Failing mechanism.
-    except:
-        return None, None
