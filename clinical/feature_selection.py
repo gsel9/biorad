@@ -234,10 +234,21 @@ def wilcoxon_signed_rank(X, y, thresh=0.05):
     return np.zeros(support, dtype=int)
 
 
-def mrmr_selection():
+def mrmr_selection(X_train, X_test, y_train, y_test, num_features):
     """Minimum redundancy maximum relevancy."""
 
-    pass
+    # Z-score transformation.
+    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+
+    if np.ndim(y_train) < 2:
+        data = np.concatenate((y[:, np.newaxis], X_train_std), axis=1)
+    elif np.ndim(y_train) == 2:
+        data = np.concatenate((y, X_train_std), axis=1)
+    else:
+        raise RuntimeError('Invalid target dimension {}'
+                           ''.format(np.ndim(y_train)))
+
+    df_X_train_std = pd.DataFrame(data)
 
 
 def minimum_redundancy_maximum_relevancy():
