@@ -24,6 +24,16 @@ from multiprocessing import cpu_count
 N_JOBS = cpu_count() - 1 if cpu_count() > 1 else cpu_count()
 
 
+def listdir(path_to_dir, skip_tail=('.csv'), skip_head=('.')):
+
+    labels = []
+    for label in os.listdir(path_to_dir):
+        if not label.endswith(skip_tail) and not label.startswith(skip_head):
+            labels.append(str(label))
+
+    return labels
+
+
 def _typecheck(item):
     # Return <int> if able to convert, else <str>.
 

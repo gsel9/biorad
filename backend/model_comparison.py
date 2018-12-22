@@ -101,6 +101,14 @@ def model_comparison(
                         selector=None,
                         n_jobs=n_jobs, verbose=verbose,
                         score_func=score_func, score_metric=score_metric
+                        #X, y,
+                        #n_splits,
+                        #random_state,
+                        #path_tmp_results,
+                        #estimator, hparam_grid,
+                        #selector,
+                        #n_jobs=1, verbose=0,
+                        #score_func=None, score_eval=None
                     )
                     for random_state in random_states
                 )
@@ -108,11 +116,9 @@ def model_comparison(
         # Including feature selection.
         else:
             for selector_name, procedure in selectors.items():
-                selector = {
-                    'name': selector_name,
-                    'func': fprocedure,
-                    'params': selector_params[selector_name]
-                }
+                selector = feature_selection.Selector(
+                    selector_name, procedure, selector_params[selector_name]
+                )
                 results.extend(
                     joblib.Parallel(
                         n_jobs=n_jobs, verbose=verbose

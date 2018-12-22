@@ -17,93 +17,6 @@ from numba import jit
 from sklearn.preprocessing import StandardScaler
 
 
-class Selector:
-    """Representation of a feature selection procedure.
-
-    Args:
-        name (str): Name of feature selection procedure.
-        funt (function): Function executing the selection procedure.
-        params (dict): Parameters passed to the selection procedure.
-
-    Returns:
-        (tuple): Training subset, test subset and selected features support
-            indicators.
-
-    """
-
-    def __init__(self, name, func, params):
-
-        self.name = name
-        self.func = func
-        self.params = params
-
-    def __call__(self, *args **kwargs):
-
-        X_train_std, X_test_std, _support = self.func(
-            *args, **self.params, **kwargs
-        )
-        support = self._check_support(_support, X_train_std)
-
-        return self._check_feature_subset(X_train_std, X_test_std, support)
-
-    @staticmethod
-    def _check_support(support, X):
-        # Formatting of indicators subset.
-
-        if not isinstance(support, np.ndarray):
-            support = np.array(support, dtype=int)
-
-        # NB: Default mechanism includes all features if none were selected.
-        if len(support) < 1:
-            support = np.arange(X.shape[1], dtype=int)
-        else:
-            if np.ndim(support) > 1:
-                support = np.squeeze(support)
-            if np.ndim(support) < 1:
-                support = support[np.newaxis]
-            if np.ndim(support) != 1:
-                raise RuntimeError(
-                    'Invalid dimension {} to support.'.format(np.ndim(support))
-                )
-        return support
-
-    @staticmethod
-    def _check_feature_subset(X_train, X_test, support):
-        # Formatting training and test subsets.
-
-        # Support should be a non-empty vector (ensured in _check_support).
-        _X_train, _X_test = X_train[:, support],  X_test[:, support]
-
-        if np.ndim(_X_train) > 2:
-            if np.ndim(np.squeeze(_X_train)) > 2:
-                raise RuntimeError('X train ndim {}'.format(np.ndim(_X_train)))
-            else:
-                _X_train = np.squeeze(_X_train)
-
-        if np.ndim(_X_test) > 2:
-            if np.ndim(np.squeeze(_X_test)) > 2:
-                raise RuntimeError('X test ndim {}'.format(np.ndim(_X_train)))
-            else:
-                _X_test = np.squeeze(_X_test)
-
-        if np.ndim(_X_train) < 2:
-            if np.ndim(_X_train.reshape(-1, 1)) == 2:
-                _X_train = _X_train.reshape(-1, 1)
-            else:
-                raise RuntimeError('X train ndim {}'.format(np.ndim(_X_train)))
-
-        if np.ndim(_X_test) < 2:
-            if np.ndim(_X_test.reshape(-1, 1)) == 2:
-                _X_test = _X_test.reshape(-1, 1)
-            else:
-                raise RuntimeError('X test ndim {}'.format(np.ndim(_X_test)))
-
-        return (
-            np.array(_X_train, dtype=float), np.array(_X_test, dtype=float),
-            support
-        )
-
-
 class BootstrapOutOfBag:
     """A bootstrap Out-of-Bag resampler.
 
@@ -143,15 +56,6 @@ class BootstrapOutOfBag:
                 list(set(sample_indicators) - set(train_idx)), dtype=int
             )
             yield train_idx, test_idx
-
-
-def check_support(support):
-    """Format selected support."""
-    if np.ndim(support) > 1:
-        return np.squeeze(support)
-
-    if not isinstance(support, np.ndarray):
-        return np.array(support, dtype=int)
 
 
 # This approach is more robust towards situations where no features are

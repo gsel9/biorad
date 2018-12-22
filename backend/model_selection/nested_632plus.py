@@ -2,13 +2,6 @@
 #
 # nested_632plus.py
 #
-# TODOS:
-# * Catch errors if unable to select features, train model, make predictions,
-#   evaluate average performances. Create separate mechanisms at each step and a
-#   evaluation step before toring results checking if anything went wrong (which in case None is passed
-#   as failed experiment).
-# * Confirm permutation selection and Wilcoxon selects properly.
-# * Include grid search in permutation importance selection?
 
 """
 The nested .632+ Out-of-Bag procedure for model selection. The .632+ bootstrap
@@ -91,9 +84,11 @@ def _nested_point632plus(
         selector, support_method,
         n_jobs, verbose, score_func, score_metric
     ):
+
     # Bookeeping results and feature votes.
     results = {'experiment_id': random_state}
     features = np.zeros(X.shape[1], dtype=int)
+
     # Outer OOB resampler.
     sampler = utils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
@@ -130,7 +125,7 @@ def _nested_point632plus(
             opt_hparams.append(best_model.get_params())
             features[best_support] += 1
         # Apply mode to all opt hparam settings.
-        best_model_hparams = _filter_hparams(opt_hparams)
+        best_model_hparams = utils.select_hparams(opt_hparams)
         # Retain features with max activations.
         best_support, num_votes = _filter_support(features, method='max')
     # Callback handling of preliminary results.
@@ -151,26 +146,31 @@ def oob_exhaustive_search(
         random_state,
         estimator, hparam_grid,
         selector,
-        n_jobs=n_jobs, verbose=verbose,
+        n_jobs=n_jobs,
+        verbose=verbose,
         score_func=score_func, score_metric=score_metric
     ):
     # Inner OOB resampler.
-    oob_sampler = utils.BootstrapOutOfBag(
+    sampler = utils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
     )
+    # Exhaustive hyperparameter search.
     best_test_score = 0
     best_model, best_support = [], []
     for combo_num, hparams in enumerate(hparam_grid):
+
         # Bookeeping of feature votes.
         features = np.zeros(X.shape[1], dtype=int)
-        # Recording general performance of modelling procedure.
+
         train_scores, test_scores = [], []
-        for num, (train_idx, test_idx) in enumerate(oob_sampler.split(X, y)):
+        for split_num, (train_idx, test_idx) in enumerate(sampler.split(X, y)):
+
             X_train, X_test = X[train_idx], X[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
-            # NOTE: Standardizing in feature sel function.
-            X_train_sub, X_test_sub, support = selector['func'](
-                (X_train, X_test, y_train, y_test), **selector['params']
+
+            # NOTE: Z-score transformation included in selection procedure.
+            X_train_sub, X_test_sub, support = selector(
+                X_train, X_test, y_train, y_test
             )
             # NB: Need error handling.
             model = _check_estimator(
@@ -187,27 +187,9 @@ def oob_exhaustive_search(
         if score_eval(test_scores) > best_test_score:
             best_test_score = current_score
             # Retain features of max activation.
-            best_support, num_votes = _filter_support(features, method='max')
+            best_support, num_votes = utils.select_support(features)
             # Re-instantiate a new untrained model.
             best_model = _check_estimator(
                 np.size(support), hparams, estimator, random_state=random_state
             )
         return best_model, best_support
-
-
-def _filter_support(features, method='max', **kwargs):
-
-    # This approach is more robust towards situations where no features are
-    # selected, but may suffer from a very small subset of features selected.
-    if method == 'max':
-        max_counts = np.max(features)
-        return np.squeeze(np.where(features == max_counts)), max_counts
-
-
-def _filter_hparams(hparams):
-    # Selecting mode of hparams as opt hparam settings.
-    try:
-        return max(hparams, key=hparams.count)
-    # Error mechanism in case all hparams have equal votes.
-    except:
-        return hparams
