@@ -234,28 +234,6 @@ def wilcoxon_signed_rank(X, y, thresh=0.05):
     return np.zeros(support, dtype=int)
 
 
-def mrmr_selection(X_train, X_test, y_train, y_test, num_features):
-    """Minimum redundancy maximum relevancy."""
-
-    # Z-score transformation.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
-
-    if np.ndim(y_train) < 2:
-        data = np.concatenate((y[:, np.newaxis], X_train_std), axis=1)
-    elif np.ndim(y_train) == 2:
-        data = np.concatenate((y, X_train_std), axis=1)
-    else:
-        raise RuntimeError('Invalid target dimension {}'
-                           ''.format(np.ndim(y_train)))
-
-    df_X_train_std = pd.DataFrame(data)
-
-
-def minimum_redundancy_maximum_relevancy():
-
-    pass
-
-
 def relieff(X_train, X_test, y_train, y_test, num_neighbors, num_features):
     """A wrapper for the ReliefF feature selection algorithm.
 
@@ -278,3 +256,32 @@ def relieff(X_train, X_test, y_train, y_test, num_neighbors, num_features):
     support = _check_support(selector.top_features[:num_features], X_train_std)
 
     return _check_feature_subset(X_train_std, X_test_std, support)
+
+
+# ERROR:
+def mrmr_selection(X_train, X_test, y_train, y_test, num_features):
+    """Minimum redundancy maximum relevancy."""
+    # Z-score transformation.
+    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+    # Format data set.
+    if np.ndim(y_train) < 2:
+        data = np.concatenate((y[:, np.newaxis], X_train_std), axis=1)
+    elif np.ndim(y_train) == 2:
+        data = np.concatenate((y, X_train_std), axis=1)
+    else:
+        raise RuntimeError('Invalid target dimension {}'
+                           ''.format(np.ndim(y_train)))
+
+    df_X_train_std = pd.DataFrame(data)
+
+
+# ERROR:
+def minimum_redundancy_maximum_relevancy():
+
+    pass
+
+
+# ERROR:
+def forward_sequential_gain():
+    # The procedure descirbed by Vallieres et al selecting 25 features.
+    pass
