@@ -33,10 +33,10 @@ def nested_point632plus(
         path_tmp_results,
         estimator, hparam_grid,
         selector,
-        n_jobs=1, verbose=0,
-        score_func=None, score_eval=None
+        n_jobs=1, verbose=0, score_func=None, score_eval=None
     ):
     """Model performance evaluation according to the .632+ bootstrap method.
+    Results are written to disk.
 
     Args:
         X (array-like):
@@ -169,9 +169,18 @@ def oob_exhaustive_search(
             y_train, y_test = y[train_idx], y[test_idx]
 
             # NOTE: Z-score transformation included in selection procedure.
+
+            # Pass model, score func, data, and random state always
             X_train_sub, X_test_sub, support = selector(
-                X_train, X_test, y_train, y_test
+                X_train, X_test, y_train, y_test,
+                score_func,
+                model,
+                num_rounds,
+                random_state
             )
+
+
+
             # NB: Need error handling.
             model = _check_estimator(
                 np.size(support), hparams, estimator, random_state=random_state
