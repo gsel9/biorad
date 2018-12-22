@@ -37,13 +37,13 @@ def wilcoxon_selection(X_train, X_test, y_train, y_test, thresh=0.05):
 
     _, ncols = np.shape(X_train_std)
 
-    indicators = wilcoxon_rank_sum_test(X_train_std, y_train, thresh=thresh)
+    indicators = wilcoxon_signed_rank(X_train_std, y_train, thresh=thresh)
     support = _check_support(indicators, X_train_std)
 
     return _check_feature_subset(X_train_std, X_test_std, support)
 
 
-def wilcoxon_rank_sum_test(X, y, thresh=0.05):
+def wilcoxon_signed_rank(X, y, thresh=0.05):
     """
 
     Also known as Mann-Whitney U test or Mann-Whitney Wilcoxon test.
@@ -62,7 +62,7 @@ def wilcoxon_rank_sum_test(X, y, thresh=0.05):
         (numpy.ndarray): Support indicators.
 
     """
-    _, ncols = np.shape(X)
+    """_, ncols = np.shape(X)
 
     support = []
     for num in range(ncols):
@@ -72,7 +72,7 @@ def wilcoxon_rank_sum_test(X, y, thresh=0.05):
         if pval <= thresh / ncols:
             support.append(num)
 
-    return np.zeros(support, dtype=int)
+    return np.zeros(support, dtype=int)"""
 
 
 # TODO: Verify correct sorting.
