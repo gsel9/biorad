@@ -10,6 +10,7 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
+import mifs
 import utils
 
 import numpy as np
@@ -246,6 +247,10 @@ def relieff(X_train, X_test, y_train, y_test, num_neighbors, num_features):
             feature importance scores.
         num_features (): The number of features to select.
 
+    Returns:
+        (tuple): Training subset, test subset and selected features support
+            indicators.
+
     """
     # Z-score transformation.
     X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
@@ -258,30 +263,29 @@ def relieff(X_train, X_test, y_train, y_test, num_neighbors, num_features):
     return _check_feature_subset(X_train_std, X_test_std, support)
 
 
-# ERROR:
+# Cloned from: https://github.com/danielhomola/mifs
 def mrmr_selection(X_train, X_test, y_train, y_test, num_features):
-    """Minimum redundancy maximum relevancy."""
+    """Minimum redundancy maximum relevancy.
+
+    Args:
+        X_train (array-like): Training predictor set.
+        X_test (array-like): Test predictor set.
+        y_train (array-like): Training target set.
+        y_test (array-like): Test target set.
+
+    Returns:
+        (tuple): Training subset, test subset and selected features support
+            indicators.
+
+    """
     # Z-score transformation.
     X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
-    # Format data set.
-    if np.ndim(y_train) < 2:
-        data = np.concatenate((y[:, np.newaxis], X_train_std), axis=1)
-    elif np.ndim(y_train) == 2:
-        data = np.concatenate((y, X_train_std), axis=1)
-    else:
-        raise RuntimeError('Invalid target dimension {}'
-                           ''.format(np.ndim(y_train)))
 
-    df_X_train_std = pd.DataFrame(data)
+    selector = mifs.MutualInformationFeatureSelector(
+        method='MRMR', k=5, n_features='auto', categorical=True
+    )
+    # If 'auto': n_features is determined based on the amount of mutual
+    # information the previously selected features share with y.
+    selector.fit(X_train_std, y_train)
 
-
-# ERROR:
-def minimum_redundancy_maximum_relevancy():
-
-    pass
-
-
-# ERROR:
-def forward_sequential_gain():
-    # The procedure descirbed by Vallieres et al selecting 25 features.
-    pass
+    return _check_feature_subset(X_train_std, X_test_std, selector.support_)
