@@ -4,6 +4,8 @@
 #
 
 """
+Wrapped feature selection algorithms providing API compatible with model
+comparison framework.
 """
 
 __author__ = 'Severin Langberg'
@@ -43,7 +45,7 @@ class Selector:
         self.params = params
 
     def __call__(self, *args **kwargs):
-
+        # Execute feature selection procedure.
         X_train_std, X_test_std, _support = self.func(
             *args, **self.params, **kwargs
         )
@@ -55,7 +57,6 @@ class Selector:
     @staticmethod
     def _check_support(support, X):
         # Formatting of indicators subset.
-
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
 
@@ -79,33 +80,29 @@ class Selector:
 
         # Support should be a non-empty vector (ensured by _check_support).
         _X_train, _X_test = X_train[:, support],  X_test[:, support]
-
         if np.ndim(_X_train) > 2:
             if np.ndim(np.squeeze(_X_train)) > 2:
                 raise RuntimeError('X train ndim {}'.format(np.ndim(_X_train)))
             else:
                 _X_train = np.squeeze(_X_train)
-
         if np.ndim(_X_test) > 2:
             if np.ndim(np.squeeze(_X_test)) > 2:
                 raise RuntimeError('X test ndim {}'.format(np.ndim(_X_train)))
             else:
                 _X_test = np.squeeze(_X_test)
-
         if np.ndim(_X_train) < 2:
             if np.ndim(_X_train.reshape(-1, 1)) == 2:
                 _X_train = _X_train.reshape(-1, 1)
             else:
                 raise RuntimeError('X train ndim {}'.format(np.ndim(_X_train)))
-
         if np.ndim(_X_test) < 2:
             if np.ndim(_X_test.reshape(-1, 1)) == 2:
                 _X_test = _X_test.reshape(-1, 1)
             else:
                 raise RuntimeError('X test ndim {}'.format(np.ndim(_X_test)))
-
         return (
-            np.array(_X_train, dtype=float), np.array(_X_test, dtype=float),
+            np.array(_X_train, dtype=float),
+            np.array(_X_test, dtype=float),
             support
         )
 

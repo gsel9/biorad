@@ -63,18 +63,7 @@ if __name__ == '__main__':
     * Griegthuysen et al.
     * Limkin et al.
     * Parmar et al.
-
-    FEATURE SELECTION:
-    * Pass current estimator to permutaiton importance wrapper.
-
-    QUESTIONS:
-    - Wilcoxon test for feature selection?
-        - Remove features with indicated identical distribution to target?
-        - Perform Z-score transformation?
-        - Bonferroni correction?
-    - Random sampling of hparams?
-    - Feature selection across parameter grid and select most stable features?
-
+    * Avonzo et al. describes studies.
     """
 
     # Comparing on precision.
@@ -95,16 +84,10 @@ if __name__ == '__main__':
         'svc': SVC,
     }
     selectors = {
-        'permutation': feature_selection.permutation_importance,
+        'permutation': feature_selection.permutation_importance_selection,
         'wlcx': feature_selection.wilcoxon_selection,
-        'relieff_k10_n5': feature_selection.relieff,
-        'relieff_k30_n5': feature_selection.relieff,
-        'relieff_k10_n20': feature_selection.relieff,
-        'relieff_k30_n20': feature_selection.relieff,
-        'mutual_info_k10_n5': feature_selection.mutual_info,
-        'mutual_info_k30_n5': feature_selection.mutual_info,
-        'mutual_info_k10_n20': feature_selection.mutual_info,
-        'mutual_info_k30_n20': feature_selection.mutual_info
+        'mrmr': feature_selection.mrmr_selection,
+        'relieff': feature_selection.relieff,
     }
     estimator_params = {
         'rf': {
@@ -122,13 +105,12 @@ if __name__ == '__main__':
             'degree': [2, 3],
             'max_iter': [2000]
         },
-        'logreg_l1': {
+        'logreg': {
             'tol': [0.0001, 0.01, 0.1, 1],
             'C': [0.001, 0.01, 1, 10],
             'class_weight': ['balanced'],
-            # Use L1 reg. to reduce dim. feature space.
-            'penalty': ['l1'],
-            'solver': ['liblinear'],
+            'penalty': ['l1', 'l2'],
+            'solver': ['newton-cg'],
             'max_iter': [2000],
             'n_jobs': [-1]
         },
@@ -144,14 +126,8 @@ if __name__ == '__main__':
     selector_params = {
         'permutation_imp': {'model': None, 'num_rounds': 1},
         'wlcx': {'thresh': 0.05},
-        'relieff_k10': {'num_features': 10, 'num_neighbors': 5},
-        'relieff_k30': {'num_features': 30, 'num_neighbors': 5},
-        'relieff_k10': {'num_features': 10, 'num_neighbors': 20},
-        'relieff_k30': {'num_features': 30, 'num_neighbors': 20},
-        'mutual_info_k10': {'num_features': 10, 'num_neighbors': 20},
-        'mutual_info_k30': {'num_features': 30, 'num_neighbors': 20},
-        'mutual_info_k10': {'num_features': 10, 'num_neighbors': 5},
-        'mutual_info_k30': {'num_features': 30, 'num_neighbors': 5},
+        'relieff': {'num_features': 10, 'num_neighbors': 5},
+        'mrmr': {}
     }
 
     # Feature data.
