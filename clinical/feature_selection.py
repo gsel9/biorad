@@ -111,7 +111,7 @@ class Selector:
 
 def permutation_importance_selection(
         X_train, X_test, y_train, y_test,
-        scoring,
+        score_func,
         model,
         num_rounds,
         random_state
@@ -123,10 +123,14 @@ def permutation_importance_selection(
         X_test (array-like): Test predictor set.
         y_train (array-like): Training target set.
         y_test (array-like): Test target set.
-        scoring ():
+        score_func (function):
         model ():
         num_rounds (int):
         random_state (int):
+
+    Returns:
+        (tuple): Training subset, test subset and selected features support
+            indicators.
 
     """
     # Z-score transformation.
@@ -135,7 +139,7 @@ def permutation_importance_selection(
     model.fit(X_train_std, y_train)
 
     imp = feature_permutation_importance(
-        X_test_std, y_test, scoring, model, num_rounds, random_state
+        X_test_std, y_test, score_func, model, num_rounds, random_state
     )
     # Return features contributing to model performance as support.
     return X_train_std, X_test_std, np.where(imp > 0)
@@ -147,9 +151,9 @@ def feature_permutation_importance(
     """Feature importance by random feature permutations.
 
     Args:
-        X (array-like):
-        y (array-like):
-        scoring ():
+        X (array-like): Predictor observations.
+        y (array-like): Ground truths.
+        score_func (function):
         model ():
         num_rounds (int):
         random_state (int):
@@ -181,7 +185,7 @@ def feature_permutation_importance(
 
 
 def wilcoxon_selection(X_train, X_test, y_train, y_test, thresh=0.05):
-    """Perform feature selection by the Wilcoxon Rank-Sum Test.
+    """Perform feature selection by the Wilcoxon signed-rank.
 
     Args:
         X_train (array-like): Training predictor set.
@@ -190,14 +194,15 @@ def wilcoxon_selection(X_train, X_test, y_train, y_test, thresh=0.05):
         y_test (array-like): Test target set.
         thresh (float):
 
+    Returns:
+        (tuple): Training subset, test subset and selected features support
+            indicators.
+
     """
     # Z-score transformation.
     X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
 
-    _, ncols = np.shape(X_train_std)
-
-    indicators = wilcoxon_signed_rank(X_train_std, y_train, thresh=thresh)
-    support = _check_support(indicators, X_train_std)
+    support = wilcoxon_signed_rank(X_train_std, y_train, thresh=thresh)
 
     return _check_feature_subset(X_train_std, X_test_std, support)
 
@@ -211,8 +216,8 @@ def wilcoxon_signed_rank(X, y, thresh=0.05):
     H1: The distribution of the differences x - y is not symmetric about zero.
 
     Args:
-        X ():
-        y ():
+        X (array-like): Predictor observations.
+        y (array-like): Ground truths.
         thresh (float):
 
     Returns:
@@ -238,40 +243,6 @@ def mrmr_selection():
 def minimum_redundancy_maximum_relevancy():
 
     pass
-
-
-# TODO: Verify correct sorting.
-def mutual_info(
-        X_train, X_test, y_train, y_test,
-        num_neighbors, num_features,
-        random_state=None
-    ):
-    """A wrapper of scikit-learn mutual information feature selector.
-
-    Args:
-        X_train (array-like): Training predictor set.
-        X_test (array-like): Test predictor set.
-        y_train (array-like): Training target set.
-        y_test (array-like): Test target set.
-        num_neighbors (int): The number of neighbors to consider when assigning
-            feature importance scores.
-        random_state (int):
-
-    Returns:
-        (tuple):
-
-    """
-    # Z-score transformation.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
-
-    info = feature_selection.mutual_info_classif(
-        X_train_std, y_train, n_neighbors=num_neighbors,
-        random_state=random_state
-    )
-    # NOTE: Retain features contributing above threshold to model performance.
-    support = _check_support(sorted(info)[:num_features], X_train_std)
-
-    return _check_feature_subset(X_train_std, X_test_std, support)
 
 
 def relieff(X_train, X_test, y_train, y_test, num_neighbors, num_features):
