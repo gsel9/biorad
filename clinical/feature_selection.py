@@ -133,12 +133,9 @@ def permutation_importance_selection(
     X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
 
     model.fit(X_train_std, y_train)
-    imp = feature_permutation_importancen(
-        X_test_std, y_test,
-        scoring=scoring,
-        model=model,
-        num_rounds=num_rounds,
-        random_state=random_state
+
+    imp = feature_permutation_importance(
+        X_test_std, y_test, scoring, model, num_rounds, random_state
     )
     # Return features contributing to model performance as support.
     return X_train_std, X_test_std, np.where(imp > 0)
@@ -165,19 +162,19 @@ def feature_permutation_importance(
 
     # Baseline performance.
     baseline = score_func(y, model.predict(X))
-    
+
     _, num_features = np.shape(X)
     importance = np.zeros(num_features, dtype=float)
     for round_idx in range(num_rounds):
         for col_idx in range(num_features):
             # Store original feature permutation.
-            temp = X[:, col_idx].copy()
+            x_orig = X[:, col_idx].copy()
             # Break association between x and y by random permutation.
             rgen.shuffle(X[:, col_idx])
-             # Permutation score.
             new_score = score_func(y, model.predict(X))
-            X[:, col_idx] = temp
-            # Likely feature is important if new score < baseline.
+            # Reinsert original feature prior to permutation.
+            X[:, col_idx] = x_orig
+            # Feature is likely important if new score < baseline.
             importance[col_idx] += baseline - new_score
 
     return importance / num_rounds
