@@ -126,7 +126,7 @@ def permutation_selection(
         y_test (array-like): Test target set.
         score_func (function):
         model ():
-        num_rounds (int):
+        num_rounds (int): The number of permutations per feature.
         random_state (int):
 
     Returns:
@@ -157,7 +157,7 @@ def feature_permutation_importance(
         y (array-like): Ground truths.
         score_func (function):
         model ():
-        num_rounds (int):
+        num_rounds (int): The number of permutations per feature.
         random_state (int):
 
     Returns:
@@ -230,18 +230,18 @@ def wilcoxon_signed_rank(X, y, thresh=0.05, **kwargs):
     """
     _, ncols = np.shape(X)
 
-    support = []
+    support, pvals = [], []
     for num in range(ncols):
-        _, pval = stats.wilcoxon(X[:, num], y)
         # If p-value > thresh: same distribution.
-        # NOTE: Add H-B test instead of Bonferroni?
+        _, pval = stats.wilcoxon(X[:, num], y)
+        # Bonferroni correction.
         if pval <= thresh / ncols:
             support.append(num)
 
     return np.array(support, dtype=int)
 
 
-def relieff(
+def relieff_selection(
         X_train, X_test, y_train, y_test, num_neighbors, num_features, **kwargs
     ):
     """A wrapper for the ReliefF feature selection algorithm.
@@ -270,7 +270,7 @@ def relieff(
 
 
 # Cloned from: https://github.com/danielhomola/mifs
-def mrmr_selection(X_train, X_test, y_train, y_test, num_features, **kwargs):
+def mrmr_selection(X_train, X_test, y_train, y_test, k, num_features, **kwargs):
     """Minimum redundancy maximum relevancy.
 
     Args:

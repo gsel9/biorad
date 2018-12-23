@@ -47,15 +47,20 @@ def model_comparison(
         X, y,
         n_splits,
         random_states,
-        path_to_results,
-        estimators, estimator_params,
-        selectors=None, selector_params=None,
-        verbose=1, score_func=None, score_eval=None, n_jobs=None
+        estimators,
+        estimator_params,
+        selectors=None,
+        selector_params=None,
+        score_func=None,
+        score_eval=None,
+        verbose=0,
+        n_jobs=None,
+        path_to_results=None
     ):
     """Compare model performances with optional feature selection.
 
     Args:
-        comparison_scheme ():
+        comparison_scheme (function):
         X (array-like):
         y (array-like):
         n_splits (int):
@@ -64,9 +69,11 @@ def model_comparison(
         estimator_params (dict):
         selectors (dict):
         selector_params (dict):
-        verbose (int):
         score_func ():
+        score_eval ():
+        verbose (int):
         n_jobs (int):
+        path_to_results (str):
 
     Returns:
         None: Writes results to disk an removes tmp directory.

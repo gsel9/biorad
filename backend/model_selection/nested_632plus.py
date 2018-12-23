@@ -64,7 +64,7 @@ def nested_point632plus(
     """
     # Setup:
     path_case_file = os.path.join(
-        path_tempdir, '{}_{}_{}'.format(
+        path_tmp_results, '{}_{}_{}'.format(
             estimator.__name__, selector.name, random_state
         )
     )
@@ -75,7 +75,10 @@ def nested_point632plus(
         print('Initiating experiment: {}'.format(random_state))
         start_time = datetime.now()
         results = _nested_point632plus(
-            *args, verbose=verbose, score_func=score_func, n_jobs=n_jobs
+            *args,
+            verbose=verbose,
+            score_func=score_func,
+            n_jobs=n_jobs
         )
         duration = datetime.now() - start_time()
         print('Experiment {} completed in {}'.format(random_state, duration))
@@ -105,7 +108,7 @@ def _nested_point632plus(
         y_train, y_test = y[train_idx], y[test_idx]
         # Perform exhaustive hyperparameter search.
         best_model, best_support = oob_exhaustive_search(
-            X_train, y_train
+            X_train, y_train,
             n_splits,
             random_state,
             estimator, hparam_grid,
@@ -156,16 +159,15 @@ def _nested_point632plus(
 
 
 def oob_exhaustive_search(
-        X_train, y_train
+        X_train, y_train,
         n_splits,
         random_state,
         estimator, hparam_grid,
         selector,
-        n_jobs=n_jobs,
-        verbose=verbose,
-        score_func=score_func, score_metric=score_metric
+        n_jobs, verbose,
+        score_func, score_metric
     ):
-    """Perform hyperparameter optimizatino according to the .632+ bootstrap
+    """Perform hyperparameter optimization according to the .632+ bootstrap
     Out-of-Bag method.
 
     Args:

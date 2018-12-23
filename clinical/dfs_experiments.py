@@ -30,7 +30,7 @@ def feature_set(path_to_data, index_col=0):
 if __name__ == '__main__':
     import sys
     # Add backend directory to PATH variable.
-    sys.append('./../backend')
+    sys.path.append('./../backend')
 
     import os
     import feature_selection
@@ -43,6 +43,7 @@ if __name__ == '__main__':
 
     from sklearn.svm import SVC
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.naive_bayes import GaussianNB
     from sklearn.linear_model import LogisticRegression
     from sklearn.cross_decomposition import PLSRegression
 
@@ -59,35 +60,46 @@ if __name__ == '__main__':
 
     ALGORITHMS:
     * Zhang et al.
-    * Wu et al.
+    * Wu et al.: Naive Baye’s + ReliefF
     * Griegthuysen et al.
     * Limkin et al.
-    * Parmar et al.
+    * Parmar et al.: Random Forest + Wilcoxon
     * Avonzo et al. describes studies.
     """
+
+    # ToDos:
+    # * Sequential test runs with each model to check is working.
+    # * Run achieving complete overfitting of all models (may be recommended by
+    #   Francois to check correctness of procedure).
+    # * Iniate clinical, image and clinical + image experiments.
+    # *
 
     # Comparing on precision.
     LOSS = precision_recall_fscore_support
 
+    # Evaluating model general performance.
+    EVAL = np.median
+
     # Mumber of OOB splits per level.
-    NUM_REPS = 100
+    NUM_SPLITS = 100
 
     # Number of repeated experiments (40 reps also used in a paper).
     NUM_ROUNDS = 40
 
     # Classifiers and feature selectors:
     estimators = {
-        'logreg': LogisticRegression,
-        'rf': RandomForestClassifier,
-        'plsr': PLSRegression,
-        'nb': GaussianNB,
-        'svc': SVC,
+        #'logreg': LogisticRegression,
+        #'rf': RandomForestClassifier,
+        #'plsr': PLSRegression,
+        'gnb': GaussianNB,
+        #'svc': SVC,
     }
     selectors = {
-        'permutation': feature_selection.permutation_importance_selection,
-        'wlcx': feature_selection.wilcoxon_selection,
-        'mrmr': feature_selection.mrmr_selection,
-        'relieff': feature_selection.relieff,
+        #'permutation': feature_selection.permutation_selection,
+        #'wlcx': feature_selection.wilcoxon_selection,
+        'relieff_5': feature_selection.relieff_selection,
+        #'relieff_20': feature_selection.relieff_selection,
+        #'mrmr': feature_selection.mrmr_selection
     }
     estimator_params = {
         'rf': {
@@ -124,12 +136,16 @@ if __name__ == '__main__':
         },
     }
     selector_params = {
-        'permutation_imp': {'model': None, 'num_rounds': 1},
+        'permutation': {'num_rounds': 100},
+        # Using a 5 % significance level.
         'wlcx': {'thresh': 0.05},
-        'relieff': {'num_features': 10, 'num_neighbors': 5},
-        'mrmr': {}
-    }
 
+        'relieff_5': {'num_neighbors': 10, 'num_features': 5},
+        'relieff_20': {'num_neighbors': 10, 'num_features': 20},
+        # Kraskov et al. recommend k a small integer between 3 and 10. Default
+        # in MIFs package is k=5.
+        'mrmr': {'num_features': 'auto', 'k': 5}
+    }
     # Feature data.
     X = feature_set('./../../../data/to_analysis/clinical_params.csv')
 
@@ -137,20 +153,24 @@ if __name__ == '__main__':
     y = target('./../../../data/to_analysis/target_dfs.csv')
 
     # Comparison scheme.
-    comparison_scheme = nested_point632plus
+    comparison_scheme = nested_632plus.nested_point632plus
 
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
     random_states = np.random.randint(1000, size=NUM_ROUNDS)
 
-    """
     _ = model_comparison(
         comparison_scheme,
         X, y,
-        estimators, estimator_params,
-        selectors, selector_params,
-        random_states, NUM_REPS,
+        NUM_SPLITS,
+        random_states,
+        estimators,
+        estimator_params,
+        selectors,
+        selector_params,
+        score_func=LOSS,
+        score_eval=EVAL,
+        verbose=0,
+        n_jobs=None,
         path_to_results='./results/dfs.csv',
-        score_func=LOSS
     )
-    """
