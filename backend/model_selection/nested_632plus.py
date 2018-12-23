@@ -2,6 +2,11 @@
 #
 # nested_632plus.py
 #
+# In experimental setup:
+# * Specify the number of components (include a PCA on the feature set to infere
+#   rasonable range.)
+# *
+
 
 """
 The nested .632+ Out-of-Bag procedure for model selection. The .632+ bootstrap
@@ -84,7 +89,6 @@ def _nested_point632plus(
         selector, support_method,
         n_jobs, verbose, score_func, score_metric
     ):
-
     # Bookeeping results and feature votes.
     results = {'experiment_id': random_state}
     features = np.zeros(X.shape[1], dtype=int)
@@ -102,25 +106,27 @@ def _nested_point632plus(
             X_train, y_train
             n_splits,
             random_state,
-            estimator, hparam_grid, selector,
-            n_jobs=n_jobs, verbose=verbose,
-            score_func=score_func, score_metric=score_metric
+            estimator, hparam_grid,
+            selector,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            score_func=score_func,
+            score_metric=score_metric
         )
-        # Error mechanism for logging results.
-        if best_model is None and best_support is None:
-            train_scores.append(None), test_scores.append(None)
-            opt_hparams.append(None)
+        # NOTE: Z-score transformation and error handlng included in
+        # function.
+        train_score, test_score = utils.scale_fit_predict632(
+            X_train[:, best_support], X_test[:, best_support],
+            y_train, y_test,
+            score_func,
+            best_model
+        )
+        # NOTE: Error handling mechanism.
+        if train_score is None and test_score is None:
+            pass
         else:
-            # NB: Need error handling.
-            best_model = _check_estimator(
-                np.size(best_support), best_model.get_params(), estimator,
-                random_state=random_state
-            )
-            # NB: Need error handling.
-            train_score, test_score = utils.scale_fit_predict632(
-                best_model, X_train[:, best_support], X_test[:, best_support],
-                y_train, y_test, score_func=score_func, score_metric
-            )
+            # TODO:
+
             train_scores.append(train_score), test_scores.append(test_score)
             opt_hparams.append(best_model.get_params())
             features[best_support] += 1
@@ -128,6 +134,7 @@ def _nested_point632plus(
         best_model_hparams = utils.select_hparams(opt_hparams)
         # Retain features with max activations.
         best_support, num_votes = _filter_support(features, method='max')
+
     # Callback handling of preliminary results.
     end_results = _update_prelim_results(
         results,
@@ -164,41 +171,73 @@ def oob_exhaustive_search(
 
         train_scores, test_scores = [], []
         for split_num, (train_idx, test_idx) in enumerate(sampler.split(X, y)):
-
-            X_train, X_test = X[train_idx], X[test_idx]
-            y_train, y_test = y[train_idx], y[test_idx]
-
-            # NOTE: Z-score transformation included in selection procedure.
-
-            # Pass model, score func, data, and random state always
-            X_train_sub, X_test_sub, support = selector(
-                X_train, X_test, y_train, y_test,
+            # Exectue modeling procedure for performance evaluation.
+            train_score, test_score = _eval_candidate_procedure(
+                X[train_idx], X[test_idx],
+                y[train_idx], y[test_idx],
+                estimator, hparams,
+                selector,
                 score_func,
-                model,
-                num_rounds,
-                random_state
+                random_state,
             )
-
-
-
-            # NB: Need error handling.
-            model = _check_estimator(
-                np.size(support), hparams, estimator, random_state=random_state
-            )
-            train_score, test_score = utils.scale_fit_predict632(
-                model,
-                X_train_sub, X_test_sub, y_train, y_test,
-                score_func
-            )
-            features[support] += 1
-            train_scores.append(train_score), test_scores.append(test_score)
-        # Comparing general model performances.
+            # NOTE: Error handling mechanism.
+            if train_score is None and test_score is None:
+                pass
+            else:
+                features[support] += 1
+                train_scores.append(train_score)
+                test_scores.append(test_score)
         if score_eval(test_scores) > best_test_score:
             best_test_score = current_score
             # Retain features of max activation.
             best_support, num_votes = utils.select_support(features)
             # Re-instantiate a new untrained model.
-            best_model = _check_estimator(
-                np.size(support), hparams, estimator, random_state=random_state
+            best_model = check_estimator(
+                len(support),
+                hparams,
+                estimator,
+                random_state=random_state
             )
         return best_model, best_support
+
+
+def _eval_candidate_procedure(*args):
+    # Evaluate the performance of modeling procedure.
+    (
+        X_train, X_test, y_train, y_test,
+        hparams, estimator,
+        selector,
+        score_func,
+        random_state,
+
+    ) = args
+    # Reconstruct a model prior to feature selection.
+    model = check_estimator(
+        hparams,
+        estimator,
+        support=None,
+        random_state=random_state
+    )
+    # NOTE: Z-score transformation and error handlng included in
+    # selector.
+    X_train_sub, X_test_sub, support = selector(
+        X_train, X_test, y_train, y_test,
+        random_state=random_state,
+        score_func=score_func,
+        model=model
+    )
+    # Reconstruct a model prior to predictions.
+    model = check_estimator(
+        hparams,
+        estimator,
+        support=support,
+        random_state=random_state
+    )
+    # NOTE: Z-score transformation and error handlng included in
+    # function.
+    train_score, test_score = utils.scale_fit_predict632(
+        X_train_sub, X_test_sub, y_train, y_test,
+        score_func,
+        model
+    )
+    return train_score, test_score

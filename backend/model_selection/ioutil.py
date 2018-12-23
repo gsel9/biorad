@@ -1,22 +1,4 @@
-def _check_estimator(nfeatures, hparams, estimator, random_state):
-
-    # Using all available features after feature selection.
-    if 'n_components' in hparams:
-        if nfeatures - 1 < 1:
-            hparams['n_components'] = 1
-        else:
-            hparams['n_components'] = nfeatures - 1
-
-    # If stochastic algorithms.
-    try:
-        model = estimator(**hparams, random_state=random_state)
-    except:
-        model = estimator(**hparams)
-
-    return model
-
-
-def _update_prelim_results(results, path_tempdir, random_state, *args):
+def update_prelim_results(results, path_tempdir, random_state, *args):
     # Update results <dict> container and write preliminary results to disk.
     (
         estimator, selector, best_params, avg_test_scores, avg_train_scores,
