@@ -95,16 +95,16 @@ if __name__ == '__main__':
 
     # Classifiers and feature selectors:
     estimators = {
-        'logreg': LogisticRegression,
+        #'logreg': LogisticRegression,
         #'rf': RandomForestClassifier,
         #'plsr': PLSRegression,
-        #'gnb': GaussianNB,
+        'gnb': GaussianNB,
         #'svc': SVC,
     }
     selectors = {
-        'permutation': feature_selection.permutation_selection,
+        #'permutation': feature_selection.permutation_selection,
         #'wlcx': feature_selection.wilcoxon_selection,
-        #'relieff_5': feature_selection.relieff_selection,
+        'relieff_5': feature_selection.relieff_selection,
         #'relieff_20': feature_selection.relieff_selection,
         #'mrmr': feature_selection.mrmr_selection
     }
@@ -129,7 +129,6 @@ if __name__ == '__main__':
             'C': [0.001, 0.01, 1, 10],
             'class_weight': ['balanced'],
             'penalty': ['l1', 'l2'],
-            'solver': ['newton-cg'],
             'max_iter': [2000],
             'n_jobs': [-1]
         },
