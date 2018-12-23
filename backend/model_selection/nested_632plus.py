@@ -5,12 +5,12 @@
 # In experimental setup:
 # * Specify the number of components (include a PCA on the feature set to infere
 #   rasonable range.)
-# *
+# * Use median as score eval.
 
 
 """
-The nested .632+ Out-of-Bag procedure for model selection. The .632+ bootstrap
-method was proposed by Efron and Tibhirani.
+The nested .632+ bootstrap Out-of-Bag procedure for model selection. The .632+
+estimator was proposed by Efron and Tibhirani.
 """
 
 __author__ = 'Severin Langberg'
@@ -58,6 +58,9 @@ def nested_point632plus(
         score_func ():
         score_eval (str):
 
+    Returns:
+        (dict):
+
     """
     # Setup:
     path_case_file = os.path.join(
@@ -77,7 +80,7 @@ def nested_point632plus(
         duration = datetime.now() - start_time()
         print('Experiment {} completed in {}'.format(random_state, duration))
 
-    return None
+    return results
 
 
 def _nested_point632plus(
@@ -92,7 +95,6 @@ def _nested_point632plus(
     # Bookeeping results and feature votes.
     results = {'experiment_id': random_state}
     features = np.zeros(X.shape[1], dtype=int)
-
     # Outer OOB resampler.
     sampler = utils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
@@ -113,8 +115,10 @@ def _nested_point632plus(
             score_func=score_func,
             score_metric=score_metric
         )
-        # NOTE: Z-score transformation and error handlng included in
-        # function.
+        # Error handling mechanism.
+        if best_model is None and best_support is None:
+            return {}
+        # NOTE: Z-score transformation and error handlng included in function.
         train_score, test_score = utils.scale_fit_predict632(
             X_train[:, best_support], X_test[:, best_support],
             y_train, y_test,
@@ -125,24 +129,29 @@ def _nested_point632plus(
         if train_score is None and test_score is None:
             pass
         else:
-            # TODO:
-
             train_scores.append(train_score), test_scores.append(test_score)
             opt_hparams.append(best_model.get_params())
             features[best_support] += 1
+
         # Apply mode to all opt hparam settings.
         best_model_hparams = utils.select_hparams(opt_hparams)
         # Retain features with max activations.
         best_support, num_votes = _filter_support(features, method='max')
 
     # Callback handling of preliminary results.
-    end_results = _update_prelim_results(
+    end_results = ioutil.update_prelim_results(
         results,
+        test_scores,
+        train_scores,
+        score_eval(test_scores),
+        score_eval(train_scores),
         path_tempdir,
         random_state,
-        estimator, best_model_hparams,
-        selector, best_support, metric
-        score_metric(test_scores), score_metric(train_scores)
+        estimator,
+        best_model_hparams,
+        num_votes
+        selector,
+        best_support,
     )
     return end_results
 
@@ -163,7 +172,7 @@ def oob_exhaustive_search(
     )
     # Exhaustive hyperparameter search.
     best_test_score = 0
-    best_model, best_support = [], []
+    best_model, best_support = None, None
     for combo_num, hparams in enumerate(hparam_grid):
 
         # Bookeeping of feature votes.
@@ -187,11 +196,12 @@ def oob_exhaustive_search(
                 features[support] += 1
                 train_scores.append(train_score)
                 test_scores.append(test_score)
+        #
         if score_eval(test_scores) > best_test_score:
-            best_test_score = current_score
+            best_test_score = score_eval(test_scores)
             # Retain features of max activation.
-            best_support, num_votes = utils.select_support(features)
-            # Re-instantiate a new untrained model.
+            best_support, _ = utils.select_support(features)
+            # Re-instantiate the best candidate model.
             best_model = check_estimator(
                 len(support),
                 hparams,
@@ -218,8 +228,7 @@ def _eval_candidate_procedure(*args):
         support=None,
         random_state=random_state
     )
-    # NOTE: Z-score transformation and error handlng included in
-    # selector.
+    # NOTE: Z-score transformation and error handlng included in selector.
     X_train_sub, X_test_sub, support = selector(
         X_train, X_test, y_train, y_test,
         random_state=random_state,
@@ -233,8 +242,7 @@ def _eval_candidate_procedure(*args):
         support=support,
         random_state=random_state
     )
-    # NOTE: Z-score transformation and error handlng included in
-    # function.
+    # NOTE: Z-score transformation and error handlng included in function.
     train_score, test_score = utils.scale_fit_predict632(
         X_train_sub, X_test_sub, y_train, y_test,
         score_func,
