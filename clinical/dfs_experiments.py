@@ -51,8 +51,10 @@ if __name__ == '__main__':
 
     METRIC:
     * Relapse/not survival are positively labeled classes.
-    * Main focus is the ability to detect correctly positive samples (cancer situations).
-    * Use precision and recall to focus on minority positive class.
+    * Main focus is the ability to detect correctly positive samples
+      (cancer situations).
+    * Use precision (and recall) to focus on minority positive class.
+    * Compute weighted (by support) average score across all samples.
 
     COMPARISON SCHEME:
     * Vallieres et al. uses .632+
@@ -131,19 +133,15 @@ if __name__ == '__main__':
         },
         'pls': {
             'tol': [0.0001, 0.01, 0.1, 1],
-            'n_components': [None],
+            'n_components': [10, 20, 30, 40],
             'max_iter': [2000]
         },
     }
     selector_params = {
         'permutation': {'num_rounds': 100},
-        # Using a 5 % significance level.
         'wlcx': {'thresh': 0.05},
-
         'relieff_5': {'num_neighbors': 10, 'num_features': 5},
         'relieff_20': {'num_neighbors': 10, 'num_features': 20},
-        # Kraskov et al. recommend k a small integer between 3 and 10. Default
-        # in MIFs package is k=5.
         'mrmr': {'num_features': 'auto', 'k': 5}
     }
     # Feature data.
@@ -172,5 +170,5 @@ if __name__ == '__main__':
         score_eval=EVAL,
         verbose=0,
         n_jobs=None,
-        path_to_results='./results/dfs.csv',
+        path_to_results='./results/original_dfs.csv',
     )
