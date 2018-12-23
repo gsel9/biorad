@@ -1,3 +1,22 @@
+
+"""
+Note: joblib 0.12.2 restarts workers when a memory leak is detected.
+"""
+
+import re
+import os
+
+import pandas as pd
+
+
+def read_prelim_result(path_to_file):
+    """Read temporary stored results."""
+
+    results = pd.read_csv(path_to_file, index_col=False)
+
+    return OrderedDict(zip(*(results.columns, results.values[0])))
+
+
 def update_prelim_results(*args):
     """
     Auxillary function to update results and write preliminary results to
@@ -17,7 +36,6 @@ def update_prelim_results(*args):
         selector,
         best_support,
     ) = args
-
     # Update results dict.
     results.update(
         {
