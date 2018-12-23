@@ -1,3 +1,16 @@
+# -*- coding: utf-8 -*-
+#
+# test_feature_selection.py
+#
+
+"""
+Feature selection test module.
+"""
+
+__author__ = 'Severin Langberg'
+__email__ = 'langberg91@gmail.com'
+
+
 import sys
 sys.path.append('../')
 
@@ -50,7 +63,7 @@ def test_permutation_importance(data, clf):
     assert len(support) < 3
 
 
-def test_wilcoxon(data, clf):
+def test_wilcoxon(data):
 
     X_train, X_test, y_train, y_test = data
 
@@ -65,7 +78,7 @@ def test_wilcoxon(data, clf):
     assert len(support) <= 3
 
 
-def test_relieff(data, clf):
+def test_relieff(data):
 
     X_train, X_test, y_train, y_test = data
 
@@ -80,7 +93,7 @@ def test_relieff(data, clf):
     assert len(support) == 2
 
 
-def test_mrmr(data, clf):
+def test_mrmr(data):
 
     X_train, X_test, y_train, y_test = data
 
@@ -93,3 +106,19 @@ def test_mrmr(data, clf):
         X_train, X_test, y_train, y_test, num_features='auto'
     )
     assert len(support) <= 3
+
+
+def test_selector(data):
+
+    def dummy(X_train, X_test, y_train, y_test, param1, param2):
+
+        support = np.arange(X_train.shape[1], dtype=int)
+
+        return X_train, X_test, support
+
+    X_train, X_test, y_train, y_test = data
+
+    selector = selection.Selector('dummy', dummy, {'param1': 1, 'param2': 3})
+    X_train, X_test, support = selector(X_train, X_test, y_train, y_test)
+
+    assert len(support) == 3
