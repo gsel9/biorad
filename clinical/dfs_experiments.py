@@ -39,7 +39,7 @@ if __name__ == '__main__':
     import nested_632plus
     from model_comparison import model_comparison
 
-    from sklearn.metrics import precision_recall_fscore_support
+    from sklearn.metrics import roc_auc_score
 
     from sklearn.svm import SVC
     from sklearn.ensemble import RandomForestClassifier
@@ -50,11 +50,15 @@ if __name__ == '__main__':
     """SETUP:
 
     METRIC:
+
+    Old:
     * Relapse/not survival are positively labeled classes.
     * Main focus is the ability to detect correctly positive samples
       (cancer situations).
     * Use precision (and recall) to focus on minority positive class.
     * Compute weighted (by support) average score across all samples.
+    New:
+    * Upsample according to Vallieres scheme and score with AUC metric.
 
     COMPARISON SCHEME:
     * Vallieres et al. uses .632+
@@ -77,29 +81,30 @@ if __name__ == '__main__':
     # *
 
     # Comparing on precision.
-    LOSS = precision_recall_fscore_support
+    #LOSS = precision_recall_fscore_support
+    LOSS = roc_auc_score
 
     # Evaluating model general performance.
     EVAL = np.median
 
     # Mumber of OOB splits per level.
-    NUM_SPLITS = 100
+    NUM_SPLITS = 1 #100
 
     # Number of repeated experiments (40 reps also used in a paper).
-    NUM_ROUNDS = 40
+    NUM_ROUNDS = 1 #10
 
     # Classifiers and feature selectors:
     estimators = {
-        #'logreg': LogisticRegression,
+        'logreg': LogisticRegression,
         #'rf': RandomForestClassifier,
         #'plsr': PLSRegression,
-        'gnb': GaussianNB,
+        #'gnb': GaussianNB,
         #'svc': SVC,
     }
     selectors = {
-        #'permutation': feature_selection.permutation_selection,
+        'permutation': feature_selection.permutation_selection,
         #'wlcx': feature_selection.wilcoxon_selection,
-        'relieff_5': feature_selection.relieff_selection,
+        #'relieff_5': feature_selection.relieff_selection,
         #'relieff_20': feature_selection.relieff_selection,
         #'mrmr': feature_selection.mrmr_selection
     }
@@ -131,7 +136,7 @@ if __name__ == '__main__':
         'gnb': {
             'priors': [[0.677, 0.323]]
         },
-        'pls': {
+        'plsr': {
             'tol': [0.0001, 0.01, 0.1, 1],
             'n_components': [10, 20, 30, 40],
             'max_iter': [2000]
@@ -140,8 +145,8 @@ if __name__ == '__main__':
     selector_params = {
         'permutation': {'num_rounds': 100},
         'wlcx': {'thresh': 0.05},
-        'relieff_5': {'num_neighbors': 10, 'num_features': 5},
-        'relieff_20': {'num_neighbors': 10, 'num_features': 20},
+        'relieff_5': {'num_neighbors': 7, 'num_features': 5},
+        'relieff_20': {'num_neighbors': 7, 'num_features': 20},
         'mrmr': {'num_features': 'auto', 'k': 5}
     }
     # Feature data.

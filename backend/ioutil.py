@@ -7,6 +7,7 @@ import shutil
 import numpy as np
 import pandas as pd
 
+from collections import OrderedDict
 
 
 def write_final_results(path_to_file, results):
@@ -50,15 +51,26 @@ def read_prelim_result(path_to_file):
     return OrderedDict(zip(*(results.columns, results.values[0])))
 
 
+def write_prelim_results(path_to_file, results):
+    """Store results in temporary separate files to prevent write conflicts."""
+
+    with open(path_to_file, 'w') as outfile:
+        writer = csv.DictWriter(
+            outfile, fieldnames=list(results.keys()), lineterminator='\n'
+        )
+        writer.writeheader()
+        writer.writerow(results)
+
+    return None
+
+
 def update_prelim_results(*args):
     """Auxillary function to update results and write preliminary results to
     disk as backup."""
     (
         path_tmp_results,
-        avg_train_precision, avg_test_precision,
-        train_precisions, test_precisions,
-        train_supports, test_supports,
-        train_recalls, test_recalls,
+        avg_train_score, avg_test_score,
+        train_scores, test_scores,
         estimator_name, hparams,
         selector_name,
         support_votes,
@@ -69,14 +81,10 @@ def update_prelim_results(*args):
     # Update results dict.
     results.update(
         {
-            'avg_train_precision': avg_train_precision,
-            'avg_test_precision': avg_test_precision,
-            'train_precisions': train_precisions,
-            'test_precisions': test_precisions,
-            'train_target_ratios': train_supports,
-            'test_target_ratios': test_supports,
-            'train_recalls': train_recalls,
-            'test_recalls': test_recalls,
+            'avg_train_score': avg_train_score,
+            'avg_test_score': avg_test_score,
+            'train_scores': train_scores,
+            'test_scores': test_scores,
             'estimator': estimator_name,
             'hyperparameters': hparams,
             'selector_name': selector_name,

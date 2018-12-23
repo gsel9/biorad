@@ -60,8 +60,9 @@ class Selector:
         # Formatting of indicators subset.
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
+
         # NB: Default mechanism includes all features if none were selected.
-        if len(support) < 1:
+        if len(support) - 1 < 1:
             support = np.arange(X.shape[1], dtype=int)
         else:
             if np.ndim(support) > 1:
