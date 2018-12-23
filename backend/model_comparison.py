@@ -11,21 +11,15 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
-import os
-import utils
 import ioutil
-import shutil
-import logging
 import model_selection
 import feature_selection
 
 import numpy as np
 import pandas as pd
 
-from datetime import datetime
 from multiprocessing import cpu_count
 from sklearn.externals import joblib
-from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import ParameterGrid
 
 # Name of directory to store temporary results.
