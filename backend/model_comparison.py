@@ -103,7 +103,8 @@ def model_comparison(
                             n_splits,
                             random_state,
                             path_tmp_results,
-                            estimator, hparam_grid,
+                            estimator,
+                            hparam_grid,
                             selector=selector,
                             n_jobs=n_jobs, verbose=verbose,
                             score_func=score_func, score_eval=score_eval

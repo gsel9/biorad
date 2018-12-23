@@ -100,7 +100,7 @@ def train_test_z_scores(X_train, X_test):
     return X_train_std, X_test_std
 
 
-def check_estimator(hparams, estimator, support=None, random_state=None):
+def check_estimator(estimator, hparams, support_size=None, random_state=None):
     """Ensure correct estimator setup.
 
     Args:
@@ -114,12 +114,11 @@ def check_estimator(hparams, estimator, support=None, random_state=None):
         (object): Instantiated model.
 
     """
-
     # In case num components > support.
-    if support is not None and 'n_components' in hparams:
+    if support_size is not None and 'n_components' in hparams:
         # NOTE: Adjusting to Python counting logic.
-        if len(support) - 1 < hparams['n_components']:
-            hparams['n_components'] = len(support) - 1
+        if support_size - 1 < hparams['n_components']:
+            hparams['n_components'] = support_size - 1
 
     # If stochastic algorithm.
     try:

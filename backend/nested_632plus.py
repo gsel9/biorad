@@ -36,7 +36,8 @@ def nested_point632plus(
         n_splits,
         random_state,
         path_tmp_results,
-        estimator, hparam_grid,
+        estimator,
+        hparam_grid,
         selector=None,
         n_jobs=1, verbose=0,
         score_func=None, score_eval=None
@@ -75,7 +76,8 @@ def nested_point632plus(
             n_splits,
             random_state,
             path_tmp_results,
-            estimator, hparam_grid,
+            estimator,
+            hparam_grid,
             selector,
             n_jobs, verbose,
             score_func, score_eval
@@ -86,13 +88,13 @@ def nested_point632plus(
     return results
 
 
-# ERROR: Fix parameter flow
 def _nested_point632plus(
         X, y,
         n_splits,
         random_state,
         path_tmp_results,
-        estimator, hparam_grid,
+        estimator,
+        hparam_grid,
         selector,
         n_jobs, verbose,
         score_func, score_eval
@@ -162,7 +164,8 @@ def oob_exhaustive_search(
         X, y,
         n_splits,
         random_state,
-        estimator, hparam_grid,
+        estimator,
+        hparam_grid,
         selector,
         n_jobs, verbose,
         score_func, score_eval
@@ -193,7 +196,8 @@ def oob_exhaustive_search(
             train_score, test_score = _eval_candidate_procedure(
                 X[train_idx], X[test_idx],
                 y[train_idx], y[test_idx],
-                estimator, hparams,
+                estimator,
+                hparams,
                 selector,
                 score_func,
                 random_state,
@@ -212,9 +216,9 @@ def oob_exhaustive_search(
             best_support, _ = utils.select_support(features)
             # Re-instantiate the best candidate model.
             best_model = utils.check_estimator(
-                len(support),
-                hparams,
                 estimator,
+                hparams,
+                support_size=len(support),
                 random_state=random_state
             )
         return best_model, best_support
@@ -223,8 +227,10 @@ def oob_exhaustive_search(
 def _eval_candidate_procedure(*args):
     # Evaluate the performance of modeling procedure.
     (
-        X_train, X_test, y_train, y_test,
-        hparams, estimator,
+        X_train, X_test,
+        y_train, y_test,
+        estimator,
+        hparams,
         selector,
         score_func,
         random_state,
@@ -232,9 +238,9 @@ def _eval_candidate_procedure(*args):
     ) = args
     # Reconstruct a model prior to feature selection.
     model = utils.check_estimator(
-        hparams,
         estimator,
-        support=None,
+        hparams,
+        support_size=None,
         random_state=random_state
     )
     # NOTE: Z-score transformation and error handlng included in selector.
@@ -246,9 +252,9 @@ def _eval_candidate_procedure(*args):
     )
     # Reconstruct a model prior to predictions.
     model = utils.check_estimator(
-        hparams,
         estimator,
-        support=support,
+        hparams,
+        support_size=support,
         random_state=random_state
     )
     # NOTE: Z-score transformation and error handlng included in function.
@@ -288,6 +294,9 @@ def scale_fit_predict632(X_train, X_test, y_train, y_test, score_func, model):
     y_train_pred = model.predict(X_train_std)
     y_test_pred = model.predict(X_test_std)
 
+    # NB: Returns precision, recall, f_beta_score (beta variable), the number
+    # of occurrences of each label in y_true (record proportinos in training
+    # samples).
     train_score = score_func(y_train, y_train_pred)
     test_score = score_func(y_test, y_test_pred)
 
