@@ -107,11 +107,15 @@ def _nested_point632plus(
         n_splits=n_splits, random_state=random_state
     )
     train_scores, test_scores, opt_hparams = [], [], []
-    for num, (train_idx, test_idx) in enumerate(sampler.split(X, y)):
+    for split_num, (train_idx, test_idx) in enumerate(sampler.split(X, y)):
+
+        if verbose > 1:
+            print('Outer loop iter number {}'.format(split_num))
+
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
         # Perform exhaustive hyperparameter search.
-        best_model, best_support = oob_exhaustive_search(
+        best_model, best_support = oob_grid_search(
             X_train, y_train,
             n_splits,
             random_state,
@@ -124,17 +128,18 @@ def _nested_point632plus(
         if best_model is None and best_support is None:
             return {}
         # NOTE: Z-score transformation and error handlng included in function.
-        train_score, test_score = scale_fit_predict632(
+        outputs = scale_fit_predict632(
             X_train[:, best_support], X_test[:, best_support],
             y_train, y_test,
             score_func,
             best_model
         )
         # NOTE: Error handling mechanism.
-        if train_score is None and test_score is None:
+        if not outputs:
             pass
         else:
-            train_scores.append(train_score), test_scores.append(test_score)
+            train_scores.append(outputs['train_precision'])
+            test_scores.append(outputs['test_precision'])
             opt_hparams.append(best_model.get_params())
             features[best_support] += 1
         # Apply mode to all opt hparam settings.
@@ -143,24 +148,28 @@ def _nested_point632plus(
         best_support, support_votes = utils.select_support(features)
 
     # Callback handling of preliminary results.
-    end_results = ioutil.update_prelim_results(
-        results,
-        test_scores,
-        train_scores,
-        score_eval(test_scores),
-        score_eval(train_scores),
+    final_results = ioutil.update_prelim_results(
         path_tmp_results,
-        random_state,
-        estimator,
+        score_eval(outputs['train_precision']),
+        score_eval(outputs['test_precision']),
+        outputs['train_precision'],
+        outputs['test_precision'],
+        outputs['train_support'],
+        outputs['test_support'],
+        outputs['train_recall'],
+        outputs['test_recall'],
+        estimator.__name__,
         best_model_hparams,
+        selector.name,
         support_votes,
-        selector,
         best_support,
+        random_state,
+        results,
     )
-    return end_results
+    return final_results
 
 
-def oob_exhaustive_search(
+def oob_grid_search(
         X, y,
         n_splits,
         random_state,
@@ -187,13 +196,20 @@ def oob_exhaustive_search(
     best_model, best_support = None, None
     for combo_num, hparams in enumerate(hparam_grid):
 
+        if verbose > 1:
+            print('Hyperparameter combo number {}'.format(combo_num))
+
         # Bookeeping of feature votes.
         features = np.zeros(X.shape[1], dtype=int)
 
         train_scores, test_scores = [], []
         for split_num, (train_idx, test_idx) in enumerate(sampler.split(X, y)):
+
+            if verbose > 1:
+                print('Inner loop iter number {}'.format(split_num))
+
             # Exectue modeling procedure for performance evaluation.
-            train_score, test_score = _eval_candidate_procedure(
+            outputs, support = _eval_candidate_procedure(
                 X[train_idx], X[test_idx],
                 y[train_idx], y[test_idx],
                 estimator,
@@ -203,14 +219,15 @@ def oob_exhaustive_search(
                 random_state,
             )
             # NOTE: Error handling mechanism.
-            if train_score is None and test_score is None:
+            if not outputs:
                 pass
             else:
                 features[support] += 1
-                train_scores.append(train_score)
-                test_scores.append(test_score)
-        #
+                train_scores.append(outputs['train_precision'])
+                test_scores.append(outputs['test_precision'])
+
         if score_eval(test_scores) > best_test_score:
+            # Save score for later comparison.
             best_test_score = score_eval(test_scores)
             # Retain features of max activation.
             best_support, _ = utils.select_support(features)
@@ -258,12 +275,13 @@ def _eval_candidate_procedure(*args):
         random_state=random_state
     )
     # NOTE: Z-score transformation and error handlng included in function.
-    train_score, test_score = scale_fit_predict632(
-        X_train_sub, X_test_sub, y_train, y_test,
+    outputs = scale_fit_predict632(
+        X_train_sub, X_test_sub,
+        y_train, y_test,
         score_func,
         model
     )
-    return train_score, test_score
+    return outputs, support
 
 
 def scale_fit_predict632(X_train, X_test, y_train, y_test, score_func, model):
@@ -288,26 +306,33 @@ def scale_fit_predict632(X_train, X_test, y_train, y_test, score_func, model):
     try:
         model.fit(X_train_std, y_train)
     except:
-        return None, None
-
+        return {}
     # Aggregate model predictions.
     y_train_pred = model.predict(X_train_std)
     y_test_pred = model.predict(X_test_std)
 
-    # NB: Returns precision, recall, f_beta_score (beta variable), the number
-    # of occurrences of each label in y_true (record proportinos in training
-    # samples).
-    train_score = score_func(y_train, y_train_pred)
-    test_score = score_func(y_test, y_test_pred)
-
+    # NB: Returns precision, recall, f-beta and target proportions.
+    train_prec, train_recall, _, train_support = score_func(
+        y_train, y_train_pred, average='weighted'
+    )
+    test_prec, test_recall, _, test_support = score_func(
+        y_test, y_test_pred, average='weighted'
+    )
     # Compute .632+ scores.
-    train_632_score = point632plus_score(
-        y_train, y_train_pred, train_score, test_score
+    train_632 = point632plus_score(
+        y_train, y_train_pred, train_prec, test_prec
     )
-    test_632_score = point632plus_score(
-        y_test, y_test_pred, train_score, test_score
+    test_632 = point632plus_score(
+        y_test, y_test_pred, train_prec, test_prec
     )
-    return train_632_score, test_632_score
+    return {
+        'train_support': train_support,
+        'train_precision': train_prec,
+        'train_recall': train_recall,
+        'test_support': test_support,
+        'test_precision': test_prec,
+        'test_recall': test_recall,
+    }
 
 
 def point632plus_score(y_true, y_pred, train_score, test_score):

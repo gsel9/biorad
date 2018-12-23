@@ -13,6 +13,7 @@ __email__ = 'langberg91@gmail.com'
 
 
 import mifs
+import utils
 
 import numpy as np
 import pandas as pd
@@ -59,7 +60,6 @@ class Selector:
         # Formatting of indicators subset.
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
-
         # NB: Default mechanism includes all features if none were selected.
         if len(support) < 1:
             support = np.arange(X.shape[1], dtype=int)
@@ -79,34 +79,10 @@ class Selector:
         # Formatting training and test subsets.
 
         # Support should be a non-empty vector (ensured by _check_support).
-        _X_train, _X_test = X_train[:, support],  X_test[:, support]
-
-        if np.ndim(_X_train) > 2:
-            if np.ndim(np.squeeze(_X_train)) > 2:
-                raise RuntimeError('X train ndim {}'.format(np.ndim(_X_train)))
-            else:
-                _X_train = np.squeeze(_X_train)
-        if np.ndim(_X_train) < 2:
-            if np.ndim(_X_train.reshape(-1, 1)) == 2:
-                _X_train = _X_train.reshape(-1, 1)
-            else:
-                raise RuntimeError('X train ndim {}'.format(np.ndim(_X_train)))
-
-        if np.ndim(_X_test) > 2:
-            if np.ndim(np.squeeze(_X_test)) > 2:
-                raise RuntimeError('X test ndim {}'.format(np.ndim(_X_train)))
-            else:
-                _X_test = np.squeeze(_X_test)
-        if np.ndim(_X_test) < 2:
-            if np.ndim(_X_test.reshape(-1, 1)) == 2:
-                _X_test = _X_test.reshape(-1, 1)
-            else:
-                raise RuntimeError('X test ndim {}'.format(np.ndim(_X_test)))
-        return (
-            np.array(_X_train, dtype=float),
-            np.array(_X_test, dtype=float),
-            support
+        X_train, X_test = utils.check_train_test(
+            X_train[:, support],  X_test[:, support]
         )
+        return X_train, X_test, support
 
 
 def train_test_z_scores(X_train, X_test):
@@ -120,6 +96,8 @@ def train_test_z_scores(X_train, X_test):
         (tuple): Transformed training and test set.
 
     """
+    X_train, X_test = utils.check_train_test(X_train, X_test)
+
     scaler = StandardScaler()
     X_train_std = scaler.fit_transform(X_train)
     # Apply training params in transforming test set: renders test set
