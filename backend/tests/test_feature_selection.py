@@ -68,3 +68,28 @@ def test_wilcoxon(data, clf):
 def test_relieff(data, clf):
 
     X_train, X_test, y_train, y_test = data
+
+    X_train_std, X_test_std, support = selection.relieff(
+        X_train, X_test, y_train, y_test, num_neighbors=3, num_features=1
+    )
+    assert len(support) == 1
+
+    X_train_std, X_test_std, support = selection.relieff(
+        X_train, X_test, y_train, y_test, num_neighbors=3, num_features=2
+    )
+    assert len(support) == 2
+
+
+def test_mrmr(data, clf):
+
+    X_train, X_test, y_train, y_test = data
+
+    X_train_std, X_test_std, support = selection.mrmr_selection(
+        X_train, X_test, y_train, y_test, num_features=1
+    )
+    assert len(support) == 1
+
+    X_train_std, X_test_std, support = selection.mrmr_selection(
+        X_train, X_test, y_train, y_test, num_features='auto'
+    )
+    assert len(support) <= 3
