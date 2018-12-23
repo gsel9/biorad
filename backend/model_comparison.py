@@ -50,7 +50,7 @@ def model_comparison(
         path_to_results,
         estimators, estimator_params,
         selectors=None, selector_params=None,
-        verbose=1, score_func=None, score_metric=None, n_jobs=None
+        verbose=1, score_func=None, score_eval=None, n_jobs=None
     ):
     """Compare model performances with optional feature selection.
 
@@ -100,15 +100,7 @@ def model_comparison(
                         estimator, hparam_grid,
                         selector=None,
                         n_jobs=n_jobs, verbose=verbose,
-                        score_func=score_func, score_metric=score_metric
-                        #X, y,
-                        #n_splits,
-                        #random_state,
-                        #path_tmp_results,
-                        #estimator, hparam_grid,
-                        #selector,
-                        #n_jobs=1, verbose=0,
-                        #score_func=None, score_eval=None
+                        score_func=score_func, score_eval=score_eval
                     )
                     for random_state in random_states
                 )
@@ -131,7 +123,7 @@ def model_comparison(
                             estimator, hparam_grid,
                             selector=selector,
                             n_jobs=n_jobs, verbose=verbose,
-                            score_func=score_func, score_metric=score_metric
+                            score_func=score_func, score_eval=score_eval
                         )
                         for random_state in random_states
                     )
