@@ -40,8 +40,8 @@ def nested_point632plus(
         selector,
         n_jobs=1, verbose=0, score_func=None, score_eval=None
     ):
-    """Model performance evaluation according to the .632+ bootstrap method.
-    Results are written to disk.
+    """Mested model performance evaluation according to the .632+ bootstrap
+    method.
 
     Args:
         X (array-like):
@@ -65,7 +65,7 @@ def nested_point632plus(
     # Setup:
     path_case_file = os.path.join(
         path_tempdir, '{}_{}_{}'.format(
-            estimator.__name__, selector['name'], random_state
+            estimator.__name__, selector.name, random_state
         )
     )
     if os.path.isfile(path_case_file):
@@ -132,11 +132,10 @@ def _nested_point632plus(
             train_scores.append(train_score), test_scores.append(test_score)
             opt_hparams.append(best_model.get_params())
             features[best_support] += 1
-
         # Apply mode to all opt hparam settings.
         best_model_hparams = utils.select_hparams(opt_hparams)
         # Retain features with max activations.
-        best_support, num_votes = _filter_support(features, method='max')
+        best_support, support_votes = utils.select_support(features)
 
     # Callback handling of preliminary results.
     end_results = ioutil.update_prelim_results(
@@ -149,7 +148,7 @@ def _nested_point632plus(
         random_state,
         estimator,
         best_model_hparams,
-        num_votes
+        support_votes,
         selector,
         best_support,
     )
@@ -166,7 +165,15 @@ def oob_exhaustive_search(
         verbose=verbose,
         score_func=score_func, score_metric=score_metric
     ):
-    # Inner OOB resampler.
+    """Perform hyperparameter optimizatino according to the .632+ bootstrap
+    Out-of-Bag method.
+
+    Args:
+
+    Returns:
+        (tuple): The winning model and the selected features (optional).
+
+    """
     sampler = utils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
     )

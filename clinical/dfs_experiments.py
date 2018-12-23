@@ -143,6 +143,7 @@ if __name__ == '__main__':
     np.random.seed(0)
     random_states = np.random.randint(1000, size=NUM_ROUNDS)
 
+    """
     _ = model_comparison(
         comparison_scheme,
         X, y,
@@ -152,3 +153,4 @@ if __name__ == '__main__':
         path_to_results='./results/dfs.csv',
         score_func=LOSS
     )
+    """

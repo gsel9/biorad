@@ -72,7 +72,6 @@ def model_comparison(
         None: Writes results to disk an removes tmp directory.
 
     """
-
     global TMP_RESULTS_DIR
 
     # Setup temporary directory.
@@ -88,23 +87,7 @@ def model_comparison(
         hparam_grid = ParameterGrid(estimator_params[estimator_name])
         # Skip feature selection.
         if selectors is None:
-            results.extend(
-                joblib.Parallel(
-                    n_jobs=n_jobs, verbose=verbose
-                )(
-                    joblib.delayed(comparison_scheme)(
-                        X, y,
-                        n_splits,
-                        random_state,
-                        path_tmp_results,
-                        estimator, hparam_grid,
-                        selector=None,
-                        n_jobs=n_jobs, verbose=verbose,
-                        score_func=score_func, score_eval=score_eval
-                    )
-                    for random_state in random_states
-                )
-            )
+            raise NotImplementedError('')
         # Including feature selection.
         else:
             for selector_name, procedure in selectors.items():
