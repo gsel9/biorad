@@ -61,10 +61,15 @@ class BootstrapOutOfBag:
 # This approach is more robust towards situations where no features are
 # selected, but may result in very small feature subsets. Increasing feature
 # robustness.
-def select_support(features):
+def select_support(features, method='max', thresh=0.05):
     """Select feature indicators according to maximum number of votes."""
+
     max_counts = np.max(features)
-    return np.squeeze(np.where(features == max_counts)), max_counts
+    if method == 'max':
+        return np.squeeze(np.where(features == max_counts)), max_counts
+    elif method == 'frac':
+        fracs = features / max_counts
+        return np.squeeze(np.where(fracs >= thresh)), max_counts
 
 
 def select_hparams(hparams):
