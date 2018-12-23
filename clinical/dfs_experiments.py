@@ -36,7 +36,7 @@ if __name__ == '__main__':
     import feature_selection
 
     from datetime import datetime
-    from model_selection import nested_632plus
+    import nested_632plus
     from model_comparison import model_comparison
 
     from sklearn.metrics import precision_recall_fscore_support

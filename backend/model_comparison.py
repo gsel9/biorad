@@ -12,7 +12,6 @@ __email__ = 'langberg91@gmail.com'
 
 
 import ioutil
-import model_selection
 import feature_selection
 
 import numpy as np

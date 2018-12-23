@@ -13,7 +13,6 @@ __email__ = 'langberg91@gmail.com'
 
 
 import mifs
-import utils
 
 import numpy as np
 import pandas as pd
@@ -21,6 +20,7 @@ import pandas as pd
 from scipy import stats
 from ReliefF import ReliefF
 from sklearn import feature_selection
+from sklearn.preprocessing import StandardScaler
 from mlxtend.feature_selection import SequentialFeatureSelector
 
 
@@ -109,6 +109,26 @@ class Selector:
         )
 
 
+def train_test_z_scores(X_train, X_test):
+    """Apply Z-score transformation to features in training and test sets.
+
+    Args:
+        X_train (array-like): Training set.
+        X_test (array-like): Test set.
+
+    Returns:
+        (tuple): Transformed training and test set.
+
+    """
+    scaler = StandardScaler()
+    X_train_std = scaler.fit_transform(X_train)
+    # Apply training params in transforming test set: renders test set
+    # comparable to training set while preventing information bleeding.
+    X_test_std = scaler.transform(X_test)
+
+    return X_train_std, X_test_std
+
+
 def permutation_selection(
         X_train, X_test, y_train, y_test,
         score_func,
@@ -135,7 +155,7 @@ def permutation_selection(
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
 
     model.fit(X_train_std, y_train)
 
@@ -204,7 +224,7 @@ def wilcoxon_selection(
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
 
     support = wilcoxon_signed_rank(
         X_train_std, y_train, thresh=thresh, **kwargs
@@ -261,7 +281,7 @@ def relieff_selection(
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
 
     selector = ReliefF(n_neighbors=num_neighbors)
     selector.fit(X_train_std, y_train)
@@ -285,7 +305,7 @@ def mrmr_selection(X_train, X_test, y_train, y_test, k, num_features, **kwargs):
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
     # If 'auto': n_features is determined based on the amount of mutual
     # information the previously selected features share with y.
     selector = mifs.MutualInformationFeatureSelector(
