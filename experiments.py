@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #
-# model_comparison_setup.py
+# dfs_experiments.py
 #
 
 """
-Setup model comparison experiments.
+Disease- model comparison experiments.
 """
 
 __author__ = 'Severin Langberg'
@@ -71,42 +71,35 @@ if __name__ == '__main__':
     * Limkin et al.
     * Parmar et al.: Random Forest + Wilcoxon
     * Avonzo et al. describes studies.
+
     """
 
-    # ToDos:
-    # * Sequential test runs with each model to check is working.
-    # * Run achieving complete overfitting of all models (may be recommended by
-    #   Francois to check correctness of procedure).
-    # * Iniate clinical, image and clinical + image experiments.
-    # *
-
-    # Comparing on precision.
-    #LOSS = precision_recall_fscore_support
     LOSS = roc_auc_score
 
     # Evaluating model general performance.
     EVAL = np.median
 
-    # Mumber of OOB splits per level.
-    NUM_SPLITS = 1 #100
+    # Number of OOB splits per level.
+    NUM_SPLITS = 100
 
     # Number of repeated experiments (40 reps also used in a paper).
-    NUM_ROUNDS = 1 #10
+    NUM_ROUNDS = 40
 
     # Classifiers and feature selectors:
     estimators = {
-        #'logreg': LogisticRegression,
-        #'rf': RandomForestClassifier,
-        #'plsr': PLSRegression,
+        'logreg': LogisticRegression,
+        'rf': RandomForestClassifier,
+        'plsr': PLSRegression,
         'gnb': GaussianNB,
-        #'svc': SVC,
+        'svc': SVC,
     }
     selectors = {
-        #'permutation': feature_selection.permutation_selection,
-        #'wlcx': feature_selection.wilcoxon_selection,
+        # QUESTION: Swap with RF from paper? Drop?
+        'permutation': feature_selection.permutation_selection,
+        'wlcx': feature_selection.wilcoxon_selection,
         'relieff_5': feature_selection.relieff_selection,
-        #'relieff_20': feature_selection.relieff_selection,
-        #'mrmr': feature_selection.mrmr_selection
+        'relieff_20': feature_selection.relieff_selection,
+        'mrmr': feature_selection.mrmr_selection
     }
     estimator_params = {
         'rf': {
@@ -133,7 +126,10 @@ if __name__ == '__main__':
             'n_jobs': [-1]
         },
         'gnb': {
+            # DFS:
             'priors': [[0.677, 0.323]]
+            # LRR:
+            # 'priors'. [[0.75, ]]
         },
         'plsr': {
             'tol': [0.0001, 0.01, 0.1, 1],
@@ -148,21 +144,20 @@ if __name__ == '__main__':
         'relieff_20': {'num_neighbors': 7, 'num_features': 20},
         'mrmr': {'num_features': 'auto', 'k': 5}
     }
-    # Feature data.
-    X = feature_set('./../../../data/to_analysis/clinical_params.csv')
+    X = feature_set('./../../../data/to_analysis/complete_decorr.csv')
 
-    # Disease-Free Survival.
+    #y = target('./../../../data/to_analysis/target_lrr.csv')
     y = target('./../../../data/to_analysis/target_dfs.csv')
 
-    # Comparison scheme.
-    comparison_scheme = nested_632plus.nested_point632plus
+    # CURRENT: DFS
+    path_to_results = './results/dfs.csv'
 
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
     random_states = np.random.randint(1000, size=NUM_ROUNDS)
 
-    _ = model_comparison(
-        comparison_scheme,
+    model_comparison(
+        model_selection.nested_point632plus,
         X, y,
         NUM_SPLITS,
         random_states,
@@ -174,5 +169,5 @@ if __name__ == '__main__':
         score_eval=EVAL,
         verbose=0,
         n_jobs=None,
-        path_to_results='./results/original_dfs.csv',
+        path_to_results=path_to_results
     )
