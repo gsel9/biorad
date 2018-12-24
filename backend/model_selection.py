@@ -2,11 +2,7 @@
 #
 # nested_632plus.py
 #
-# In experimental setup:
-# * Specify the number of components (include a PCA on the feature set to infere
-#   rasonable range.)
-# * Use median as score eval.
-
+# ToDo: Add SMOTE balancing.
 
 """
 The nested .632+ bootstrap Out-of-Bag procedure for model selection. The .632+

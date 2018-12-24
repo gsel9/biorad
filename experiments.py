@@ -2,6 +2,7 @@
 #
 # dfs_experiments.py
 #
+# ToDo: Add SMOTE balancing.
 
 """
 Disease- model comparison experiments.
