@@ -25,6 +25,7 @@ from numba import jit
 from datetime import datetime
 from collections import OrderedDict
 from sklearn.externals import joblib
+from imblearn.over_sampling import SMOTE
 
 
 def nested_point632plus(
@@ -39,7 +40,7 @@ def nested_point632plus(
         score_func=None, score_eval=None
     ):
     """Mested model performance evaluation according to the .632+ bootstrap
-    method.
+    method including Synthetic Minority Over-sampling.
 
     Args:
         X (array-like):
@@ -65,10 +66,11 @@ def nested_point632plus(
         results = ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
+        X_os, y_os = SMOTE(random_state=random_state).fit_sample(X, y)
         print('Initiating experiment: {}'.format(random_state))
         start_time = datetime.now()
         results = _nested_point632plus(
-            X, y,
+            X_os, y_os,
             n_splits,
             random_state,
             path_tmp_results,

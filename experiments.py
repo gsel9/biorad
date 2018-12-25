@@ -31,14 +31,14 @@ def feature_set(path_to_data, index_col=0):
 if __name__ == '__main__':
     import sys
     # Add backend directory to PATH variable.
-    sys.path.append('./../backend')
+    sys.path.append('./backend')
 
     import os
     import feature_selection
 
     from datetime import datetime
-    import nested_632plus
     from model_comparison import model_comparison
+    from model_selection import nested_point632plus
 
     from sklearn.metrics import roc_auc_score
 
@@ -145,10 +145,10 @@ if __name__ == '__main__':
         'relieff_20': {'num_neighbors': 7, 'num_features': 20},
         'mrmr': {'num_features': 'auto', 'k': 5}
     }
-    X = feature_set('./../../../data/to_analysis/complete_decorr.csv')
+    X = feature_set('./../../data/to_analysis/complete_decorr.csv')
 
     #y = target('./../../../data/to_analysis/target_lrr.csv')
-    y = target('./../../../data/to_analysis/target_dfs.csv')
+    y = target('./../../data/to_analysis/target_dfs.csv')
 
     # CURRENT: DFS
     path_to_results = './results/dfs.csv'
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     random_states = np.random.randint(1000, size=NUM_ROUNDS)
 
     model_comparison(
-        model_selection.nested_point632plus,
+        nested_point632plus,
         X, y,
         NUM_SPLITS,
         random_states,
