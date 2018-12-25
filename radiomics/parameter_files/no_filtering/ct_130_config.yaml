@@ -1,0 +1,74 @@
+# -*- coding: utf-8 -*-
+#
+# PyRadiomics version: 2.0.1
+#
+
+# NOTE: If analyzing images from different scanners, check if the extracted
+# features are correlated to the scanner used. If so, consider normalization.
+
+setting:
+  # Image Normalization: CT gray values reflect absolute world values and
+  # should thus be comparable between scanners. Hence, normalization is
+  # unnecessary.
+  normalize: True
+  # Outliers: values differing more than n * STD from the mean. From Image
+  # Biomarker Standardization Initiative refere to a method suggested by
+  # Vallieres et al. after Collewet et al., and states that voxels outside n=3
+  # are outliers.
+  removeOutliers: 3
+
+  # Resampling the image: Image resampling is an interpolation process in which
+  # anisotropic voxels are resampled into isotropic-sized voxels.
+  # Images have already isotropoc voxels.
+  # See: https://mipav.cit.nih.gov/pubwiki/index.php/Reslice-Isotropic_Voxels
+
+  # Resegmentation: Disabled due to already defined ROI.
+
+  # Mask validation: Disabled due to already defined masks.
+
+  # Outlier handling: Artifacts not affecting features as they are assumed not
+  # to be within close proximity to tumor region (from which features are
+  # extracted).
+
+  # Pre-Cropping: Crops the image onto the bounding box with additional padding
+  # as specified in padDistance. Speeds up extraction and makes it less memory
+  # intensive, especially in the case of large images with only small ROIs.
+  preCrop: True
+  # Padding is needed for some filters. The value of padded voxels are set to
+  # original gray level intensity.
+  padDistance: 5
+  # Histogram bin size and image value quantification (current: 128 bins).
+  binWidth: 12.03
+  # All image intensity values > 0: no need to shift voxels.
+  voxelArrayShift: 0
+  # Distance to neighbour: Specifies the distances between the center voxel and
+  # the neighbor, for which angles should be generated. Only affects the GLCM
+  # and NGTDM feature classes. The GLSZM and GLRLM feature classes use a fixed
+  # distance of 1 (infinity norm) to define neighbours.
+  distances: [1]
+  # Value of ROI in mask (is binary).
+  label: 1
+  # Disable output of additional information from the extraction.
+  additionalInfo: False
+
+
+imageType:
+  # Original filter: No filter applied.
+  Original: {}
+
+
+featureClass:
+  # Enable all possible features.
+  shape:
+
+  firstorder:
+
+  glcm:
+
+  glrlm:
+
+  glszm:
+
+  gldm:
+
+  ngtdm:
