@@ -11,11 +11,12 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
-import ioutil
 import feature_selection
 
 import numpy as np
 import pandas as pd
+
+from utils import ioutil
 
 from multiprocessing import cpu_count
 from sklearn.externals import joblib

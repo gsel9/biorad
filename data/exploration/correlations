@@ -1,0 +1,841 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Association of variables with tumor outcomes\n",
+    "\n",
+    "* Univariate analysis of association of radiomics features with locoregional recurrences and disease-free survival. \n",
+    "* Approach described in Vallieres et al., *Radiomics Strategies for risk assessment of tumor failure in head-and-neck cancer* using a $10 \\%$ false discovery rate.\n",
+    "\n",
+    "A [tutorial](https://www.statisticshowto.datasciencecentral.com/benjamini-hochberg-procedure/) on the Benjamini-Hochberg procedure. \n",
+    "\n",
+    "**Ranking algorithm:**\n",
+    "\n",
+    "1. Sort p-values in ascending order.\n",
+    "2. Assign ranks to p-values.\n",
+    "3. Calculate each individual p-value’s Benjamini-Hochberg critical values asscording to (i/m)Q, where i: rank of p-value, m: the total number of tests, Q: false discovery rate.  \n",
+    "4. Compare the original p-values to the critical B-H values B-H. \n",
+    "\n",
+    "All variables with a p-value < corresponding B-H critical value\n",
+    "\n",
+    "**Results Vallieres**\n",
+    "* $0\\%$ of PET radiomics features significantly associated with locoregional recurrences.\n",
+    "* $0\\%$ of CT radiomics features significantly associated with locoregional recurrences.\n",
+    "* $12\\%$ of PET radiomics features significantly associated with overall survival.\n",
+    "* $34\\%$ of CT radiomics features significantly associated with overall survival.\n",
+    "* Strongest feature association (both PET and CT) to locoregional recurrence: CT LZHGE_{GLSZM} ($r_s=-0.15$, $p=0.007$).\n",
+    "* Strongest feature association (both PET and CT) to overall survival: CT GLV_{GLRLM} $r_s=0.24$, $p=4\\cdot 10^{-5}$).\n",
+    "\n",
+    "**NOTE**\n",
+    "* Include algorithm in thesis appendix."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 47,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "\n",
+    "from scipy import stats \n",
+    "from operator import itemgetter"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 117,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def spearmans_rank(X, y, fdr=0.1):\n",
+    "    \"\"\"Assess the association between features and a target \n",
+    "    variable with Speraman's rank correlations. Includes \n",
+    "    Benjamini–Hochberg correction.\n",
+    "    \n",
+    "    Args:\n",
+    "        X (array-like): Predictor variables.\n",
+    "        y (array-like): Target variable.\n",
+    "        \n",
+    "    Returns:\n",
+    "        (dict): Key-value paris of feature indicators with statistically \n",
+    "            significant correlation to the target variable, and the \n",
+    "            corresponding correlation coefficient and p-values.\n",
+    "            \n",
+    "    \"\"\"\n",
+    "    _, num_feats = np.shape(X)\n",
+    "    # Compute p-value for each feature.\n",
+    "    pvals, rhos = [], []\n",
+    "    for num in range(num_feats):\n",
+    "        rho, pval = stats.spearmanr(X.values[:, num], y)\n",
+    "        pvals.append(pval), rhos.append(rho)\n",
+    "    \n",
+    "    # Sorted p-values in ascending order.\n",
+    "    sorted_pvals = sorted(pvals)\n",
+    "\n",
+    "    sign_feats = {}\n",
+    "    for num, pval in enumerate(sorted_pvals):\n",
+    "        bh_crit = (num + 1) * fdr / num_feats\n",
+    "        if bh_crit < pval:\n",
+    "            sign_feats[X.columns[num]] = (pval, rhos[num])\n",
+    "    \n",
+    "    return sign_feats"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 118,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Target variables.\n",
+    "dfs = pd.read_csv('./../../data/to_analysis/target_dfs.csv', index_col=0)\n",
+    "lrr = pd.read_csv('./../../data/to_analysis/target_lrr.csv', index_col=0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Image Variables"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 119,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "img_vars = pd.read_csv('./../../data/to_analysis/img_features.csv', index_col=0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 129,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ct_vars = img_vars.filter(regex='CT')\n",
+    "pet_vars = img_vars.filter(regex='PET')\n",
+    "shape_vars = img_vars.filter(regex='shape')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Disease-Free Survival\n",
+    "\n",
+    "**CT**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 121,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ct_dfs_img_ranks = spearmans_rank(ct_vars, dfs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 125,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "35.16483516483517"
+      ]
+     },
+     "execution_count": 125,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(ct_dfs_img_ranks.keys()) / ct_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 139,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['CT original_glszm_GrayLevelVariance',\n",
+       " 'CT original_glszm_HighGrayLevelZoneEmphasis',\n",
+       " 'CT original_glszm_LargeAreaEmphasis',\n",
+       " 'CT original_glszm_LargeAreaHighGrayLevelEmphasis',\n",
+       " 'CT original_glszm_LargeAreaLowGrayLevelEmphasis']"
+      ]
+     },
+     "execution_count": 139,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(ct_dfs_img_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 123,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.08478873052306143, -0.040167898264550174),\n",
+       " (0.08813250315089713, -0.021547195404113942),\n",
+       " (0.09023352233996154, 0.25126976091925657),\n",
+       " (0.09023352233996154, 0.2399342829830495),\n",
+       " (0.12370438984333879, 0.2505140623901761)]"
+      ]
+     },
+     "execution_count": 123,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(ct_dfs_img_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**PET**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 126,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pet_dfs_img_ranks = spearmans_rank(pet_vars, dfs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 127,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "80.0"
+      ]
+     },
+     "execution_count": 127,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(pet_dfs_img_ranks.keys()) / pet_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 136,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['PET original_glcm_ClusterProminence',\n",
+       " 'PET original_glcm_ClusterShade',\n",
+       " 'PET original_glcm_ClusterTendency',\n",
+       " 'PET original_glcm_Contrast',\n",
+       " 'PET original_glcm_Correlation']"
+      ]
+     },
+     "execution_count": 136,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(pet_dfs_img_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 137,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.058838762955310826, -0.012846874994368004),\n",
+       " (0.06797794036032029, -0.013035799626638122),\n",
+       " (0.08240258670438406, 0.01152440256847718),\n",
+       " (0.1088439215341862, -0.09257306981235768),\n",
+       " (0.12435608813173646, 0.05629954041649508)]"
+      ]
+     },
+     "execution_count": 137,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(pet_dfs_img_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Shape**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 130,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "shape_dfs_img_ranks = spearmans_rank(shape_vars, dfs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 132,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "15.384615384615385"
+      ]
+     },
+     "execution_count": 132,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(shape_dfs_img_ranks.keys()) / shape_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 135,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['original_shape_SurfaceVolumeRatio', 'original_shape_Volume']"
+      ]
+     },
+     "execution_count": 135,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(shape_dfs_img_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 140,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.30474459498356976, -0.15869669110689885),\n",
+       " (0.3771465724399866, 0.22926021847280806)]"
+      ]
+     },
+     "execution_count": 140,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(shape_dfs_img_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Locoregional Relapse\n",
+    "\n",
+    "**CT**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 143,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ct_lrr_img_ranks = spearmans_rank(ct_vars, lrr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 144,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "35.16483516483517"
+      ]
+     },
+     "execution_count": 144,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(ct_lrr_img_ranks.keys()) / ct_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 145,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['CT original_firstorder_10Percentile',\n",
+       " 'CT original_glszm_HighGrayLevelZoneEmphasis',\n",
+       " 'CT original_glszm_LargeAreaEmphasis',\n",
+       " 'CT original_glszm_LargeAreaHighGrayLevelEmphasis',\n",
+       " 'CT original_glszm_LargeAreaLowGrayLevelEmphasis']"
+      ]
+     },
+     "execution_count": 145,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(ct_lrr_img_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 146,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.0012099980431762624, 0.14036125951266576),\n",
+       " (0.07307029215506046, -0.023660237241525797),\n",
+       " (0.08756527026261585, 0.2218547406009823),\n",
+       " (0.1205342473780193, 0.2236975580125271),\n",
+       " (0.14435025315633293, 0.2071122013086235)]"
+      ]
+     },
+     "execution_count": 146,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(ct_lrr_img_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**PET**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 147,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pet_lrr_img_ranks = spearmans_rank(pet_vars, lrr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 148,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "87.36842105263159"
+      ]
+     },
+     "execution_count": 148,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(pet_lrr_img_ranks.keys()) / pet_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 149,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['PET original_firstorder_10Percentile',\n",
+       " 'PET original_firstorder_90Percentile',\n",
+       " 'PET original_firstorder_Energy',\n",
+       " 'PET original_firstorder_Entropy',\n",
+       " 'PET original_firstorder_Uniformity']"
+      ]
+     },
+     "execution_count": 149,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(pet_lrr_img_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 150,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.0028733005317349287, 0.013206858116071394),\n",
+       " (0.0031637450300710216, 0.06496776515707492),\n",
+       " (0.003754210854344388, 0.19236966201626476),\n",
+       " (0.00456743125226722, -0.01627822046864614),\n",
+       " (0.01885709230344657, 0.013411615606243044)]"
+      ]
+     },
+     "execution_count": 150,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(pet_lrr_img_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Shape**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 151,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "shape_lrr_img_ranks = spearmans_rank(shape_vars, lrr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 152,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "15.384615384615385"
+      ]
+     },
+     "execution_count": 152,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(shape_lrr_img_ranks.keys()) / shape_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 153,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['original_shape_SurfaceVolumeRatio', 'original_shape_Volume']"
+      ]
+     },
+     "execution_count": 153,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(shape_lrr_img_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 154,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.130596755487678, -0.1364708671994044),\n",
+       " (0.5257739997249165, 0.19462214484671708)]"
+      ]
+     },
+     "execution_count": 154,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(shape_lrr_img_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Clinical Variables"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 155,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "clin_vars = pd.read_csv('./../../data/to_analysis/clinical_params.csv', index_col=0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 156,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dfs_clin_ranks = spearmans_rank(clin_vars, dfs)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Disease-Free Survival"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 157,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "92.85714285714286"
+      ]
+     },
+     "execution_count": 157,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with DFS.\n",
+    "len(dfs_clin_ranks.keys()) / clin_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 160,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['Age', 'Naxogin Days', 'ICD-10_C03', 'ICD-10_C04', 'ICD-10_C05']"
+      ]
+     },
+     "execution_count": 160,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(dfs_clin_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 161,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.00254323068389186, 0.10353073849748919),\n",
+       " (0.007168098774324121, 0.08715493501002772),\n",
+       " (0.020901280668800013, -0.04923846152029757),\n",
+       " (0.020901280668800013, 0.0026787422721745347),\n",
+       " (0.05520975423222327, -0.09923542145894367)]"
+      ]
+     },
+     "execution_count": 161,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(dfs_clin_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Locoregional Relapse"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 158,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lrr_clin_ranks = spearmans_rank(clin_vars, lrr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 159,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "100.0"
+      ]
+     },
+     "execution_count": 159,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Precentage of radiomics features singificantly associated with LRR.\n",
+    "len(lrr_clin_ranks.keys()) / clin_vars.shape[1] * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 163,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['Age', 'Years Smoking', 'Naxogin Days', 'Sex_M', 'ICD-10_C02']"
+      ]
+     },
+     "execution_count": 163,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(lrr_clin_ranks.keys())[:5]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 164,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[(0.011389244772878017, 0.0944956182357087),\n",
+       " (0.013262504114678022, 0.0329684733221144),\n",
+       " (0.024715673706297233, -0.011730198610754186),\n",
+       " (0.0811751318295311, 0.09088023228246712),\n",
+       " (0.0811751318295311, 0.17950982180079614)]"
+      ]
+     },
+     "execution_count": 164,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "list(lrr_clin_ranks.values())[:5]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Observations**\n",
+    "* TODO: Compare percentage of associations + strongest features, rank and p-values."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python [conda env:anaconda]",
+   "language": "python",
+   "name": "conda-env-anaconda-py"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

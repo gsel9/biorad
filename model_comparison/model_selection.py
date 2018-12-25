@@ -2,11 +2,9 @@
 #
 # nested_632plus.py
 #
-# ToDo: Add SMOTE balancing.
 
 """
-The nested .632+ bootstrap Out-of-Bag procedure for model selection. The .632+
-estimator was proposed by Efron and Tibhirani.
+The nested .632+ bootstrap Out-of-Bag procedure for model selection.
 """
 
 __author__ = 'Severin Langberg'
@@ -14,12 +12,13 @@ __email__ = 'langberg91@gmail.com'
 
 
 import os
-import utils
-import ioutil
+
 import feature_selection
 
 import numpy as np
 import pandas as pd
+
+from utils import ioutil, fwutils
 
 from numba import jit
 from datetime import datetime
@@ -66,11 +65,12 @@ def nested_point632plus(
         results = ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        X_os, y_os = SMOTE(random_state=random_state).fit_sample(X, y)
+        # Synthetic resampling according to target distributions.
+        _X, _y = SMOTE(random_state=random_state).fit_sample(X, y)
         print('Initiating experiment: {}'.format(random_state))
         start_time = datetime.now()
         results = _nested_point632plus(
-            X_os, y_os,
+            _X, _y,
             n_splits,
             random_state,
             path_tmp_results,
@@ -101,7 +101,7 @@ def _nested_point632plus(
     results = {'experiment_id': random_state}
     features = np.zeros(X.shape[1], dtype=int)
     # Outer OOB resampler.
-    sampler = utils.BootstrapOutOfBag(
+    sampler = fwutils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
     )
     train_scores, test_scores, opt_hparams = [], [], []
@@ -137,9 +137,9 @@ def _nested_point632plus(
             opt_hparams.append(best_model.get_params())
             features[best_support] += 1
         # Apply mode to all opt hparam settings.
-        best_model_hparams = utils.select_hparams(opt_hparams)
+        best_model_hparams = fwutils.select_hparams(opt_hparams)
         # Retain features with max activations.
-        best_support, support_votes = utils.select_support(features)
+        best_support, support_votes = fwutils.select_support(features)
 
     # Callback handling of preliminary results.
     final_results = ioutil.update_prelim_results(
@@ -178,7 +178,7 @@ def oob_grid_search(
         (tuple): The winning model and the selected features (optional).
 
     """
-    sampler = utils.BootstrapOutOfBag(
+    sampler = fwutils.BootstrapOutOfBag(
         n_splits=n_splits, random_state=random_state
     )
     # Exhaustive hyperparameter search.
@@ -218,9 +218,9 @@ def oob_grid_search(
         # Update current best results.
         if score_eval(test_scores) > best_test_score:
             best_test_score = score_eval(test_scores)
-            best_support, _ = utils.select_support(features)
+            best_support, _ = fwutils.select_support(features)
             # Re-instantiate the best candidate model.
-            best_model = utils.check_estimator(
+            best_model = fwutils.check_estimator(
                 estimator,
                 hparams,
                 support_size=len(support),
@@ -241,7 +241,7 @@ def _eval_candidate_procedure(*args):
         random_state,
     ) = args
     # Reconstruct a model prior to feature selection.
-    model = utils.check_estimator(
+    model = fwutils.check_estimator(
         estimator,
         hparams,
         support_size=None,
@@ -255,7 +255,7 @@ def _eval_candidate_procedure(*args):
         model=model
     )
     # Reconstruct a model prior to predictions.
-    model = utils.check_estimator(
+    model = fwutils.check_estimator(
         estimator,
         hparams,
         support_size=len(support),
@@ -288,7 +288,7 @@ def scale_fit_predict632(X_train, X_test, y_train, y_test, score_func, model):
 
     """
     # Compute Z scores.
-    X_train_std, X_test_std = utils.train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
     # NOTE: Error handling mechanism.
     try:
         model.fit(X_train_std, y_train)

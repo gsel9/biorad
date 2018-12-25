@@ -13,10 +13,11 @@ __email__ = 'langberg91@gmail.com'
 
 
 import mifs
-import utils
 
 import numpy as np
 import pandas as pd
+
+from utils import fwutils
 
 from scipy import stats
 from ReliefF import ReliefF
@@ -80,32 +81,10 @@ class Selector:
         # Formatting training and test subsets.
 
         # Support should be a non-empty vector (ensured by _check_support).
-        X_train, X_test = utils.check_train_test(
+        X_train, X_test = fwutils.check_train_test(
             X_train[:, support],  X_test[:, support]
         )
         return X_train, X_test, support
-
-
-def train_test_z_scores(X_train, X_test):
-    """Apply Z-score transformation to features in training and test sets.
-
-    Args:
-        X_train (array-like): Training set.
-        X_test (array-like): Test set.
-
-    Returns:
-        (tuple): Transformed training and test set.
-
-    """
-    X_train, X_test = utils.check_train_test(X_train, X_test)
-
-    scaler = StandardScaler()
-    X_train_std = scaler.fit_transform(X_train)
-    # Apply training params in transforming test set: renders test set
-    # comparable to training set while preventing information bleeding.
-    X_test_std = scaler.transform(X_test)
-
-    return X_train_std, X_test_std
 
 
 def permutation_selection(
@@ -134,7 +113,7 @@ def permutation_selection(
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
 
     model.fit(X_train_std, y_train)
 
