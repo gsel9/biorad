@@ -29,7 +29,7 @@ def feature_set(path_to_data, index_col=0):
 
 if __name__ == '__main__':
     import sys
-    sys.path.append('./../../model_comparison')
+    sys.path.append('./../model_comparison')
 
     import os
     import feature_selection
@@ -73,36 +73,36 @@ if __name__ == '__main__':
 
     """
     # FEATURE SET:
-    X = feature_set('./../../../data/to_analysis/complete_decorr.csv')
+    X = feature_set('./../../data_source/to_analysis/complete_decorr.csv')
 
     # TARGET:
-    #y = target('./../../../data/to_analysis/target_lrr.csv')
-    y = target('./../../../data/to_analysis/target_dfs.csv')
+    #y = target('./../../data_source/to_analysis/target_lrr.csv')
+    y = target('./../../data_source/to_analysis/target_dfs.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../../../data/outputs/no_filtering_dfs.csv'
+    path_to_results = './../../data_source/experiments/no_filtering_dfs.csv'
 
     # SETUP:
-    NUM_ROUNDS = 40
-    NUM_SPLITS = 100
+    NUM_ROUNDS = 2#40
+    NUM_SPLITS = 4#100
     EVAL = np.median
     LOSS = roc_auc_score
 
     estimators = {
-        'logreg': LogisticRegression,
-        'rf': RandomForestClassifier,
-        'plsr': PLSRegression,
+        #'logreg': LogisticRegression,
+        #'rf': RandomForestClassifier,
+        #'plsr': PLSRegression,
         'gnb': GaussianNB,
-        'svc': SVC,
+        #'svc': SVC,
     }
 
     selectors = {
         # QUESTION: Swap with RF from paper? Drop?
-        'permutation': feature_selection.permutation_selection,
-        'wlcx': feature_selection.wilcoxon_selection,
+        #'permutation': feature_selection.permutation_selection,
+        #'wlcx': feature_selection.wilcoxon_selection,
         'relieff_5': feature_selection.relieff_selection,
-        'relieff_20': feature_selection.relieff_selection,
-        'mrmr': feature_selection.mrmr_selection
+        #'relieff_20': feature_selection.relieff_selection,
+        #'mrmr': feature_selection.mrmr_selection
     }
 
     estimator_params = {

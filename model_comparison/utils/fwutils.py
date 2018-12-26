@@ -13,6 +13,7 @@ __email__ = 'langberg91@gmail.com'
 
 import numpy as np
 
+from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
 
 
@@ -94,6 +95,23 @@ def check_train_test(X_train, X_test):
         np.array(X_train, dtype=float), np.array(X_test, dtype=float),
     )
 
+
+def balance_data(X, y, random_state):
+    """Balance distribution of target classes with the Synthetic Minority
+    Oversmapling Technique proposed by ...
+
+    Args:
+        X (array-like):
+        y (array-like):
+        random_state (int):
+
+    Returns:
+        (tuple): Balanced predictor and target data sets.
+
+    """
+
+    balancer = SMOTE(random_state=random_state)
+    return balancer.fit_sample(X, y)
 
 
 def check_train_test(X_train, X_test):

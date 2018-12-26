@@ -2,6 +2,8 @@
 #
 # nested_632plus.py
 #
+# Checkout: https://github.com/tmadl/highdimensional-decision-boundary-plot
+#
 
 """
 The nested .632+ bootstrap Out-of-Bag procedure for model selection.
@@ -24,7 +26,6 @@ from numba import jit
 from datetime import datetime
 from collections import OrderedDict
 from sklearn.externals import joblib
-from imblearn.over_sampling import SMOTE
 
 
 def nested_point632plus(
@@ -34,6 +35,7 @@ def nested_point632plus(
         path_tmp_results,
         estimator,
         hparam_grid,
+        balance=True,
         selector=None,
         n_jobs=1, verbose=0,
         score_func=None, score_eval=None
@@ -65,12 +67,14 @@ def nested_point632plus(
         results = ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        # Synthetic resampling according to target distributions.
-        _X, _y = SMOTE(random_state=random_state).fit_sample(X, y)
+        # Apply SMOTE to balance target class distributions.
+        if balance:
+            X, y = fwutils.balance_data(X, y, random_state)
+
         print('Initiating experiment: {}'.format(random_state))
         start_time = datetime.now()
         results = _nested_point632plus(
-            _X, _y,
+            X, y,
             n_splits,
             random_state,
             path_tmp_results,
@@ -82,7 +86,6 @@ def nested_point632plus(
         )
         duration = datetime.now() - start_time
         print('Experiment {} completed in {}'.format(random_state, duration))
-
     return results
 
 
@@ -146,8 +149,8 @@ def _nested_point632plus(
         path_tmp_results,
         score_eval(train_score),
         score_eval(test_score),
-        train_score,
-        test_score,
+        train_scores,
+        test_scores,
         estimator.__name__,
         best_model_hparams,
         selector.name,

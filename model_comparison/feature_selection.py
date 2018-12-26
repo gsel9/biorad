@@ -182,7 +182,7 @@ def wilcoxon_selection(
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
 
     support = wilcoxon_signed_rank(
         X_train_std, y_train, thresh=thresh, **kwargs
@@ -239,7 +239,7 @@ def relieff_selection(
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
 
     selector = ReliefF(n_neighbors=num_neighbors)
     selector.fit(X_train_std, y_train)
@@ -263,7 +263,7 @@ def mrmr_selection(X_train, X_test, y_train, y_test, k, num_features, **kwargs):
 
     """
     # Z-score transformation.
-    X_train_std, X_test_std = train_test_z_scores(X_train, X_test)
+    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
     # If 'auto': n_features is determined based on the amount of mutual
     # information the previously selected features share with y.
     selector = mifs.MutualInformationFeatureSelector(
