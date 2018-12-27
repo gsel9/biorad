@@ -132,6 +132,8 @@ def _nested_point632plus(
             score_func, score_eval
         )
         # NOTE: Z-score transformation and error handlng included in function.
+
+        # NB: Training new model
         train_score, test_score = scale_fit_predict632(
             X_train[:, best_support], X_test[:, best_support],
             y_train, y_test,
@@ -207,8 +209,8 @@ def oob_grid_search(
             if verbose > 1:
                 print('Inner loop iter number {}'.format(split_num))
 
-            # Exectue modeling procedure for performance evaluation.
-            train_score, test_score, support = _eval_candidate_procedure(
+            # NB: Expensive
+            train_score, test_score, support = objective(
                 X[train_idx], X[test_idx],
                 y[train_idx], y[test_idx],
                 estimator,
@@ -238,8 +240,8 @@ def oob_grid_search(
         return best_model, best_support
 
 
-def _eval_candidate_procedure(*args):
-    # Evaluate the performance of modeling procedure.
+def objective(*args):
+    # Maps a modeling procedure to a score value.
     (
         X_train, X_test,
         y_train, y_test,
