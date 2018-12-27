@@ -21,6 +21,7 @@ from utils import ioutil
 from multiprocessing import cpu_count
 from sklearn.externals import joblib
 from sklearn.model_selection import ParameterGrid
+from sklearn.pipeline import Pipeline
 
 # Name of directory to store temporary results.
 TMP_RESULTS_DIR = 'tmp_model_comparison'
@@ -85,34 +86,38 @@ def model_comparison(
     results = []
     for estimator_name, estimator in estimators.items():
         # Setup hyperparameter grid.
-        hparam_grid = ParameterGrid(estimator_params[estimator_name])
-        # Skip feature selection.
-        if selectors is None:
-            raise NotImplementedError('')
-        # Including feature selection.
-        else:
-            for selector_name, procedure in selectors.items():
-                selector = feature_selection.Selector(
-                    selector_name, procedure, selector_params[selector_name]
-                )
-                results.extend(
-                    joblib.Parallel(
-                        n_jobs=n_jobs, verbose=verbose
-                    )(
-                        joblib.delayed(comparison_scheme)(
-                            X, y,
-                            n_splits,
-                            random_state,
-                            path_tmp_results,
-                            estimator,
-                            hparam_grid,
-                            selector=selector,
-                            n_jobs=n_jobs, verbose=verbose,
-                            score_func=score_func, score_eval=score_eval
-                        )
-                        for random_state in random_states
+        #hparam_grid = ParameterGrid(estimator_params[estimator_name])
+        for selector_name, procedure in selectors.items():
+            # TODO: Enable scikit API (fit, transform)
+            selector = feature_selection.Selector(
+                selector_name, procedure, selector_params[selector_name]
+            )
+            pipe = Pipeline([
+                ('selector', selector(random_state=random_state)),
+                ('estimator', estimator(random_state=random_state))
+            ])
+            results.extend(
+                joblib.Parallel(
+                    n_jobs=n_jobs, verbose=verbose
+                )(
+                    joblib.delayed(comparison_scheme)(
+                        X, y,
+                        pipe,
+
+                        ##
+
+                        n_splits,
+                        random_state,
+                        path_tmp_results,
+                        estimator,
+                        hparam_grid,
+                        selector=selector,
+                        n_jobs=n_jobs, verbose=verbose,
+                        score_func=score_func, score_eval=score_eval
                     )
+                    for random_state in random_states
                 )
+            )
         # Tear down temporary dirs after succesfully written results to disk.
         _cleanup(results, path_to_results)
 
