@@ -1,30 +1,24 @@
 # -*- coding: utf-8 -*-
-#
-# complete_decorr.py
-#
 
-"""
-Model comparison experiments of decorrelated complete feature set.
-"""
-
-__author__ = 'Severin Langberg'
-__email__ = 'langberg91@gmail.com'
-
+import sys
+import time
 
 import numpy as np
 import pandas as pd
 
 
+# NOTE: To utils
 def target(path_to_target, index_col=0):
 
     var = pd.read_csv(path_to_target, index_col=index_col)
-    return np.squeeze(var.values)
+    return np.squeeze(var.values).astype(np.float32)
 
 
+# NOTE: To utils
 def feature_set(path_to_data, index_col=0):
 
     data = pd.read_csv(path_to_data, index_col=index_col)
-    return np.array(data.values, dtype=float)
+    return np.array(data.values, dtype=np.float32)
 
 
 if __name__ == '__main__':
@@ -34,11 +28,12 @@ if __name__ == '__main__':
     import os
     import feature_selection
 
+    from scipy import stats
     from datetime import datetime
     from model_comparison import model_comparison
     from model_selection import nested_point632plus
 
-    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import roc_auc_score, matthews_corrcoef, precision_recall_fscore_support
 
     from sklearn.svm import SVC
     from sklearn.ensemble import RandomForestClassifier
@@ -83,50 +78,68 @@ if __name__ == '__main__':
     path_to_results = './../../data_source/experiments/no_filtering_dfs.csv'
 
     # SETUP:
-    NUM_ROUNDS = 2#40
-    NUM_SPLITS = 4#100
+    CV = 10
+    N_ITER = 100
+
+    NUM_REPS = 100
+    NUM_SPLITS = 10
+    NUM_RESAMPLINGS = 500
     EVAL = np.median
-    LOSS = roc_auc_score
+    SCORING = roc_auc_score
 
     estimators = {
-        #'logreg': LogisticRegression,
-        #'rf': RandomForestClassifier,
-        #'plsr': PLSRegression,
+        'logreg': LogisticRegression,
+        'rf': RandomForestClassifier, # (Breiman 2001)
+        'plsr': PLSRegression,
         'gnb': GaussianNB,
-        #'svc': SVC,
+        'svc': SVC, # (Cortes and Vapnik 1995)
     }
-
     selectors = {
-        # QUESTION: Swap with RF from paper? Drop?
         #'permutation': feature_selection.permutation_selection,
-        #'wlcx': feature_selection.wilcoxon_selection,
+        'wlcx': feature_selection.wilcoxon_selection,
         'relieff_5': feature_selection.relieff_selection,
-        #'relieff_20': feature_selection.relieff_selection,
-        #'mrmr': feature_selection.mrmr_selection
+        'relieff_20': feature_selection.relieff_selection,
+        'mrmr': feature_selection.mrmr_selection
     }
 
-    estimator_params = {
+    # HYPERPARAMETER DISTRIBUTIONS
+    # - We want about an equal chance of ending up with a number of any order
+    # of magnitude within our range of interest.
+    n_estimators = stats.expon(scale=100)
+    max_depth = stats.randint(1, 40)
+
+    estimator_hparams = {
+        # Classification hyperparameters.
         'rf': {
-            'n_estimators': [100, 300, 600, 1000],
+            # From scikit-learn example.
+            'n_estimators': stats.expon(scale=100),
+            'max_depth': stats.randint(1, 40),
+            'max_features': stats.randint(1, 11),
+            'min_samples_split': stats.randint(2, 11),
+            'bootstrap': [True, False],
             'criterion': ['gini', 'entropy'],
             'class_weight': ['balanced'],
-            'max_depth': [None],
-            'n_jobs': [-1]
         },
         'svc': {
             # class_weight: balanced by default.
-            'tol': [0.0001, 0.01, 0.1, 1],
-            'C': [0.001, 0.01, 1, 10],
+            # Limiting the number of unique values (size=100) to ensure a
+            # certain degree of diversity in the hparam values.
+            'tol': stats.reciprocal(size=10),
+            # From scikit-learn docs.
+            'C': stats.expon(scale=100),
+            # From scikit-learn docs.
+            'gamma': stats.expon(scale=.1),
             'kernel': ['linear', 'rbf', 'ploy'],
             'degree': [2, 3],
             'max_iter': [2000]
         },
         'logreg': {
-            'tol': [0.0001, 0.01, 0.1, 1],
-            'C': [0.001, 0.01, 1, 10],
+            'tol': stats.reciprocal(size=10),
+            'C': stats.expon(scale=100),
             'class_weight': ['balanced'],
             'penalty': ['l1', 'l2'],
             'max_iter': [2000],
+            'solver': ['liblinear'],
         },
         'gnb': {
             # DFS:
@@ -135,20 +148,28 @@ if __name__ == '__main__':
             # 'priors'. [[0.75, ]]
         },
         'plsr': {
-            'tol': [0.0001, 0.01, 0.1, 1],
-            'n_components': [10, 20, 30, 40],
+            'tol': stats.reciprocal(size=10),
+            'n_components': stats.expon(scale=100),
             'max_iter': [2000]
         },
+    selector_hparams = {
+        # Feature selection hyperparameters.
+        'permutation': {
+            'num_rounds': [100]
+        },
+        'wlcx': {
+            'thresh': [0.05]
+        },
+        'relieff': {
+            'num_neighbors': stats.expon(scale=100),
+            'num_features': stats.expon(scale=100)
+        },
+        'mrmr': {
+            'num_features': ['auto'],
+            # See paper
+            'k': [3, 5, 7]
+        }
     }
-
-    selector_params = {
-        'permutation': {'num_rounds': 100},
-        'wlcx': {'thresh': 0.05},
-        'relieff_5': {'num_neighbors': 7, 'num_features': 5},
-        'relieff_20': {'num_neighbors': 7, 'num_features': 20},
-        'mrmr': {'num_features': 'auto', 'k': 5}
-    }
-
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
     random_states = np.random.randint(1000, size=NUM_ROUNDS)
@@ -164,7 +185,7 @@ if __name__ == '__main__':
         selector_params,
         score_func=LOSS,
         score_eval=EVAL,
-        verbose=0,
+        verbose=1,
         n_jobs=None,
         path_to_results=path_to_results
     )
