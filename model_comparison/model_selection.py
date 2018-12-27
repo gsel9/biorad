@@ -11,6 +11,86 @@
 # * Use a function to compute the whole series of
 # * Checkout: numpy.fromfunction, frompyfunc(func, nin, nout), apply_along_axis(func1d, axis, arr, *args, …)
 
+# ToDos:
+# * Hyperopt package for hparam opt
+# * sklearn Pipeline as objective function
+# * Consider model selection and estimatoras one model with a common set of hparams.
+# * Optimize on AUC, but also include precision, recall, f-beta and support (sklearn)
+
+
+def outer_iterations():
+
+    pass
+
+
+def inner_iterations():
+
+    # Do hparam selection
+    # Evalaute performance
+    pass
+
+
+class LearningProcedure:
+
+    # * Combine Z-score transformation, feature selection and estimator in a pipeline.
+    # * Both FS and E have hyperparameters.
+    # * Compare on errors (always >= 0, see TT paper for proof of Nonnegativity of the bias.).
+    pass
+
+
+
+def css(results, y, loss):
+    """Configuration selection strategy as described by Tsamardinos & Greasidou
+    (2018).
+
+    Args:
+        results (array-like): A matrix (N x C) containing out-of-sample
+            predictions for N sapmles and C hyperparameter configurations. Thus,
+            results[i, j] denotes the out-of-sample prediction of on the i-th
+            sample of the j-th configuration.
+        y (array-like): Ground truths corresponding to results.
+        loss (function): Score criterion.
+
+    Returns:
+        (int): Index of the best performing configuration according to the
+            loss criterion.
+
+    """
+
+    # Use numpy.argmin() to quickly determine optimal run.
+    pass
+
+
+
+def hyperopt_search(args, data, model, param_grid, max_evals):
+
+    def objective(param_grid):
+        # Create a pipeline object
+        args.num_hidden = param_grid['num_hidden']
+        args.dropout_output = param_grid['dropout_output']
+        args.dropout_input = param_grid['dropout_input']
+        args.clip_norm = param_grid['clip_norm']
+        args.batch_size = param_grid['batch_size']
+        # args.learning_rate = param_grid['learning_rate']
+        print(args)
+        print()
+        scores = run_network(args, data, model, tuning=args.tune)
+        test_score, eval_score = scores
+        tf.reset_default_graph()
+        eval_score = -eval_score[0]
+        return {'loss': eval_score, 'params': args, 'status': STATUS_OK}
+
+    trials = Trials()
+    results = fmin(
+        objective, param_grid, algo=tpe.suggest,
+        trials=trials, max_evals=max_evals)
+
+    return results, trials.results
+
+
+
+
+
 """
 The nested .632+ bootstrap Out-of-Bag procedure for model selection.
 """
@@ -133,7 +213,7 @@ def _nested_point632plus(
         )
         # NOTE: Z-score transformation and error handlng included in function.
 
-        # NB: Training new model
+        # NB: Training new model (can be avoided with TT method)
         train_score, test_score = scale_fit_predict632(
             X_train[:, best_support], X_test[:, best_support],
             y_train, y_test,
@@ -209,7 +289,7 @@ def oob_grid_search(
             if verbose > 1:
                 print('Inner loop iter number {}'.format(split_num))
 
-            # NB: Expensive
+            # NB: Expensive (FS + model training)
             train_score, test_score, support = objective(
                 X[train_idx], X[test_idx],
                 y[train_idx], y[test_idx],
@@ -282,11 +362,20 @@ def objective(*args):
     return train_score, test_score, support
 
 
-def response_surface():
+def surrogate():
     # The surrogate function, also called the response surface, is the
     # probability representation of the objective function built using previous
     # evaluations.
 
+    pass
+
+
+def selection():
+    # The criteria by which the next set of hyperparameters are chosen from the
+    # surrogate function. The most common choice of criteria is Expected
+    # Improvement.
+
+    # NOTE: Involves integration: fast numpy/scipy.
     pass
 
 
