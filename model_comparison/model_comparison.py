@@ -25,7 +25,7 @@ from sklearn.pipeline import Pipeline
 
 # Name of directory to store temporary results.
 TMP_RESULTS_DIR = 'tmp_model_comparison'
-# Extensions to estimator and selector hyperparameters. 
+# Extensions to estimator and selector hyperparameters.
 ESTIMATOR_ID = 'estimator'
 SELECTOR_ID = 'dim_red'
 
@@ -108,26 +108,28 @@ def model_comparison(
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else cpu_count()
 
     results = []
-    for estimator_name, estimator in estimators.items():
-        # Setup hyperparameter grid.
-        #hparam_grid = ParameterGrid(estimator_params[estimator_name])
-        for selector_name, procedure in selectors.items():
-            # TODO: Enable scikit API (fit, transform)
-            selector = feature_selection.Selector(
-                selector_name, procedure, selector_params[selector_name]
-            )
-            # TODO: Do a check estimator for random states etc.
-            pipe = Pipeline([
+    for estimator_id, _estimator in estimators.items():
+        for selector_id, procedure in selectors.items():
+            # Instantiate selector representation for pipeline compatibility.
+            selector = feature_selection.Selector(selector_id, procedure)
+            # Combine parameter grids.
+            param_grid = [
+                _format_hparams(selector_params[selector_id]),
+                _format_hparams(estimator_params[estimator_id])
+            ]
+            # Create estiamtor pipeline.
+            pipeline = Pipeline([
                 (SELECTOR_ID, selector(random_state=random_state)),
                 (ESTIMATOR_ID, estimator(random_state=random_state))
             ])
+            """
             results.extend(
                 joblib.Parallel(
                     n_jobs=n_jobs, verbose=verbose
                 )(
                     joblib.delayed(comparison_scheme)(
                         X, y,
-                        pipe,
+                        pipeline,
 
                         ##
 
@@ -143,7 +145,22 @@ def model_comparison(
                     for random_state in random_states
                 )
             )
+            """
         # Tear down temporary dirs after succesfully written results to disk.
-        _cleanup(results, path_to_results)
+        #_cleanup(results, path_to_results)
 
     return None
+
+
+if __name__ == '__main__':
+    # ToDos:
+    # * Make Pipeline encompassing feature selection and classifcaiton.
+    #   Remember to include StandardScaler at appropriate locations.
+    # *
+    # * Determine reasonable distributions for hparams (figure out how
+    #   distribution boundaries are determined by sklearn).
+    # *
+
+    from sklearn.datasets import mnist
+
+    X =
