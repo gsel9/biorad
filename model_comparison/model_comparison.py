@@ -25,6 +25,9 @@ from sklearn.pipeline import Pipeline
 
 # Name of directory to store temporary results.
 TMP_RESULTS_DIR = 'tmp_model_comparison'
+# Extensions to estimator and selector hyperparameters. 
+ESTIMATOR_ID = 'estimator'
+SELECTOR_ID = 'dim_red'
 
 
 def _cleanup(results, path_to_results):
@@ -35,6 +38,27 @@ def _cleanup(results, path_to_results):
     ioutil.teardown_tempdir(TMP_RESULTS_DIR)
 
     return results
+
+
+def _format_hparams(params, kind='estimator'):
+    # Format parameter names to scikit Pipeline compatibility.
+
+    global ESTIMATOR_ID, SELECTOR_ID
+
+    if kind == 'estimator':
+        ext = ESTIMATOR_ID
+    elif kind == 'selector':
+        ext = SELECTOR_ID
+    else:
+        raise ValueError('Invalid kind {} not in (`estimator`, `selector`)'
+                         ''.format(kind))
+    # Update keys.
+    for set_key,  param_set in hparams.items():
+        hparams[set_key] = {
+            key.replace(key, ('__').join((ext, key)): params
+            for key, params in param_set.items()
+        }
+    return hparams
 
 
 def model_comparison(
@@ -74,7 +98,7 @@ def model_comparison(
         None: Writes results to disk an removes tmp directory.
 
     """
-    global TMP_RESULTS_DIR
+    global TMP_RESULTS_DIR, ESTIMATOR_ID, SELECTOR_ID
 
     # Setup temporary directory.
     path_tmp_results = ioutil.setup_tempdir(TMP_RESULTS_DIR, root='.')
@@ -92,9 +116,10 @@ def model_comparison(
             selector = feature_selection.Selector(
                 selector_name, procedure, selector_params[selector_name]
             )
+            # TODO: Do a check estimator for random states etc.
             pipe = Pipeline([
-                ('selector', selector(random_state=random_state)),
-                ('estimator', estimator(random_state=random_state))
+                (SELECTOR_ID, selector(random_state=random_state)),
+                (ESTIMATOR_ID, estimator(random_state=random_state))
             ])
             results.extend(
                 joblib.Parallel(
