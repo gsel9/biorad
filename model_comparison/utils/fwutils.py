@@ -13,10 +13,20 @@ __email__ = 'langberg91@gmail.com'
 
 import numpy as np
 
+from numba import int32
+from numba import jitclass
+from numba import jit
+
+from collections import OrderedDict
+
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
 
 
+#@jitclass(OrderedDict(
+#    n_splits=int32,
+#    random_state=int32,
+#))
 class BootstrapOutOfBag:
     """A bootstrap Out-of-Bag resampler.
 
@@ -166,6 +176,7 @@ def select_support(features, method='max', thresh=0.05):
         return np.squeeze(np.where(fracs >= thresh)), max_counts
 
 
+@jit
 def select_hparams(hparams):
     """Select hyperparameters according most frequently occuring settings."""
     # NOTE: Returns original input if all parameters have equal number of votes.

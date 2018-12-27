@@ -4,6 +4,12 @@
 #
 # Checkout: https://github.com/tmadl/highdimensional-decision-boundary-plot
 #
+# REFACTORING:
+# * Generate numpy objects and numpy iters in loops.
+# * Generate inner and outer Z-score samples in one loop.
+# * Use numpy.random.choice(a, size=None, replace=True, p=None)
+# * Use a function to compute the whole series of
+# * Checkout: numpy.fromfunction, frompyfunc(func, nin, nout), apply_along_axis(func1d, axis, arr, *args, …)
 
 """
 The nested .632+ bootstrap Out-of-Bag procedure for model selection.
@@ -22,7 +28,7 @@ import pandas as pd
 
 from utils import ioutil, fwutils
 
-from numba import jit
+from numba import jit, vectorize, float64
 from datetime import datetime
 from collections import OrderedDict
 from sklearn.externals import joblib
@@ -37,7 +43,7 @@ def nested_point632plus(
         hparam_grid,
         balance=True,
         selector=None,
-        n_jobs=1, verbose=0,
+        n_jobs=1, verbose=1,
         score_func=None, score_eval=None
     ):
     """Mested model performance evaluation according to the .632+ bootstrap
@@ -110,7 +116,7 @@ def _nested_point632plus(
     train_scores, test_scores, opt_hparams = [], [], []
     for split_num, (train_idx, test_idx) in enumerate(sampler.split(X, y)):
 
-        if verbose > 1:
+        if verbose > 0:
             print('Outer loop iter number {}'.format(split_num))
 
         X_train, X_test = X[train_idx], X[test_idx]
@@ -334,7 +340,7 @@ def point632plus_score(y_true, y_pred, train_score, test_score):
     return point632plus(train_score, test_score, r_marked, test_score_marked)
 
 
-@jit
+@vectorize([float64(float64, float64, float64, float64)])
 def point632plus(train_score, test_score, r_marked, test_score_marked):
     """Calculate the .632+ score from parameters.
 
@@ -354,7 +360,7 @@ def point632plus(train_score, test_score, r_marked, test_score_marked):
     return point632 + (test_score_marked - train_score) * frac
 
 
-@jit
+@vectorize([float64(float64, float64, float64)])
 def relative_overfit_rate(train_score, test_score, gamma):
     """Calculate the relative overfitting rate from parameters.
 
@@ -373,9 +379,10 @@ def relative_overfit_rate(train_score, test_score, gamma):
         return 0
 
 
+@jit
 def _no_info_rate_binary(y_true, y_pred):
     # NB: Only applicable to a dichotomous classification problem.
-    p_one = np.sum(y_true) / np.size(y_true)
-    q_one = np.sum(y_pred) / np.size(y_pred)
+    p_one = sum(y_true) / len(y_true)
+    q_one = sum(y_pred) / len(y_pred)
 
     return p_one * (1 - q_one) + (1 - p_one) * q_one
