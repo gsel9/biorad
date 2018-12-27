@@ -282,6 +282,14 @@ def objective(*args):
     return train_score, test_score, support
 
 
+def response_surface():
+    # The surrogate function, also called the response surface, is the
+    # probability representation of the objective function built using previous
+    # evaluations.
+
+    pass
+
+
 def scale_fit_predict632(X_train, X_test, y_train, y_test, score_func, model):
     """Assess model performance on Z-score transformed training and test sets.
 
@@ -334,57 +342,36 @@ def point632plus_score(y_true, y_pred, train_score, test_score):
         (float): The .632+ score value.
 
     """
+
+    @vectorize([float64(float64, float64, float64)])
+    def _relative_overfit_rate(train_score, test_score, gamma):
+        # Relative Overfiting Rate as described in ....
+        if test_score > train_score and gamma > train_score:
+            return (test_score - train_score) / (gamma - train_score)
+        else:
+            return 0
+
+    @jit
+    def _no_info_rate_binary(y_true, y_pred):
+        # The No Information Rate as described in ...
+        # NB: Only applicable to a dichotomous classification problem.
+        p_one = sum(y_true) / len(y_true)
+        q_one = sum(y_pred) / len(y_pred)
+
+        return p_one * (1 - q_one) + (1 - p_one) * q_one
+
+
+    @vectorize([float64(float64, float64, float64, float64)])
+    def _point632plus(train_score, test_score, r_marked, test_score_marked):
+        #
+        point632 = 0.368 * train_score + 0.632 * test_score
+        frac = (0.368 * 0.632 * r_marked) / (1 - 0.368 * r_marked)
+
+        return point632 + (test_score_marked - train_score) * frac
+
     gamma = _no_info_rate_binary(y_true, y_pred)
     # Calculate adjusted parameters as described in Efron & Tibshiranir paper.
     test_score_marked = min(test_score, gamma)
     r_marked = relative_overfit_rate(train_score, test_score, gamma)
 
     return point632plus(train_score, test_score, r_marked, test_score_marked)
-
-
-@vectorize([float64(float64, float64, float64, float64)])
-def point632plus(train_score, test_score, r_marked, test_score_marked):
-    """Calculate the .632+ score from parameters.
-
-    Args:
-        train_score (float): The resubstitution score.
-        test_score (float): The true score.
-        r_marked (float): Adjusted relative overfitting rate.
-        test_score_marked (float):
-
-    Returns:
-        (float): The .632+ score value.
-
-    """
-    point632 = 0.368 * train_score + 0.632 * test_score
-    frac = (0.368 * 0.632 * r_marked) / (1 - 0.368 * r_marked)
-
-    return point632 + (test_score_marked - train_score) * frac
-
-
-@vectorize([float64(float64, float64, float64)])
-def relative_overfit_rate(train_score, test_score, gamma):
-    """Calculate the relative overfitting rate from parameters.
-
-    Args:
-        train_score (float): The resubstitution score.
-        test_score (float): The true score.
-        gamma (float): The no information rate.
-
-    Returns:
-        (float): The relative overfitting rate value.
-
-    """
-    if test_score > train_score and gamma > train_score:
-        return (test_score - train_score) / (gamma - train_score)
-    else:
-        return 0
-
-
-@jit
-def _no_info_rate_binary(y_true, y_pred):
-    # NB: Only applicable to a dichotomous classification problem.
-    p_one = sum(y_true) / len(y_true)
-    q_one = sum(y_pred) / len(y_pred)
-
-    return p_one * (1 - q_one) + (1 - p_one) * q_one
