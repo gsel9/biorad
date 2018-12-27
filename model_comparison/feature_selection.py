@@ -22,11 +22,13 @@ from utils import fwutils
 from scipy import stats
 from ReliefF import ReliefF
 from sklearn import feature_selection
+from sklearn.base import TransformerMixin
+
 from sklearn.preprocessing import StandardScaler
 from mlxtend.feature_selection import SequentialFeatureSelector
 
 
-class Selector:
+class Selector(TransformerMixin):
     """Representation of a feature selection procedure.
 
     Args:
@@ -40,10 +42,16 @@ class Selector:
 
     """
 
-    def __init__(self, name, func, params):
+    def __init__(self, name, func, params, random_state):
 
         self.name = name
         self.func = func
+        self.random_state = random_state
+
+        # NOTE:
+        self._X_train = None
+        self._X_test = None
+        self._support = None
 
     def fit(self, X, y, **kwargs):
 
@@ -53,12 +61,14 @@ class Selector:
         return self
 
     def transform(self):
+        """"""
 
         # Formatting of output includes error handling.
         support = self._check_support(self._support, self._X_train)
 
-        return self._check_subset(
-            self._X_train, self._X_test, support
+        # Support should be a non-empty vector (ensured by _check_support).
+        return fwutils.check_train_test(
+            self._X_train[:, support],  self._X_test[:, support]
         )
 
     @staticmethod
@@ -80,16 +90,6 @@ class Selector:
                     'Invalid dimension {} to support.'.format(np.ndim(support))
                 )
         return support
-
-    @staticmethod
-    def _check_subset(X_train, X_test, support):
-        # Formatting training and test subsets.
-
-        # Support should be a non-empty vector (ensured by _check_support).
-        X_train, X_test = fwutils.check_train_test(
-            X_train[:, support],  X_test[:, support]
-        )
-        return X_train, X_test, support
 
 
 def permutation_selection(
