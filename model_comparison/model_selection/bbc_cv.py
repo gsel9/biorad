@@ -18,20 +18,105 @@
 # * Optimize on AUC, but also include precision, recall, f-beta and support (sklearn)
 
 
-class BootstrapBiasCorrectedCV:
-    """The Bootstrap Bias Corrected CV method propsoed by Tsamardinos &
-    Greasidou (2018).
+# * 10-fold CV with random search of 100 reps.
+# * 500 OOB samples
+
+
+"""
+The nested .632+ bootstrap Out-of-Bag procedure for model selection.
+"""
+
+__author__ = 'Severin Langberg'
+__email__ = 'langberg91@gmail.com'
+
+
+import os
+
+import feature_selection
+
+import numpy as np
+import pandas as pd
+
+from utils import ioutil, fwutils
+
+from numba import jit, vectorize, float64
+from datetime import datetime
+from collections import OrderedDict
+from sklearn.externals import joblib
+
+from sklearn.model_selection import RandomizedSearchCV
+
+
+class Pipeline:
+
+    def __init__(self):
+
+        pass
+
+    def fit(self):
+        pass
+
+    def predict(self):
+        pass
+
+
+class BootstrapBiasCorrectionCV:
+    """The Bootstrap Bias Corrected Cross-Validation method propsoed by
+    Tsamardinos & Greasidou (2018).
 
     Args:
         ():
 
     """
+    # - Generate out-of-sample predictions (results) with a tuning procedure.
+    # * Parallellize tuning procedure.
+    # - Sample N rows from results with replacement (+ corresponding ground
+    #   truths) to produce B bootstrapped matrices.
+    # * Use TensorFlow as GPU-accelerated NumPy framework for parallellizing bootstrap samplings.
+    # * Parameterize feature selection procedures with an option to select a
+    #   priori number of features resulting in comparable dimensionality of
+    #   feature spaces.
+    # * Export models to JSON for production models with pipeline.
 
-    # Generate out-of-sample predictions (results) with CVT.
-    # - Parallellize CTV procedure.
-    # Sample N rows from results with replacement (+ corresponding ground
-    # truths) to produce B bootstrapped matrices.
-    pass
+    def __init__(
+        self,
+        num_rounds=500,
+        alpha=0.05,
+        n_jobs=1,
+        random_states=None,
+        balancing=True,
+    ):
+
+        self.num_rounds = num_rounds
+        self.alpha = alpha
+        self.n_jobs = n_jobs
+        self.random_states = random_states
+        self.balancing = balancing
+        self.early_stopping = early_stopping
+
+    def experiment(self, X, y):
+
+        if self.balancing:
+            # Add SMOTE to pipeline passing random states.
+            pass
+
+        best_model, loss, results = self.hparam_selection()
+
+        # early stopping: bootstrap samples from each fold
+
+    def hparam_selection(self):
+
+        searcher = RandomizedSearchCV()
+
+
+
+    @property
+    def confidence(self):
+        """A (1 - alpha) confidence interval for parameter estimates as
+        described by Efron and Tibshirani (1993)."""
+
+        sorted_loss = sorted(loss)
+        return sorted_loss[self.alpha / 2, (1 - self.alpha / 2)]
 
 
 class LearningProcedure:
@@ -39,6 +124,12 @@ class LearningProcedure:
     # * Combine Z-score transformation, feature selection and estimator in a pipeline.
     # * Both FS and E have hyperparameters.
     # * Compare on errors (always >= 0, see TT paper for proof of Nonnegativity of the bias.).
+    pass
+
+
+def bootstrap_confidence():
+    """Compute confidence intervals with the bootstrap."""
+
     pass
 
 
@@ -98,29 +189,6 @@ def hyperopt_search(args, data, model, param_grid, max_evals):
 
 
 
-
-
-"""
-The nested .632+ bootstrap Out-of-Bag procedure for model selection.
-"""
-
-__author__ = 'Severin Langberg'
-__email__ = 'langberg91@gmail.com'
-
-
-import os
-
-import feature_selection
-
-import numpy as np
-import pandas as pd
-
-from utils import ioutil, fwutils
-
-from numba import jit, vectorize, float64
-from datetime import datetime
-from collections import OrderedDict
-from sklearn.externals import joblib
 
 
 def nested_point632plus(
