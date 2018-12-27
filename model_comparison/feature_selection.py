@@ -44,17 +44,22 @@ class Selector:
 
         self.name = name
         self.func = func
-        self.params = params
 
-    def __call__(self, *args, **kwargs):
+    def fit(self, X, y, **kwargs):
+
         # Execute feature selection procedure.
-        X_train_std, X_test_std, _support = self.func(
-            *args, **self.params, **kwargs
-        )
-        # Formatting of output includes error handling.
-        support = self._check_support(_support, X_train_std)
+        self._X_train, self._X_test, self._support = self.func(X, y, **kwargs)
 
-        return self._check_feature_subset(X_train_std, X_test_std, support)
+        return self
+
+    def transform(self):
+
+        # Formatting of output includes error handling.
+        support = self._check_support(self._support, self._X_train)
+
+        return self._check_subset(
+            self._X_train, self._X_test, support
+        )
 
     @staticmethod
     def _check_support(support, X):
@@ -77,7 +82,7 @@ class Selector:
         return support
 
     @staticmethod
-    def _check_feature_subset(X_train, X_test, support):
+    def _check_subset(X_train, X_test, support):
         # Formatting training and test subsets.
 
         # Support should be a non-empty vector (ensured by _check_support).
