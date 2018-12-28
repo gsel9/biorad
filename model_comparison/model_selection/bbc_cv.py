@@ -9,7 +9,8 @@
 # * Generate inner and outer Z-score samples in one loop.
 # * Use a function to compute the whole series of
 # * Checkout: numpy.fromfunction, frompyfunc(func, nin, nout), apply_along_axis(func1d, axis, arr, *args, …)
-
+# * OBS: Bayesian Hyperparameter Optimization recommended from stackoverflow:
+#   See https://automl.github.io/SMAC3/stable/quickstart.html (with scikit-learn models).
 
 """
 The nested .632+ bootstrap Out-of-Bag procedure for model selection.
@@ -81,7 +82,13 @@ class BootstrapBiasCorrectionCV:
 
         best_model, loss, results = self.hparam_selection()
 
+        # create results matrix by storing each prediction vector per hparam
+        # configuraion. Must also store correspoding ground truths and sampled
+        # hparam configurations for analysis.
+
         # Bootstraping of pooled out-of-sample predictions.
+
+        # uniform re-sampling with replacement of rows of the datase
         np.random.choice(a, size=None, replace=True, p=None)
 
     def hparam_selection(
@@ -90,6 +97,7 @@ class BootstrapBiasCorrectionCV:
         """
 
         """
+        # TODO: Label and store each hparam configuration
         searcher = RandomizedSearchCV(
             estimator,
             param_distributions,

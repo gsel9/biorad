@@ -89,10 +89,10 @@ if __name__ == '__main__':
 
     estimators = {
         'logreg': LogisticRegression,
-        'rf': RandomForestClassifier, # (Breiman 2001)
+        'rf': RandomForestClassifier,
         'plsr': PLSRegression,
         'gnb': GaussianNB,
-        'svc': SVC, # (Cortes and Vapnik 1995)
+        'svc': SVC,
     }
     selectors = {
         #'permutation': feature_selection.permutation_selection,
@@ -111,9 +111,11 @@ if __name__ == '__main__':
     estimator_hparams = {
         # Classification hyperparameters.
         'rf': {
-            # From scikit-learn example.
+            # From scikit-learn example (typically, many estimators = good).
             'n_estimators': stats.expon(scale=100),
+            # (typically, deep = good)
             'max_depth': stats.randint(1, 40),
+            # Has somethin gto do with feature selection? Should thus be skipped.
             'max_features': stats.randint(1, 11),
             'min_samples_split': stats.randint(2, 11),
             'bootstrap': [True, False],
@@ -124,6 +126,8 @@ if __name__ == '__main__':
             # class_weight: balanced by default.
             # Limiting the number of unique values (size=100) to ensure a
             # certain degree of diversity in the hparam values.
+            # Small tolerance typically good, but want to checkout a few
+            # alternatives.
             'tol': stats.reciprocal(size=10),
             # From scikit-learn docs.
             'C': stats.expon(scale=100),
