@@ -11,9 +11,15 @@
 # * Checkout: numpy.fromfunction, frompyfunc(func, nin, nout), apply_along_axis(func1d, axis, arr, *args, …)
 # * OBS: Bayesian Hyperparameter Optimization recommended from stackoverflow:
 #   See https://automl.github.io/SMAC3/stable/quickstart.html (with scikit-learn models).
+# * Use hyperopt TPE model (GPU enabled)
+# * http://steventhornton.ca/hyperparameter-tuning-with-hyperopt-in-python/
+# * https://towardsdatascience.com/a-conceptual-explanation-of-bayesian-model-based-hyperparameter-optimization-for-machine-learning-b8172278050f
 
 """
-The nested .632+ bootstrap Out-of-Bag procedure for model selection.
+Module A:
+* 10-fold CV with TPE Bayesian hparam optimization.
+Module B:
+* BBC-CV
 """
 
 __author__ = 'Severin Langberg'
@@ -37,6 +43,49 @@ from sklearn.externals import joblib
 from sklearn.model_selection import RandomizedSearchCV
 
 
+class BayesianSearchCV:
+    """K-fold cross-validated Bayesian optimization for hyperparameter
+    estimation.
+
+    Args:
+        ():
+
+    """
+    def __init__(self, objective, space, max_evals):
+
+        self.objective = objective
+        self.max_evals = max_evals
+        self.space = space
+
+        # NOTE:
+        self._experiment = None
+
+    def fit(self):
+
+        from hyperopt import fmin, tpe, Trials
+
+        # The Trials object will store details of each iteration
+        trials = Trials()
+
+        # Run the hyperparameter search using the tpe algorithm.
+        self._experiment = fmin(
+            self.objective,
+            self.space,
+            algo=tpe.suggest,
+            max_evals=self.max_evals,
+            trials=trials
+        )
+        return self
+
+    @property
+    def optimal_settings(self):
+        """Returns the values of the optimal parameters."""
+
+        from hyperopt import space_eval
+
+        return space_eval(self.space, self._experiment)
+
+
 def experiment(random_state, balancing):
     """Work function for parallell BBC-CV experiments."""
 
@@ -45,9 +94,9 @@ def experiment(random_state, balancing):
         pass
 
 
-class BootstrapBiasCorrectionCV:
-    """The Bootstrap Bias Corrected Cross-Validation method propsoed by
-    Tsamardinos & Greasidou (2018).
+class BootstrapBiasCorrection:
+    """The Bootstrap Bias Correction method propsoed by Tsamardinos & Greasidou
+    (2018).
 
     Args:
         ():
@@ -86,10 +135,17 @@ class BootstrapBiasCorrectionCV:
         # configuraion. Must also store correspoding ground truths and sampled
         # hparam configurations for analysis.
 
-        # Bootstraping of pooled out-of-sample predictions.
+        nrows, _ = np.shape(results)
 
-        # uniform re-sampling with replacement of rows of the datase
-        np.random.choice(a, size=None, replace=True, p=None)
+        # Bootstraping of pooled out-of-sample predictions.
+        for num in range(num_rounds):
+
+            # Uniform re-sampling with replacement of rows of the dataset.
+            sample = np.random.choice(nrows, size=nrows, replace=True)
+            # Bootstrap samples.
+            X_boot, y_boot = results[sample, :], y[sample]
+
+        return self
 
     def hparam_selection(
         self, X, y, cv, scoring, n_iter, n_jobs, verbose, random_state
@@ -185,3 +241,22 @@ def scale_fit_predict(X_train, X_test, y_train, y_test, score_func, model):
     test_score = score_func(y_test, y_test_pred)
 
     return train_score, test_score
+
+
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+
+
+# NOTE: Part of experiment?
+def objective(hyperparameters):
+
+    # Use sklearn Pipeline
+    # Z-score transf
+    # Feature selection
+    # Classification
+
+    pipe.set_params(**params)
+    shuffle = KFold(n_splits=10, shuffle=True)
+    score = cross_val_score(pipe, X_train, y_train, cv=shuffle, scoring='roc_auc', n_jobs=1)
+
+    return 1 - score.mean()
