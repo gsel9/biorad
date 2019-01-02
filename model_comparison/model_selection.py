@@ -22,34 +22,78 @@ from hyperopt.pyll.base import scope
 from sklearn.model_selection import cross_val_score
 
 
-class BBCCV:
+def bbc_cv(scores, n_iter=5, random_state=None):
+    """bootstrap_bias_corrected_cv
 
-    # TODO: Refactor to recieve scores and apply argmin to these (from objective function).
-    def criterion(self):
-        """Configuration selection strategy as described by Tsamardinos and
-        Greasidou (2018).
+    Args:
+        scores (array-like): A matrix (N x C) containing out-of-sample
+            predictions for N samples and C hyperparameter configurations.
+            Thus, scores[i, j] denotes the out-of-sample prediction of on
+            the i-th sample of the j-th configuration.
+
+    Kwargs:
+        n_iter (int):
+        random_state (int):
+
+    Returns:
+        (int): Index of the best performing configuration according to the
+            loss criterion.
+
+
+    """
+
+    nrows, _ = np.shape(scores)
+    sampler = OOBSampler(n_splits, random_state)
+
+    for smaple_idx, oob_idx in sampler.split(scores)
+
+    loss_bbc = 0
+    for _ in range(n_iter):
+        idxs = np.random.choice(nrows, size=nrows, replace=True)
+        # Configuration selection strategy (Tsamardinos & Greasidou, 2018).
+        loss_bbc = loss_bbc + np.argmin(scores[idxs, :])
+
+        np.array(
+            list(set(sample_indicators) - set(train_idx)), dtype=int
+        )
+
+    return loss_bbc / n_iter
+
+
+class OOBSampler:
+    """A bootstrap Out-of-Bag resampler.
+
+    Args:
+        n_splits (int): The number of resamplings to perform.
+        random_state (int): Seed for the pseudo-random number generator.
+
+    """
+
+    def __init__(self, n_splits, random_state):
+
+        self.n_splits = n_splits
+        self.rgen = np.random.RandomState(random_state)
+
+    def split(self, X **kwargs):
+        """Generates Out-of-Bag samples.
 
         Args:
-        results (array-like): A matrix (N x C) containing out-of-sample
-            predictions for N sapmles and C hyperparameter configurations. Thus,
-            results[i, j] denotes the out-of-sample prediction of on the i-th
-            sample of the j-th configuration.
-        y_true (array-like): Ground truths corresponding to results.
-        loss (function): Score criterion.
+            X (array-like): The predictor data.
 
         Returns:
-            (int): Index of the best performing configuration according to the
-                loss criterion.
-        """
-        # NOTE: can implement other selection criteria that consider, not only the
-        # out-of-sample loss, but also the complexity of the models produced by
-        # each configuration.
+            (genrator): An iterable with X and y sample indicators.
 
-        # Compute scores for each column set of predictions.
-        # NOTE: Passing ground truths as additional argument to loss function.
-        scores = np.apply_along_axis(loss, axis=0, arr=results, y_true=y_true)
-        # Select the configuration with the minimum average loss
-        return np.argmin(scores)
+        """
+        nrows, _ = np.shape(X)
+        sample_idxs = np.arange(nrows, dtype=int)
+        for _ in range(self.n_splits):
+            train_idx = self.rgen.choice(
+                sample_idxs, size=nrows, replace=True
+            )
+            test_idx = np.array(
+                list(set(sample_idxs) - set(train_idx)), dtype=int
+            )
+            yield train_idx, test_idx
 
 
 class ParameterSearch:
@@ -58,7 +102,8 @@ class ParameterSearch:
         self,
         model, space,
         cv=5, scoring='roc_auc',
-        n_jobs=-1, max_evals=5, algo=tpe.suggest
+        n_jobs=-1, max_evals=10,
+        algo=tpe.suggest
     ):
         self.model = model
         self.space = space
@@ -76,8 +121,6 @@ class ParameterSearch:
         self.results = None
         self.run_time = None
 
-        self._runs = None
-
     @property
     def optimal_hparams(self):
         # Get the values of the optimal parameters
@@ -90,19 +133,22 @@ class ParameterSearch:
         return self.model.set_params(self.optimal_hparams)
 
     def fit(self, X, y):
+        """Perform hyperparameter search.
+
+        Args:
+            X (array-like):
+            y (array-like):
+
+        """
 
         self.X, self.y = self._check_X_y(X, y)
 
-        # The Trials object will store details of each iteration
+        # The Trials object will store details of each iteration.
         if self.trails is None:
             self.trials = Trials()
 
         if self.scores is None:
-            # TODO: Chak refactor to [np.size(y) x max_evals]
-            self.scores = np.array((np.size(y), self.max_evals), dtype=float)
-
-        # Reset num calls to objective = num hparam configurations counter.
-        self._runs = 0
+            self.scores = []
 
         # Run the hyperparameter search.
         start_time = datetime.now()
@@ -115,28 +161,32 @@ class ParameterSearch:
         )
         self.run_time = datetime.now() - start_time
 
-        # Sanity check.
-        assert np.shape(self.scores) == (np.size(y), self._runs)
-
         return self
 
-    # TODO: Return tensor of (scores x configs = num calls) to be used with BBC-CV criterion.
     def objective(self, hparams):
+        """Objective function to minimize.
+
+        Args:
+            hparams (dict): Model hyperparameter configuration.
+
+        Returns:
+            (float): Error score.
+
+        """
 
         # NOTE: Assumes standard model API.
         self.model.set_params(**hparams)
 
-        self._runs = self._runs + 1
-
         # Stratified K-fold cross-validation.
         scores = cross_val_score(
-            pipe,
+            self.model,
             self.X, self.y,
             cv=self.cv,
             scoring=self.scoring,
             n_jobs=self.n_jobs
         )
-        np.append(self.scores, scores, axis=1)
+        # Save scores for BBC-CV procedure.
+        self.scores.append(scores)
 
         return 1.0 - np.median(scores)
 
@@ -195,5 +245,5 @@ if __name__ == '__main__':
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
     searcher = ParameterSearch(pipe, space)
-    searcher.fit(X, y)
-    print(searcher.run_time)
+    searcher.fit(X_train, y_train)
+    print(searcher.optimal_hparams)
