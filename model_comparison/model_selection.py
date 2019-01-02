@@ -96,6 +96,7 @@ class ParameterSearch:
     # TODO:
     @staticmethod
     def _check_X_y(X, y):
+        # Type checking of predictor and target data.
 
         return X, y
 
@@ -143,3 +144,4 @@ if __name__ == '__main__':
 
 
     searcher = ParameterSearch(pipe, space)
+    searcher.fit(X, y)
