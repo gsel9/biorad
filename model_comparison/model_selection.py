@@ -22,42 +22,56 @@ from hyperopt.pyll.base import scope
 from sklearn.model_selection import cross_val_score
 
 
-def bbc_cv(scores, n_iter=5, random_state=None):
-    """bootstrap_bias_corrected_cv
+class BBCCV:
+    """
 
     Args:
-        scores (array-like): A matrix (N x C) containing out-of-sample
-            predictions for N samples and C hyperparameter configurations.
-            Thus, scores[i, j] denotes the out-of-sample prediction of on
-            the i-th sample of the j-th configuration.
-
-    Kwargs:
+        score_func (function):
         n_iter (int):
         random_state (int):
 
-    Returns:
-        (int): Index of the best performing configuration according to the
-            loss criterion.
-
-
     """
 
-    nrows, _ = np.shape(scores)
-    sampler = OOBSampler(n_splits, random_state)
+    def __init__(
+        self, score_func=None, n_iter=5, random_state=None
+    ):
 
-    for smaple_idx, oob_idx in sampler.split(scores)
+        self.score_func = score_func
+        self.n_iter = n_iter
+        self.random_state = random_state
 
-    loss_bbc = 0
-    for _ in range(n_iter):
-        idxs = np.random.choice(nrows, size=nrows, replace=True)
-        # Configuration selection strategy (Tsamardinos & Greasidou, 2018).
-        loss_bbc = loss_bbc + np.argmin(scores[idxs, :])
+    def loss(self, X, y):
+        """bootstrap_bias_corrected_cv
 
-        np.array(
-            list(set(sample_indicators) - set(train_idx)), dtype=int
-        )
+        Args:
+            X (array-like): A matrix (N x C) containing out-of-sample
+                predictions for N samples and C hyperparameter configurations.
+                Thus, scores[i, j] denotes the out-of-sample prediction of on
+                the i-th sample of the j-th configuration.
+            y (array-like): Target vector.
 
-    return loss_bbc / n_iter
+        Returns:
+            (int): Index of the best performing configuration according to the
+                loss criterion.
+
+
+        """
+        nrows, _ = np.shape(X)
+        sampler = OOBSampler(n_splits, random_state)
+
+        loss = 0
+        for sample_idxs, oob_idxs in sampler.split(X):
+            # Apply configuration selection method to OOB scores.
+            idx = self.criterion(X[:, sample_idxs])
+            #
+            loss = loss + X[:, idx]
+
+        return loss / self.n_iter
+
+    @staticmethod
+    def criterion(scores):
+
+        return np.argmin(scores)
 
 
 class OOBSampler:
@@ -74,7 +88,7 @@ class OOBSampler:
         self.n_splits = n_splits
         self.rgen = np.random.RandomState(random_state)
 
-    def split(self, X **kwargs):
+    def split(self, X, **kwargs):
         """Generates Out-of-Bag samples.
 
         Args:
@@ -117,9 +131,10 @@ class ParameterSearch:
         self.X = None
         self.y = None
         self.trails = None
-        self.scores = None
         self.results = None
         self.run_time = None
+
+        self._scores = None
 
     @property
     def optimal_hparams(self):
@@ -131,6 +146,11 @@ class ParameterSearch:
     def optimal_model(self):
 
         return self.model.set_params(self.optimal_hparams)
+
+    @property
+    def scores(self):
+
+        return np.array(self._scores, dtype=float)
 
     def fit(self, X, y):
         """Perform hyperparameter search.
@@ -147,8 +167,8 @@ class ParameterSearch:
         if self.trails is None:
             self.trials = Trials()
 
-        if self.scores is None:
-            self.scores = []
+        if self._scores is None:
+            self._scores = []
 
         # Run the hyperparameter search.
         start_time = datetime.now()
@@ -173,7 +193,6 @@ class ParameterSearch:
             (float): Error score.
 
         """
-
         # NOTE: Assumes standard model API.
         self.model.set_params(**hparams)
 
@@ -186,7 +205,7 @@ class ParameterSearch:
             n_jobs=self.n_jobs
         )
         # Save scores for BBC-CV procedure.
-        self.scores.append(scores)
+        self._scores.append(scores)
 
         return 1.0 - np.median(scores)
 
