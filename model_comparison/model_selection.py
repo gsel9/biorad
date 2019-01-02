@@ -21,6 +21,7 @@ from hyperopt.pyll.base import scope
 
 from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 
 
@@ -62,7 +63,7 @@ class BBCCV:
         loss = 0
         for sample_idxs, oob_idxs in self._sampler.split(y_pred):
             # Apply configuration selection method to OOB scores.
-
+            loss = 2
 
         return loss / self.n_iter
 
@@ -115,11 +116,12 @@ class ParameterSearchCV:
     def __init__(
         self,
         model, space,
-        score_func=None,
+        scoring='roc_auc',
         n_jobs=-1,
         max_evals=10,
         n_splits=10,
         shuffle=True,
+        cv=5,
         algo=tpe.suggest
     ):
         self.model = model
@@ -130,7 +132,8 @@ class ParameterSearchCV:
         self.algo = algo
         self.n_jobs = n_jobs
         self.max_evals = max_evals
-        self.score_func = score_func
+        self.scoring = scoring
+        self.cv = cv
 
         self.X = None
         self.y = None
@@ -213,31 +216,14 @@ class ParameterSearchCV:
         # NOTE: Assumes standard model API.
         self.model.set_params(**hparams)
 
-        kfolds = StratifiedKFold(
-            self.n_splits, self.shuffle, self.random_state
+        scores = cross_val_score(
+            self.model,
+            self.X, self.y,
+            cv=self.cv,
+            scoring=self.scoring,
+            n_jobs=self.n_jobs
         )
-        for train_index, test_index in kfolds.split(self.X, self.y):
-
-            X_train, X_test = self.X[train_index], self.X[test_index]
-            y_train, y_test = self.y[train_index], self.y[test_index]
-
-            model_copy = clone(self.model)
-            model_copy.fit(X_train, y_train)
-
-            y_pred_test = model_copy.predict(X_test)
-            score = self.score_func(y_test, y_pred_test)
-
-        #y_preds = cross_val_predict(
-        #    self.model,
-        #    self.X, self.y,
-        #    cv=self.cv,
-        #    n_jobs=self.n_jobs
-        #)
-        error = 1.0 - np.median(self.score_func(self.y, y_preds))
-        # Save scores for BBC-CV procedure, and errors for inspection.
-        self._y_preds.append(y_preds), self._errors.append(error)
-
-        return error
+        return 1.0 - np.median(scores)
 
     # TODO:
     @staticmethod
@@ -293,8 +279,8 @@ if __name__ == '__main__':
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
-    searcher = ParameterSearch(pipe, space, score_func=roc_auc_score)
+    searcher = ParameterSearchCV(pipe, space)
     searcher.fit(X_train, y_train)
 
-    correction = BBCCV(random_state=0)
-    correction.loss(searcher.predictions, y_train)
+    #correction = BBCCV(random_state=0)
+    #correction.loss(searcher.predictions, y_train)
