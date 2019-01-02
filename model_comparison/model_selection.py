@@ -21,7 +21,7 @@ from hyperopt.pyll.base import scope
 
 
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import StratifiedKFold
 
 
 class BBCCV:
@@ -34,11 +34,15 @@ class BBCCV:
 
     """
 
-    def __init__(self, n_iter=5, random_state=None):
+    def __init__(self, score_func=None, n_iter=5, random_state=None):
 
-        self.sampler = OOBSampler(n_iter, random_state)
+        self.score_func = score_func
+        self.n_iter = n_iter
+        self.random_state = random_state
 
-    def loss(self, scores):
+        self._sampler = OOBSampler(self.n_iter, self.random_state)
+
+    def loss(self, y_pred, y_true):
         """bootstrap_bias_corrected_cv
 
         Args:
@@ -53,14 +57,12 @@ class BBCCV:
 
 
         """
-        nrows, _ = np.shape(scores)
+        nrows = np.size(y_pred)
 
         loss = 0
-        for sample_idxs, oob_idxs in self.sampler.split(scores):
+        for sample_idxs, oob_idxs in self._sampler.split(y_pred):
             # Apply configuration selection method to OOB scores.
-            idx = int(self.criterion(scores[sample_idxs, :]))
-            #loss = loss + scores[oob_idxs, idx]
-            #print(scores[oob_idxs, idx])
+
 
         return loss / self.n_iter
 
@@ -96,7 +98,7 @@ class OOBSampler:
             (genrator): An iterable with X and y sample indicators.
 
         """
-        nrows, _ = np.shape(X)
+        nrows = np.size(X)
         sample_idxs = np.arange(nrows, dtype=int)
         for _ in range(self.n_splits):
             train_idx = self.rgen.choice(
@@ -205,6 +207,7 @@ class ParameterSearch:
         # NOTE: Assumes standard model API.
         self.model.set_params(**hparams)
 
+        # NOTE :Potentially store scores directly???
         # Stratified K-fold cross-validation.
         y_preds = cross_val_predict(
             self.model,
@@ -274,7 +277,6 @@ if __name__ == '__main__':
 
     searcher = ParameterSearch(pipe, space, score_func=roc_auc_score)
     searcher.fit(X_train, y_train)
-    print(searcher.predictions)
-    print(searcher.errors)
-    #correction = BBCCV(random_state=0)
-    #correction.loss(searcher.scores)
+
+    correction = BBCCV(random_state=0)
+    correction.loss(searcher.predictions, y_train)
