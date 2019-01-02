@@ -19,7 +19,7 @@ from hyperopt import space_eval
 
 from hyperopt.pyll.base import scope
 
-
+from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -110,21 +110,23 @@ class OOBSampler:
             yield train_idx, test_idx
 
 
-class ParameterSearch:
+class ParameterSearchCV:
 
     def __init__(
         self,
         model, space,
-        cv=5,
         score_func=None,
         n_jobs=-1,
         max_evals=10,
+        n_splits=10,
+        shuffle=True,
         algo=tpe.suggest
     ):
         self.model = model
         self.space = space
 
-        self.cv = cv
+        self.n_splits = n_splits
+        self.shuffle = shuffle
         self.algo = algo
         self.n_jobs = n_jobs
         self.max_evals = max_evals
@@ -207,14 +209,26 @@ class ParameterSearch:
         # NOTE: Assumes standard model API.
         self.model.set_params(**hparams)
 
-        # NOTE :Potentially store scores directly???
-        # Stratified K-fold cross-validation.
-        y_preds = cross_val_predict(
-            self.model,
-            self.X, self.y,
-            cv=self.cv,
-            n_jobs=self.n_jobs
+        kfolds = StratifiedKFold(
+            self.n_splits, self.shuffle, self.random_state
         )
+        for train_index, test_index in kfolds.split(self.X, self.y):
+
+            X_train, X_test = self.X[train_index], self.X[test_index]
+            y_train, y_test = self.y[train_index], self.y[test_index]
+
+            model_copy = clone(self.model)
+            model_copy.fit(X_train, y_train)
+
+            y_pred_test = model_copy.predict(X_test)
+            score = self.score_func(y_test, y_pred_test)
+
+        #y_preds = cross_val_predict(
+        #    self.model,
+        #    self.X, self.y,
+        #    cv=self.cv,
+        #    n_jobs=self.n_jobs
+        #)
         error = 1.0 - np.median(self.score_func(self.y, y_preds))
         # Save scores for BBC-CV procedure, and errors for inspection.
         self._y_preds.append(y_preds), self._errors.append(error)
