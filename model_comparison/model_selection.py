@@ -196,6 +196,10 @@ class ParameterSearchCV:
 
         return self
 
+    # ERROR:
+    # * Can do OOB bias correction directly on CV predictions?
+    # * Collecting enough info with cross_val_predict?
+    # * Need explicit CV loop in objective func?
     def objective(self, hparams):
         """Objective function to minimize.
 
