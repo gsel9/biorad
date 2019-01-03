@@ -142,33 +142,48 @@ class ParameterSearchCV:
         self.X = None
         self.y = None
         self.trials = None
-        self.results = None
-        self.run_time = None
-
-        # Keys: scores, preds, best_params, best_model
-        self._outputs = None
         self._best_params = None
-        self._preds = None
-        self._loss = None
 
     @property
-    def opt_params(self):
+    def best_params(self):
         # Get the values of the optimal parameters
 
-        #return self._outputs['opt_params']
-        pass
+        return self._best_params
 
     @property
-    def opt_model(self):
+    def best_model(self):
 
-        #return self.model.set_params(**self.opt_params)
-        pass
+        return self.model.set_params(**self.best_params)
 
     @property
-    def loss(self):
+    def train_loss(self):
 
-        #return np.transpose(np.array(self._scores, dtype=float))
-        return self._loss
+        test_losses = [results['train_loss'] for results in self.trials.results]
+        return np.array(test_losses, dtype=float)
+
+    @property
+    def test_loss(self):
+
+        test_losses = [results['loss'] for results in self.trials.results]
+        return np.array(test_losses, dtype=float)
+
+    @property
+    def train_loss_var(self):
+        """Returns the variance of K-fold cross-validated training loss."""
+
+        test_losses = [
+            results['train_loss_variance'] for results in self.trials.results
+        ]
+        return np.array(test_losses, dtype=float)
+
+    @property
+    def test_loss_var(self):
+        """Returns the variance of K-fold cross-validated test loss."""
+
+        test_losses = [
+            results['loss_variance'] for results in self.trials.results
+        ]
+        return np.array(test_losses, dtype=float)
 
     @property
     def preds(self):
@@ -191,12 +206,9 @@ class ParameterSearchCV:
         if self.trials is None:
             self.trials = Trials()
 
-        if self._preds is None:
-            self._preds = []
-
         # Run the hyperparameter search.
         start_time = datetime.now()
-        best_params = fmin(
+        self._best_params = fmin(
             self.objective,
             self.space,
             algo=self.algo,
@@ -205,7 +217,7 @@ class ParameterSearchCV:
         )
         self.run_time = datetime.now() - start_time
 
-        print(self.trials.results)
+        print(type(self.trials.results))
 
         return self
 
@@ -225,7 +237,7 @@ class ParameterSearchCV:
         kfolds = StratifiedKFold(
             self.n_splits, self.shuffle, self.random_state
         )
-        test_loss, train_loss = [], []
+        test_loss, train_loss, _preds = [], [], []
         for train_index, test_index in kfolds.split(self.X, self.y):
 
             X_train, X_test = X[train_index], X[test_index]
@@ -244,11 +256,11 @@ class ParameterSearchCV:
             _y_test = _model.predict(X_test)
             _y_train = _model.predict(X_train)
 
-            # Collect predictions to BBC-CV procedure.
-            self._preds.append(_y_test)
-
             test_loss.append(1.0 - self.score_func(y_test, _y_test))
             train_loss.append(1.0 - self.score_func(y_train, _y_train))
+
+            # Collect predictions to BBC-CV procedure.
+            _preds = np.hstack((_preds, _y_test))
 
         return {
             'status': STATUS_OK,
@@ -257,6 +269,7 @@ class ParameterSearchCV:
             'train_loss': np.median(train_loss),
             'loss_variance': np.var(test_loss),
             'train_loss_variance': np.var(train_loss),
+            'y_preds': np.array2string(_preds)
         }
 
     # TODO:
@@ -321,5 +334,6 @@ if __name__ == '__main__':
         pipe, space, score_func=roc_auc_score, random_state=0
     )
     searcher.fit(X_train, y_train)
+    print(searcher.test_loss)
     #correction = BBCCV(random_state=0)
     #correction.loss(searcher.predictions, y_train)
