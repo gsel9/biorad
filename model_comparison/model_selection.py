@@ -34,6 +34,7 @@ from sklearn.base import clone
 from sklearn.model_selection import StratifiedKFold
 
 
+# ERROR: Save some results from trial to dict (or maybe from properties?)
 def model_selection(
     X, y,
     algo,
@@ -94,6 +95,7 @@ def model_selection(
         )
         optimizer.fit(X, y)
 
+        # ERROR:
         # Include results.
         #outputs.update(optimizer.trials.results)
 
@@ -257,12 +259,14 @@ class ParameterSearchCV:
         self.trials = None
         self._best_params = None
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def best_params(self):
         """Returns the optimal hyperparameters."""
 
         return self._best_params
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def best_model(self):
         """Returns an instance of the estimator with the optimal
@@ -270,6 +274,7 @@ class ParameterSearchCV:
 
         return self.model.set_params(**self.best_params)
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def train_loss(self):
         """Returns """
@@ -277,6 +282,7 @@ class ParameterSearchCV:
         test_losses = [results['train_loss'] for results in self.trials.results]
         return np.array(test_losses, dtype=float)
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def test_loss(self):
         """Returns """
@@ -284,6 +290,7 @@ class ParameterSearchCV:
         test_losses = [results['loss'] for results in self.trials.results]
         return np.array(test_losses, dtype=float)
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def train_loss_var(self):
         """Returns the variance of each hyperparameter configuration of K-fold
@@ -294,6 +301,7 @@ class ParameterSearchCV:
         ]
         return np.array(test_losses, dtype=float)
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def test_loss_var(self):
         """Returns the variance of each hyperparameter configuration of K-fold
@@ -304,6 +312,7 @@ class ParameterSearchCV:
         ]
         return np.array(test_losses, dtype=float)
 
+    # TODO: Return dict that can be passed to outputs in model selection func
     @property
     def oos_pairs(self):
         """Returns a tuple with ground truths and corresponding out-of-sample
