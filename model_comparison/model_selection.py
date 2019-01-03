@@ -11,6 +11,7 @@ import logging
 import numpy as np
 
 from datetime import datetime
+from collections import OrderedDict
 
 from hyperopt import hp
 from hyperopt import tpe
@@ -113,30 +114,37 @@ class OOBSampler:
 
 
 class ParameterSearchCV:
+    """Represetation of a K-fold cross-validated hyperparameter search.
+
+    Args:
+        model ():
+        space ():
+        ...
+
+    """
 
     def __init__(
         self,
-        model, space,
-        score_func=None,
-        max_evals=10,
+        model,
+        space,
+        score_func,
         n_splits=10,
+        max_evals=10,
         shuffle=True,
-        cv=5,
         algo=tpe.suggest,
+        random_state=None,
         error_score=np.nan,
-        random_state=None
     ):
         self.model = model
         self.space = space
 
-        self.shuffle = shuffle
         self.algo = algo
+        self.shuffle = shuffle
+        self.score_func = score_func
         self.error_score = error_score
 
-        self.score_func = score_func
         self.n_splits = int(n_splits)
         self.max_evals = int(max_evals)
-        self.cv = int(cv)
         self.random_state = int(random_state)
 
         self.X = None
@@ -186,12 +194,17 @@ class ParameterSearchCV:
         return np.array(test_losses, dtype=float)
 
     @property
-    def preds(self):
-        """Returns out-of-sample predictions."""
+    def pred_pairs(self):
+        """Returns a tuple with ground truths and corresponding out-of-sample
+        predictions."""
 
-        return np.transpose(
+        preds = np.transpose(
             [items['y_preds'] for items in self.trials.results]
         )
+        trues = np.transpose(
+            [items['y_trues'] for items in self.trials.results]
+        )
+        return trues, preds
 
     def fit(self, X, y):
         """Perform hyperparameter search.
@@ -209,7 +222,6 @@ class ParameterSearchCV:
             self.trials = Trials()
 
         # Run the hyperparameter search.
-        start_time = datetime.now()
         self._best_params = fmin(
             self.objective,
             self.space,
@@ -217,18 +229,16 @@ class ParameterSearchCV:
             max_evals=self.max_evals,
             trials=self.trials
         )
-        self.run_time = datetime.now() - start_time
-
         return self
 
     def objective(self, hparams):
         """Objective function to minimize.
 
         Args:
-            hparams (dict): Model hyperparameter configuration.
+            hparams (dict): Hyperparameter configuration.
 
         Returns:
-            (float): Error score.
+            (dict): Outputs stored in the hyperopt trials object.
 
         """
 
@@ -237,7 +247,7 @@ class ParameterSearchCV:
         kfolds = StratifiedKFold(
             self.n_splits, self.shuffle, self.random_state
         )
-        test_loss, train_loss, _preds = [], [], []
+        test_loss, train_loss, _preds, _trues = [], [], [], []
         for train_index, test_index in kfolds.split(self.X, self.y):
 
             X_train, X_test = X[train_index], X[test_index]
@@ -245,9 +255,9 @@ class ParameterSearchCV:
 
             # Clone model to ensure independency.
             _model = clone(self.model)
-            _model.set_params(**hparams)
-            # TODO: Error handling
+            # Error handling mechanism.
             try:
+                _model.set_params(**hparams)
                 _model.fit(X_train, y_train)
             except:
                 # Use error score
@@ -259,18 +269,22 @@ class ParameterSearchCV:
             test_loss.append(1.0 - self.score_func(y_test, _y_test))
             train_loss.append(1.0 - self.score_func(y_train, _y_train))
 
-            # Collect predictions to BBC-CV procedure.
+            # Collect ground truths and predictions to BBC-CV procedure.
+            _trues = np.hstack((_trues, y_test))
             _preds = np.hstack((_preds, _y_test))
 
-        return {
-            'status': STATUS_OK,
-            'eval_time': datetime.now() - start_time,
-            'loss': np.median(test_loss),
-            'train_loss': np.median(train_loss),
-            'loss_variance': np.var(test_loss),
-            'train_loss_variance': np.var(train_loss),
-            'y_preds': _preds
-        }
+        return OrderedDict(
+            [
+                ('status', STATUS_OK),
+                ('eval_time', datetime.now() - start_time),
+                ('loss', np.median(test_loss)),
+                ('train_loss', np.median(train_loss)),
+                ('loss_variance', np.var(test_loss)),
+                ('train_loss_variance', np.var(train_loss)),
+                ('y_trues', _trues,),
+                ('y_preds', _preds,),
+            ]
+        )
 
     # TODO:
     @staticmethod
@@ -334,6 +348,9 @@ if __name__ == '__main__':
         pipe, space, score_func=roc_auc_score, random_state=0
     )
     searcher.fit(X_train, y_train)
+
+    a, b = searcher.pred_pairs
+    print(b)
 
     #correction = BBCCV(random_state=0)
     #correction.loss(searcher.predictions, y_train)
