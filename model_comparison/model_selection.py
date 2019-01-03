@@ -189,7 +189,9 @@ class ParameterSearchCV:
     def preds(self):
         """Returns out-of-sample predictions."""
 
-        return np.transpose(self._preds)
+        return np.transpose(
+            [items['y_preds'] for items in self.trials.results]
+        )
 
     def fit(self, X, y):
         """Perform hyperparameter search.
@@ -216,8 +218,6 @@ class ParameterSearchCV:
             trials=self.trials
         )
         self.run_time = datetime.now() - start_time
-
-        print(type(self.trials.results))
 
         return self
 
@@ -269,7 +269,7 @@ class ParameterSearchCV:
             'train_loss': np.median(train_loss),
             'loss_variance': np.var(test_loss),
             'train_loss_variance': np.var(train_loss),
-            'y_preds': np.array2string(_preds)
+            'y_preds': _preds
         }
 
     # TODO:
@@ -334,6 +334,6 @@ if __name__ == '__main__':
         pipe, space, score_func=roc_auc_score, random_state=0
     )
     searcher.fit(X_train, y_train)
-    print(searcher.test_loss)
+
     #correction = BBCCV(random_state=0)
     #correction.loss(searcher.predictions, y_train)
