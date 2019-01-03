@@ -95,7 +95,7 @@ def model_selection(
         optimizer.fit(X, y)
 
         # Include results.
-        outputs.update(optimizer.trials.results)
+        #outputs.update(optimizer.trials.results)
 
         # Evaluate model performance with BBC-CV method.
         bbc_cv = BootstrapBiasCorrectedCV(
@@ -104,13 +104,12 @@ def model_selection(
             alpha=alpha,
             oob=oob,
         )
-        # TEMP: Y_true, Y_pred = optimizer.oos_pairs
         # Returns results directly.
-        outputs.update(bbc_cv.evaluate(optimizer.oos_pairs))
+        outputs.update(bbc_cv.evaluate(*optimizer.oos_pairs))
 
         if verbose > 0:
             durat = datetime.now() - start_time
-            results['exp_duration'] = durat
+            outputs['exp_duration'] = durat
             print('Experiment {} completed in {}'.format(random_state, durat))
 
     return outputs
