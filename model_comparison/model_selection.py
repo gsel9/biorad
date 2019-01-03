@@ -48,7 +48,7 @@ class BBCCV:
     def __init__(
         self,
         score_func,
-        n_iter=5,
+        n_iter=10,
         alpha=0.05,
         random_state=None,
     ):
@@ -75,28 +75,34 @@ class BBCCV:
 
 
         """
-
         # Bootstrapped matrices.
         if self._sampler is None:
             self._sampler = OOBSampler(self.n_iter, self.random_state)
 
         bbc_scores = []
-        for sample_idx, oos_idx in sampler.split(Y_true, Y_pred):
-            best_config = criterion(
-                Y_true[sample_idx, :], Y_pred[sample_idx, :], self.score_func
-            )
-            bbc_scores.append(
-                self.score_func(
-                    Y_true[oos_idx, best_config], Y_pred[oos_idx, best_config]
-                )
-            )
+        for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
+
+            true_samples = Y_true[sample_idx, :]
+            pred_samples = Y_pred[sample_idx, :]
+
+            best_config = self.criterion(true_samples, pred_samples)
+
+            true_oos = Y_true[oos_idx, best_config]
+            pred_oos = Y_pred[oos_idx, best_config]
+
+            bbc_scores.append(self.score_func(true_oos, pred_oos))
         return {
             'avg_score': np.mean(bbc_scores),
             'std_score': np.std(bbc_scores),
             'median_score': np.median(bbc_scores),
-            'avg_ci': self.mean_ci(bbc_scores),
             'bootstrap_ci': self.bootstrap_ci(bbc_scores),
         }
+
+    @staticmethod
+    def _all_equal(samples):
+
+        # NOTE: Assumes binary vectors.
+        return np.sum(samples) == len(samples)
 
     def criterion(self, Y_true, Y_pred):
         """
@@ -111,22 +117,16 @@ class BBCCV:
 
         losses = np.ones(nconfigs, dtype=float) * np.nan
         for num in range(nconfigs):
-            losses[num] = 1 - self.score_func(Y_true[:, num], Y_pred[:, num])
+
+            y_true, y_pred = Y_true[:, num], Y_pred[:, num]
+            # NB: Error handling.
+            if self._all_equal(y_true) or self._all_equal(y_pred):
+                losses[num] = np.nan
+            else:
+                losses[num] = 1 - self.score_func(y_true, y_pred)
 
         # Select the configuration with the minimum loss.
-        return np.argmin(losses)
-
-    # QUESTION: How many degrees of freedom in standard error?
-    def mean_ci(self, samples):
-        """Calculate the mean confidence interval from sample data."""
-
-        # The standard error of the mean.
-        mean, mean_se  = np.mean(samples), stats.sem(samples)
-
-        # Percent point function (inverse of cdf — percentiles).
-        deviation = mean_se * stats.t.ppf(1 - self.alpha / 2, len(samples) - 1)
-
-        return mean, mean - deviation, mean + deviation
+        return np.nanargmin(losses)
 
     def bootstrap_ci(self, scores):
         """Calculate the bootstrap confidence interval from sample data."""
@@ -195,7 +195,7 @@ class ParameterSearchCV:
         model,
         space,
         score_func,
-        n_splits=10,
+        n_splits=5,
         max_evals=10,
         shuffle=True,
         random_state=None,
@@ -383,7 +383,7 @@ if __name__ == '__main__':
 
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.3, random_state=0
     )
     pipe = Pipeline([
         ('kbest', SelectPercentile(chi2)),
@@ -420,5 +420,9 @@ if __name__ == '__main__':
 
     Y_true, Y_pred = optimizer.oos_pairs
 
-    #correction = BBCCV(random_state=0)
-    #correction.loss(searcher.predictions, y_train)
+    evaluator = BBCCV(score_func=roc_auc_score, random_state=0)
+    results = evaluator.fit(Y_true, Y_pred)
+
+    print(results['avg_score'])
+    print(results['median_score'])
+    print(results['bootstrap_ci'])
