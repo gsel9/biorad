@@ -32,13 +32,42 @@ from sklearn.metrics import make_scorer
 from sklearn.model_selection import StratifiedKFold
 
 
+# TODO:
+# * include algorithm run time for plotting.
 def model_selection():
 
     # 1. Do hparam search
     # 2. Save prelim results
     # 3. Do BBC-CV
+    # 4. Save final results.
 
-    pass
+    optimizer = ParameterSearchCV(
+        algo=algo,
+        model=model,
+        space=space,
+        score_func=score_func,
+        n_splits=n_splits,
+        max_evals=max_evals,
+        shuffle=shuffle,
+        random_state=random_state,
+        error_score=error_score,
+    )
+    # Perform cross-validated hyperparameter optimization.
+    optimizer.fit(X, y)
+
+    bbc_cv = BootstrapBiasCorrectedCV(
+        random_state=random_state,
+        score_func=score_func,
+        n_iter=n_iter,
+        alpha=alpha,
+    )
+
+    Y_true, Y_pred = optimizer.oos_pairs
+
+    # Evaluate model performance.
+    results = bbc_cv.evaluate(Y_true, Y_pred)
+
+    print(optimizer.trials.results)
 
 
 class BootstrapBiasCorrectedCV:
@@ -53,16 +82,17 @@ class BootstrapBiasCorrectedCV:
 
     def __init__(
         self,
+        random_state,
         score_func,
+        error_score=np.nan,
         n_iter=10,
         alpha=0.05,
-        random_state=None,
     ):
-
+        self.random_state = random_state
         self.score_func = score_func
+        self.error_score = error_score
         self.n_iter = n_iter
         self.alpha = alpha
-        self.random_state = random_state
 
         self._sampler = None
 
@@ -79,24 +109,21 @@ class BootstrapBiasCorrectedCV:
         Returns:
             (dict):
 
-
         """
-        # Bootstrapped matrices.
+        # Generate bootstrapped matrices.
         if self._sampler is None:
             self._sampler = OOBSampler(self.n_iter, self.random_state)
 
         bbc_scores = []
         for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
-
-            true_samples = Y_true[sample_idx, :]
-            pred_samples = Y_pred[sample_idx, :]
-
-            best_config = self.criterion(true_samples, pred_samples)
-
-            true_oos = Y_true[oos_idx, best_config]
-            pred_oos = Y_pred[oos_idx, best_config]
-
-            bbc_scores.append(self.score_func(true_oos, pred_oos))
+            best_config = self.criterion(
+                Y_true[sample_idx, :], Y_pred[sample_idx, :]
+            )
+            bbc_scores.append(
+                self._score(
+                    Y_true[oos_idx, best_config], Y_pred[oos_idx, best_config]
+                )
+            )
         return {
             'avg_score': np.mean(bbc_scores),
             'std_score': np.std(bbc_scores),
@@ -104,11 +131,14 @@ class BootstrapBiasCorrectedCV:
             'bootstrap_ci': self.bootstrap_ci(bbc_scores),
         }
 
-    @staticmethod
-    def _all_equal(samples):
+    def _score(self, y_true, y_pred):
+        # Score function error mechanism.
+        try:
+            output = self.score_func(y_true, y_pred)
+        except:
+            output = self.error_score
 
-        # NOTE: Assumes binary vectors.
-        return np.sum(samples) == len(samples)
+        return output
 
     def criterion(self, Y_true, Y_pred):
         """
@@ -118,20 +148,14 @@ class BootstrapBiasCorrectedCV:
                 score function.
 
         """
+        _, num_configs = np.shape(Y_true)
 
-        _, nconfigs = np.shape(Y_true)
+        losses = np.ones(num_configs, dtype=float) * np.nan
+        for num in range(num_configs):
+            # Returns <float> or error score (1 - NaN = NaN).
+            losses[num] = 1.0 - self._score(Y_true[:, num], Y_pred[:, num])
 
-        losses = np.ones(nconfigs, dtype=float) * np.nan
-        for num in range(nconfigs):
-
-            y_true, y_pred = Y_true[:, num], Y_pred[:, num]
-            # NB: Error handling.
-            if self._all_equal(y_true) or self._all_equal(y_pred):
-                losses[num] = np.nan
-            else:
-                losses[num] = 1 - self.score_func(y_true, y_pred)
-
-        # Select the configuration with the minimum loss.
+        # Select the configuration with the minimum loss ignoring NaNs.
         return np.nanargmin(losses)
 
     def bootstrap_ci(self, scores):
@@ -186,7 +210,8 @@ class OOBSampler:
 
 
 class ParameterSearchCV:
-    """Represetation of a K-fold cross-validated hyperparameter search.
+    """Perform K-fold cross-validated hyperparameter search with the Bayesian
+    optimization Tree Parzen Estimator.
 
     Args:
         model ():
@@ -345,7 +370,7 @@ class ParameterSearchCV:
             test_loss.append(1.0 - self.score_func(y_test, _y_test))
             train_loss.append(1.0 - self.score_func(y_train, _y_train))
 
-            # Collect ground truths and predictions to BBC-CV procedure.
+            # Collect ground truths and predictions for BBC-CV procedure.
             _trues = np.hstack((_trues, y_test))
             _preds = np.hstack((_preds, _y_test))
 
@@ -373,10 +398,9 @@ class ParameterSearchCV:
 
 if __name__ == '__main__':
     # TODO:
-    # * Create BBC-CV class (tensorflow GPU/numpy-based)
     # * Write work function sewing together param search and BBC-CV class that can
     #   be passed to model_comparison.
-    # * Calc sample sizes in each fold with 10-fold CV and 198 patients.
+
 
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
@@ -398,21 +422,19 @@ if __name__ == '__main__':
         ('clf', RandomForestClassifier(random_state=0))
     ])
 
+    # Can specify hparam distr in config files that acn direclty be read into
+    # Python dict with hyperopt distirbutions?
+
     # Parameter search space
     space = {}
-
     # Random number between 50 and 100
     space['kbest__percentile'] = hp.uniform('kbest__percentile', 50, 100)
-
     # Random number between 0 and 1
     #space['clf__l1_ratio'] = hp.uniform('clf__l1_ratio', 0.0, 1.0)
-
     # Log-uniform between 1e-9 and 1e-4
     #space['clf__alpha'] = hp.loguniform('clf__alpha', -9*np.log(10), -4*np.log(10))
-
     # Random integer in 20:5:80
     #space['clf__n_iter'] = 20 + 5 * hp.randint('clf__n_iter', 12)
-
     # Random number between 50 and 100
     space['clf__class_weight'] = hp.choice('clf__class_weight', [None,]) #'balanced']),
     # Discrete uniform distribution
@@ -431,7 +453,6 @@ if __name__ == '__main__':
     results = corr.evaluate(Y_true, Y_pred)
 
     print(optimizer.trials.results)
-
 
     #print(results['avg_score'])
     #print(results['median_score'])
