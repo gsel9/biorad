@@ -9,6 +9,8 @@
 import logging
 import numpy as np
 
+import scipy.sparse as sp
+
 from datetime import datetime
 
 from hyperopt import hp
@@ -20,9 +22,9 @@ from hyperopt import space_eval
 from hyperopt.pyll.base import scope
 
 from sklearn.base import clone
+from sklearn.base import is_classifier
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import StratifiedKFold
 
 
 class BBCCV:
@@ -70,8 +72,7 @@ class BBCCV:
     @staticmethod
     def criterion(scores):
 
-        # NOTE: Maximizing score instead of minimizing error as originally in
-        # paper.
+        # Select the configuration with the maximum average score.
         return np.argmax(scores, axis=0)
 
 
@@ -141,8 +142,7 @@ class ParameterSearchCV:
         self.results = None
         self.run_time = None
 
-        self._errors = None
-        self._y_preds = None
+        self._scores = None
 
     @property
     def opt_hparams(self):
@@ -156,14 +156,9 @@ class ParameterSearchCV:
         return self.model.set_params(**self.opt_hparams)
 
     @property
-    def errors(self):
+    def scores(self):
 
-        return np.array(self._errors, dtype=float)
-
-    @property
-    def predictions(self):
-
-        return np.array(self._y_preds, dtype=float).T
+        return np.transpose(np.array(self._scores, dtype=float))
 
     def fit(self, X, y):
         """Perform hyperparameter search.
@@ -213,16 +208,19 @@ class ParameterSearchCV:
             (float): Error score.
 
         """
-        # NOTE: Assumes standard model API.
-        self.model.set_params(**hparams)
+        # Clone model to ensure independent evaluations.
+        _model = clone(self.model)
+        _model.set_params(**hparams)
 
         scores = cross_val_score(
-            self.model,
+            _model,
             self.X, self.y,
             cv=self.cv,
             scoring=self.scoring,
             n_jobs=self.n_jobs
         )
+        self._cores.append(scores)
+
         return 1.0 - np.median(scores)
 
     # TODO:
@@ -281,6 +279,6 @@ if __name__ == '__main__':
 
     searcher = ParameterSearchCV(pipe, space)
     searcher.fit(X_train, y_train)
-
+    print(searcher.scores.shape)
     #correction = BBCCV(random_state=0)
     #correction.loss(searcher.predictions, y_train)
