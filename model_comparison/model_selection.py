@@ -49,9 +49,9 @@ class BBCCV:
         self.n_iter = n_iter
         self.random_state = random_state
 
-        self._sampler = OOBSampler(self.n_iter, self.random_state)
+        self._sampler = None
 
-    def loss(self, Y_pred, Y_true):
+    def fit(self, Y_pred, Y_true):
         """bootstrap_bias_corrected_cv
 
         Args:
@@ -62,13 +62,14 @@ class BBCCV:
             Y_true ():
 
         Returns:
-            (float):
+            (dict):
 
 
         """
 
         # Bootstrapped matrices.
-        sampler = OOBSampler(n_splits=6, random_state=0)
+        if self._sampler is None:
+            self._sampler = OOBSampler(self.n_iter, self.random_state)
 
         score_bbc = 0
         for sample_idxs, oos_idxs in sampler.split(Y_true, Y_pred):
@@ -78,7 +79,11 @@ class BBCCV:
             score_bbc = score_bbc + self.score_func(
                 Y_true[oos_idxs, best_config], Y_pred[oos_idxs, best_config]
             )
-        return score_bbc / self.n_splits
+        return {
+            'avg_score': np.mean(score_bbc),
+            'std_score': np.std(score_bbc),
+            'median_score': np.median(score_bbc)
+        }
 
     def criterion(self, Y_true, Y_pred):
         """
