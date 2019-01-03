@@ -93,7 +93,9 @@ class BBCCV:
         return {
             'avg_score': np.mean(bbc_scores),
             'std_score': np.std(bbc_scores),
-            'median_score': np.median(bbc_scores)
+            'median_score': np.median(bbc_scores),
+            'avg_ci': self.mean_ci(bbc_scores),
+            'bootstrap_ci': self.bootstrap_ci(bbc_scores),
         }
 
     def criterion(self, Y_true, Y_pred):
@@ -120,13 +122,21 @@ class BBCCV:
 
         # The standard error of the mean.
         mean, mean_se  = np.mean(samples), stats.sem(samples)
-        
+
         # Percent point function (inverse of cdf — percentiles).
         deviation = mean_se * stats.t.ppf(1 - self.alpha / 2, len(samples) - 1)
 
-        return m, m - deviation, m + deviation
+        return mean, mean - deviation, mean + deviation
 
-        # Want a range than contains 95 % of the
+    def bootstrap_ci(self, scores):
+        """Calculate the bootstrap confidence interval from sample data."""
+
+        asc_scores = sorted(scores)
+
+        upper_idx = (1 - self.alpha / 2) * len(scores)
+        lower_idx = self.alpha / 2 * len(scores)
+
+        return asc_scores[int(lower_idx)], asc_scores[int(upper_idx)]
 
 
 class OOBSampler:
