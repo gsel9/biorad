@@ -6,6 +6,8 @@
 
 # Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
 
+# Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
+
 import time
 import logging
 import numpy as np
@@ -32,10 +34,14 @@ from sklearn.model_selection import StratifiedKFold
 
 def model_selection():
 
+    # 1. Do hparam search
+    # 2. Save prelim results
+    # 3. Do BBC-CV
+
     pass
 
 
-class BBCCV:
+class BootstrapBiasCorrectedCV:
     """
 
     Args:
@@ -60,8 +66,8 @@ class BBCCV:
 
         self._sampler = None
 
-    def fit(self, Y_pred, Y_true):
-        """bootstrap_bias_corrected_cv
+    def evaluate(self, Y_pred, Y_true):
+        """Bootstrap bias corrected cross-validation proposed by .
 
         Args:
             Y_pred (array-like): A matrix (N x C) containing out-of-sample
@@ -297,7 +303,8 @@ class ParameterSearchCV:
             self.space,
             algo=self.algo,
             max_evals=self.max_evals,
-            trials=self.trials
+            trials=self.trials,
+            rstate=np.random.RandomState(self.random_state)
         )
         return self
 
@@ -352,6 +359,7 @@ class ParameterSearchCV:
                 ('train_loss_variance', np.var(train_loss)),
                 ('y_trues', _trues,),
                 ('y_preds', _preds,),
+                ('hparams', hparams)
             ]
         )
 
@@ -361,7 +369,6 @@ class ParameterSearchCV:
         # Type checking of predictor and target data.
 
         return X, y
-
 
 
 if __name__ == '__main__':
@@ -414,15 +421,18 @@ if __name__ == '__main__':
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
     optimizer = ParameterSearchCV(
-        tpe.suggest,pipe, space, score_func=roc_auc_score, random_state=0
+        tpe.suggest, pipe, space, score_func=roc_auc_score, random_state=0
     )
     optimizer.fit(X_train, y_train)
 
     Y_true, Y_pred = optimizer.oos_pairs
 
-    evaluator = BBCCV(score_func=roc_auc_score, random_state=0)
-    results = evaluator.fit(Y_true, Y_pred)
+    corr = BootstrapBiasCorrectedCV(score_func=roc_auc_score, random_state=0)
+    results = corr.evaluate(Y_true, Y_pred)
 
-    print(results['avg_score'])
-    print(results['median_score'])
-    print(results['bootstrap_ci'])
+    print(optimizer.trials.results)
+
+
+    #print(results['avg_score'])
+    #print(results['median_score'])
+    #print(results['bootstrap_ci'])
