@@ -6,10 +6,9 @@
 
 # Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
 
+import time
 import logging
 import numpy as np
-
-import scipy.sparse as sp
 
 from datetime import datetime
 
@@ -18,13 +17,14 @@ from hyperopt import tpe
 from hyperopt import fmin
 from hyperopt import Trials
 from hyperopt import space_eval
+from hyperopt import STATUS_OK
 
 from hyperopt.pyll.base import scope
 
 from sklearn.base import clone
 from sklearn.base import is_classifier
-from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import cross_val_score
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import StratifiedKFold
 
 
 class BBCCV:
@@ -117,48 +117,64 @@ class ParameterSearchCV:
     def __init__(
         self,
         model, space,
-        scoring='roc_auc',
-        n_jobs=-1,
+        score_func=None,
         max_evals=10,
         n_splits=10,
         shuffle=True,
         cv=5,
-        algo=tpe.suggest
+        algo=tpe.suggest,
+        error_score=np.nan,
+        random_state=None
     ):
         self.model = model
         self.space = space
 
-        self.n_splits = n_splits
         self.shuffle = shuffle
         self.algo = algo
-        self.n_jobs = n_jobs
-        self.max_evals = max_evals
-        self.scoring = scoring
-        self.cv = cv
+        self.error_score = error_score
+
+        self.score_func = score_func
+        self.n_splits = int(n_splits)
+        self.max_evals = int(max_evals)
+        self.cv = int(cv)
+        self.random_state = int(random_state)
 
         self.X = None
         self.y = None
-        self.trails = None
+        self.trials = None
         self.results = None
         self.run_time = None
 
-        self._scores = None
+        # Keys: scores, preds, best_params, best_model
+        self._outputs = None
+        self._best_params = None
+        self._preds = None
+        self._loss = None
 
     @property
-    def opt_hparams(self):
+    def opt_params(self):
         # Get the values of the optimal parameters
 
-        return space_eval(self.space, self.results)
+        #return self._outputs['opt_params']
+        pass
 
     @property
     def opt_model(self):
 
-        return self.model.set_params(**self.opt_hparams)
+        #return self.model.set_params(**self.opt_params)
+        pass
 
     @property
-    def scores(self):
+    def loss(self):
 
-        return np.transpose(np.array(self._scores, dtype=float))
+        #return np.transpose(np.array(self._scores, dtype=float))
+        return self._loss
+
+    @property
+    def preds(self):
+        """Returns out-of-sample predictions."""
+
+        return np.transpose(self._preds)
 
     def fit(self, X, y):
         """Perform hyperparameter search.
@@ -172,18 +188,15 @@ class ParameterSearchCV:
         self.X, self.y = self._check_X_y(X, y)
 
         # The Trials object will store details of each iteration.
-        if self.trails is None:
+        if self.trials is None:
             self.trials = Trials()
 
-        if self._y_preds is None:
-            self._y_preds = []
-
-        if self._errors is None:
-            self._errors = []
+        if self._preds is None:
+            self._preds = []
 
         # Run the hyperparameter search.
         start_time = datetime.now()
-        self.results = fmin(
+        best_params = fmin(
             self.objective,
             self.space,
             algo=self.algo,
@@ -192,12 +205,10 @@ class ParameterSearchCV:
         )
         self.run_time = datetime.now() - start_time
 
+        print(self.trials.results)
+
         return self
 
-    # ERROR:
-    # * Can do OOB bias correction directly on CV predictions?
-    # * Collecting enough info with cross_val_predict?
-    # * Need explicit CV loop in objective func?
     def objective(self, hparams):
         """Objective function to minimize.
 
@@ -208,20 +219,45 @@ class ParameterSearchCV:
             (float): Error score.
 
         """
-        # Clone model to ensure independent evaluations.
-        _model = clone(self.model)
-        _model.set_params(**hparams)
 
-        scores = cross_val_score(
-            _model,
-            self.X, self.y,
-            cv=self.cv,
-            scoring=self.scoring,
-            n_jobs=self.n_jobs
+        start_time = datetime.now()
+
+        kfolds = StratifiedKFold(
+            self.n_splits, self.shuffle, self.random_state
         )
-        self._cores.append(scores)
+        test_loss, train_loss = [], []
+        for train_index, test_index in kfolds.split(self.X, self.y):
 
-        return 1.0 - np.median(scores)
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+
+            # Clone model to ensure independency.
+            _model = clone(self.model)
+            _model.set_params(**hparams)
+            # TODO: Error handling
+            try:
+                _model.fit(X_train, y_train)
+            except:
+                # Use error score
+                pass
+
+            _y_test = _model.predict(X_test)
+            _y_train = _model.predict(X_train)
+
+            # Collect predictions to BBC-CV procedure.
+            self._preds.append(_y_test)
+
+            test_loss.append(1.0 - self.score_func(y_test, _y_test))
+            train_loss.append(1.0 - self.score_func(y_train, _y_train))
+
+        return {
+            'status': STATUS_OK,
+            'eval_time': datetime.now() - start_time,
+            'loss': np.median(test_loss),
+            'train_loss': np.median(train_loss),
+            'loss_variance': np.var(test_loss),
+            'train_loss_variance': np.var(train_loss),
+        }
 
     # TODO:
     @staticmethod
@@ -231,15 +267,19 @@ class ParameterSearchCV:
         return X, y
 
 
+
 if __name__ == '__main__':
     # TODO:
     # * Create BBC-CV class (tensorflow GPU/numpy-based)
     # * Write work function sewing together param search and BBC-CV class that can
     #   be passed to model_comparison.
+    # * Calc sample sizes in each fold with 10-fold CV and 198 patients.
 
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
     from sklearn.pipeline import Pipeline
+    from sklearn.metrics import roc_auc_score
+    from sklearn.preprocessing import StandardScaler
 
     # TEMP:
     from sklearn.feature_selection.univariate_selection import SelectPercentile, chi2
@@ -247,13 +287,13 @@ if __name__ == '__main__':
 
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, random_state=42
+        X, y, test_size=0.2, random_state=42
     )
-
-    kbest = SelectPercentile(chi2)
-    clf = RandomForestClassifier(random_state=0)
-    pipe = Pipeline([('kbest', kbest), ('clf', clf)])
-
+    pipe = Pipeline([
+        ('kbest', SelectPercentile(chi2)),
+        ('clf_scaler', StandardScaler()),
+        ('clf', RandomForestClassifier(random_state=0))
+    ])
 
     # Parameter search space
     space = {}
@@ -277,8 +317,9 @@ if __name__ == '__main__':
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
-    searcher = ParameterSearchCV(pipe, space)
+    searcher = ParameterSearchCV(
+        pipe, space, score_func=roc_auc_score, random_state=0
+    )
     searcher.fit(X_train, y_train)
-    print(searcher.scores.shape)
     #correction = BBCCV(random_state=0)
     #correction.loss(searcher.predictions, y_train)
