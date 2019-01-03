@@ -9,6 +9,7 @@
 # Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
 
 import time
+import pickle
 import logging
 import numpy as np
 
@@ -34,40 +35,82 @@ from sklearn.model_selection import StratifiedKFold
 
 # TODO:
 # * include algorithm run time for plotting.
-def model_selection():
+def model_selection(
+    algo,
+    model,
+    space,
+    score_func,
+    cv,
+    oob,
+    max_evals,
+    shuffle,
+    verbose=0,
+    random_state,
+    alpha=0.05,
+    balancing=True
+    error_score=np.nan,
+):
+    """
 
-    # 1. Do hparam search
-    # 2. Save prelim results
-    # 3. Do BBC-CV
-    # 4. Save final results.
+    Args:
 
-    optimizer = ParameterSearchCV(
-        algo=algo,
-        model=model,
-        space=space,
-        score_func=score_func,
-        n_splits=n_splits,
-        max_evals=max_evals,
-        shuffle=shuffle,
-        random_state=random_state,
-        error_score=error_score,
+        cv (int): The number of folds in stratified k-fold cross-validation.
+        oob (int): The number of samples in out-of-bag bootstrap re-sampling.
+        max_evals (int): The number of iterations in hyperparameter search.
+
+    """
+    path_case_file = os.path.join(
+        path_tmp_results, '{}_{}_{}'.format(
+            estimator.__name__, selector.name, random_state
+        )
     )
-    # Perform cross-validated hyperparameter optimization.
-    optimizer.fit(X, y)
+    # Check if 
+    if os.path.isfile(path_case_file):
+        results = ioutil.read_prelim_result(path_case_file)
+        print('Reloading results from: {}'.format(path_case_file))
+    else:
+        # Apply SMOTE to balance target class distributions.
+        if balancing:
+            X, y = fwutils.balance_data(X, y, random_state)
 
-    bbc_cv = BootstrapBiasCorrectedCV(
-        random_state=random_state,
-        score_func=score_func,
-        n_iter=n_iter,
-        alpha=alpha,
-    )
+        # Bookeeping results.
+        outputs = {'exp_id': random_state}
 
-    Y_true, Y_pred = optimizer.oos_pairs
+        if verbose > 0:
+            print('Initiating experiment: {}'.format(random_state))
+            start_time = datetime.now()
 
-    # Evaluate model performance.
-    results = bbc_cv.evaluate(Y_true, Y_pred)
+        # Perform cross-validated hyperparameter optimization.
+        optimizer = ParameterSearchCV(
+            algo=algo,
+            model=model,
+            space=space,
+            score_func=score_func,
+            cv=cv,
+            max_evals=max_evals,
+            shuffle=shuffle,
+            random_state=random_state,
+            error_score=error_score,
+        )
+        optimizer.fit(X, y)
 
-    print(optimizer.trials.results)
+        # Include results.
+        outputs.update(optimizer.trials.results)
+
+        # Evaluate model performance with BBC-CV method.
+        bbc_cv = BootstrapBiasCorrectedCV(
+            random_state=random_state,
+            score_func=score_func,
+            oob=oob,
+            alpha=alpha,
+        )
+        outputs.update(bbc_cv.evaluate(optimizer.oos_pairs))
+
+        if verbose > 0:
+            dur = datetime.now() - start_time
+            print('Experiment {} completed in {}'.format(random_state, dur))
+
+    return outputs
 
 
 class BootstrapBiasCorrectedCV:
@@ -85,13 +128,13 @@ class BootstrapBiasCorrectedCV:
         random_state,
         score_func,
         error_score=np.nan,
-        n_iter=10,
+        oob=10,
         alpha=0.05,
     ):
         self.random_state = random_state
         self.score_func = score_func
         self.error_score = error_score
-        self.n_iter = n_iter
+        self.oob = oob
         self.alpha = alpha
 
         self._sampler = None
@@ -112,7 +155,7 @@ class BootstrapBiasCorrectedCV:
         """
         # Generate bootstrapped matrices.
         if self._sampler is None:
-            self._sampler = OOBSampler(self.n_iter, self.random_state)
+            self._sampler = OOBSampler(self.oob, self.random_state)
 
         bbc_scores = []
         for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
@@ -220,13 +263,16 @@ class ParameterSearchCV:
 
     """
 
+    # NOTE: For pickling.
+    TEMP_RESULTS_FILE = './tmp_trials.p'
+
     def __init__(
         self,
         algo,
         model,
         space,
         score_func,
-        n_splits=5,
+        cv=5,
         max_evals=10,
         shuffle=True,
         random_state=None,
@@ -239,7 +285,7 @@ class ParameterSearchCV:
         self.score_func = score_func
         self.error_score = error_score
 
-        self.n_splits = int(n_splits)
+        self.cv = int(cv)
         self.max_evals = int(max_evals)
         self.random_state = int(random_state)
 
@@ -322,6 +368,10 @@ class ParameterSearchCV:
         if self.trials is None:
             self.trials = Trials()
 
+        # For saving prelim results: https://github.com/hyperopt/hyperopt/issues/267
+        #pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
+        #trials = pickle.load(open('TEMP_RESULTS_FILE', 'rb'))
+
         # Run the hyperparameter search.
         self._best_params = fmin(
             self.objective,
@@ -345,9 +395,8 @@ class ParameterSearchCV:
         """
         start_time = datetime.now()
 
-        kfolds = StratifiedKFold(
-            self.n_splits, self.shuffle, self.random_state
-        )
+        kfolds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+
         test_loss, train_loss, _preds, _trues = [], [], [], []
         for train_index, test_index in kfolds.split(self.X, self.y):
 
