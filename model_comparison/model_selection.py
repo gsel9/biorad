@@ -13,6 +13,8 @@ import numpy as np
 from datetime import datetime
 from collections import OrderedDict
 
+from scipy import stats
+
 from hyperopt import hp
 from hyperopt import tpe
 from hyperopt import fmin
@@ -43,10 +45,17 @@ class BBCCV:
 
     """
 
-    def __init__(self, score_func=None, n_iter=5, random_state=None):
+    def __init__(
+        self,
+        score_func,
+        n_iter=5,
+        alpha=0.05,
+        random_state=None,
+    ):
 
         self.score_func = score_func
         self.n_iter = n_iter
+        self.alpha = alpha
         self.random_state = random_state
 
         self._sampler = None
@@ -71,18 +80,20 @@ class BBCCV:
         if self._sampler is None:
             self._sampler = OOBSampler(self.n_iter, self.random_state)
 
-        score_bbc = 0
-        for sample_idxs, oos_idxs in sampler.split(Y_true, Y_pred):
+        bbc_scores = []
+        for sample_idx, oos_idx in sampler.split(Y_true, Y_pred):
             best_config = criterion(
-                Y_true[sample_idxs, :], Y_pred[sample_idxs, :], self.score_func
+                Y_true[sample_idx, :], Y_pred[sample_idx, :], self.score_func
             )
-            score_bbc = score_bbc + self.score_func(
-                Y_true[oos_idxs, best_config], Y_pred[oos_idxs, best_config]
+            bbc_scores.append(
+                self.score_func(
+                    Y_true[oos_idx, best_config], Y_pred[oos_idx, best_config]
+                )
             )
         return {
-            'avg_score': np.mean(score_bbc),
-            'std_score': np.std(score_bbc),
-            'median_score': np.median(score_bbc)
+            'avg_score': np.mean(bbc_scores),
+            'std_score': np.std(bbc_scores),
+            'median_score': np.median(bbc_scores)
         }
 
     def criterion(self, Y_true, Y_pred):
@@ -102,6 +113,20 @@ class BBCCV:
 
         # Select the configuration with the minimum loss.
         return np.argmin(losses)
+
+    # QUESTION: How many degrees of freedom in standard error?
+    def mean_ci(self, samples):
+        """Calculate the mean confidence interval from sample data."""
+
+        # The standard error of the mean.
+        mean, mean_se  = np.mean(samples), stats.sem(samples)
+        
+        # Percent point function (inverse of cdf — percentiles).
+        deviation = mean_se * stats.t.ppf(1 - self.alpha / 2, len(samples) - 1)
+
+        return m, m - deviation, m + deviation
+
+        # Want a range than contains 95 % of the
 
 
 class OOBSampler:
