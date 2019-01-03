@@ -28,6 +28,11 @@ from sklearn.metrics import make_scorer
 from sklearn.model_selection import StratifiedKFold
 
 
+def model_selection():
+
+    pass
+
+
 class BBCCV:
     """
 
@@ -46,35 +51,52 @@ class BBCCV:
 
         self._sampler = OOBSampler(self.n_iter, self.random_state)
 
-    def loss(self, y_pred, y_true):
+    def loss(self, Y_pred, Y_true):
         """bootstrap_bias_corrected_cv
 
         Args:
-            scores (array-like): A matrix (N x C) containing out-of-sample
+            Y_pred (array-like): A matrix (N x C) containing out-of-sample
                 predictions for N samples and C hyperparameter configurations.
                 Thus, scores[i, j] denotes the out-of-sample prediction of on
                 the i-th sample of the j-th configuration.
+            Y_true ():
 
         Returns:
-            (int): Index of the best performing configuration according to the
-                loss criterion.
+            (float):
 
 
         """
-        nrows = np.size(y_pred)
 
-        loss = 0
-        for sample_idxs, oob_idxs in self._sampler.split(y_pred):
-            # Apply configuration selection method to OOB scores.
-            loss = 2
+        # Bootstrapped matrices.
+        sampler = OOBSampler(n_splits=6, random_state=0)
 
-        return loss / self.n_iter
+        score_bbc = 0
+        for sample_idxs, oos_idxs in sampler.split(Y_true, Y_pred):
+            best_config = criterion(
+                Y_true[sample_idxs, :], Y_pred[sample_idxs, :], self.score_func
+            )
+            score_bbc = score_bbc + self.score_func(
+                Y_true[oos_idxs, best_config], Y_pred[oos_idxs, best_config]
+            )
+        return score_bbc / self.n_splits
 
-    @staticmethod
-    def criterion(scores):
+    def criterion(self, Y_true, Y_pred):
+        """
 
-        # Select the configuration with the maximum average score.
-        return np.argmax(scores, axis=0)
+        Returns:
+            (int): Index of the optimal configuration according to the
+                score function.
+
+        """
+
+        _, nconfigs = np.shape(Y_true)
+
+        losses = np.ones(nconfigs, dtype=float) * np.nan
+        for num in range(nconfigs):
+            losses[num] = 1 - self.score_func(Y_true[:, num], Y_pred[:, num])
+
+        # Select the configuration with the minimum loss.
+        return np.argmin(losses)
 
 
 class OOBSampler:
@@ -89,26 +111,30 @@ class OOBSampler:
     def __init__(self, n_splits, random_state):
 
         self.n_splits = n_splits
-        self.rgen = np.random.RandomState(random_state)
+        self.random_state = random_state
 
-    def split(self, X, **kwargs):
+    def split(self, X, y, **kwargs):
         """Generates Out-of-Bag samples.
 
         Args:
             X (array-like): The predictor data.
+            y (array-like): The target data.
 
         Returns:
-            (genrator): An iterable with X and y sample indicators.
+            (generator): An iterable with X and y sample indicators.
 
         """
-        nrows = np.size(X)
-        sample_idxs = np.arange(nrows, dtype=int)
+        rgen = np.random.RandomState(self.random_state)
+
+        nrows, _ = np.shape(X)
+        sample_indicators = np.arange(nrows)
         for _ in range(self.n_splits):
-            train_idx = self.rgen.choice(
-                sample_idxs, size=nrows, replace=True
+            train_idx = rgen.choice(
+                sample_indicators, size=nrows, replace=True
             )
+            # Oberervations not part of training set defines test set.
             test_idx = np.array(
-                list(set(sample_idxs) - set(train_idx)), dtype=int
+                list(set(sample_indicators) - set(train_idx)), dtype=int
             )
             yield train_idx, test_idx
 
@@ -125,20 +151,19 @@ class ParameterSearchCV:
 
     def __init__(
         self,
+        algo,
         model,
         space,
         score_func,
         n_splits=10,
         max_evals=10,
         shuffle=True,
-        algo=tpe.suggest,
         random_state=None,
         error_score=np.nan,
     ):
+        self.algo = algo
         self.model = model
         self.space = space
-
-        self.algo = algo
         self.shuffle = shuffle
         self.score_func = score_func
         self.error_score = error_score
@@ -154,30 +179,35 @@ class ParameterSearchCV:
 
     @property
     def best_params(self):
-        # Get the values of the optimal parameters
+        """Returns the optimal hyperparameters."""
 
         return self._best_params
 
     @property
     def best_model(self):
+        """Returns an instance of the estimator with the optimal
+        hyperparameters."""
 
         return self.model.set_params(**self.best_params)
 
     @property
     def train_loss(self):
+        """Returns """
 
         test_losses = [results['train_loss'] for results in self.trials.results]
         return np.array(test_losses, dtype=float)
 
     @property
     def test_loss(self):
+        """Returns """
 
         test_losses = [results['loss'] for results in self.trials.results]
         return np.array(test_losses, dtype=float)
 
     @property
     def train_loss_var(self):
-        """Returns the variance of K-fold cross-validated training loss."""
+        """Returns the variance of each hyperparameter configuration of K-fold
+        cross-validated training loss."""
 
         test_losses = [
             results['train_loss_variance'] for results in self.trials.results
@@ -186,7 +216,8 @@ class ParameterSearchCV:
 
     @property
     def test_loss_var(self):
-        """Returns the variance of K-fold cross-validated test loss."""
+        """Returns the variance of each hyperparameter configuration of K-fold
+        cross-validated test loss."""
 
         test_losses = [
             results['loss_variance'] for results in self.trials.results
@@ -194,7 +225,7 @@ class ParameterSearchCV:
         return np.array(test_losses, dtype=float)
 
     @property
-    def pred_pairs(self):
+    def oos_pairs(self):
         """Returns a tuple with ground truths and corresponding out-of-sample
         predictions."""
 
@@ -207,17 +238,16 @@ class ParameterSearchCV:
         return trues, preds
 
     def fit(self, X, y):
-        """Perform hyperparameter search.
+        """Optimal hyperparameter search.
 
         Args:
             X (array-like):
             y (array-like):
 
         """
-
         self.X, self.y = self._check_X_y(X, y)
 
-        # The Trials object will store details of each iteration.
+        # The Trials object stores information of each iteration.
         if self.trials is None:
             self.trials = Trials()
 
@@ -241,7 +271,6 @@ class ParameterSearchCV:
             (dict): Outputs stored in the hyperopt trials object.
 
         """
-
         start_time = datetime.now()
 
         kfolds = StratifiedKFold(
@@ -344,13 +373,12 @@ if __name__ == '__main__':
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
-    searcher = ParameterSearchCV(
-        pipe, space, score_func=roc_auc_score, random_state=0
+    optimizer = ParameterSearchCV(
+        tpe.suggest,pipe, space, score_func=roc_auc_score, random_state=0
     )
-    searcher.fit(X_train, y_train)
+    optimizer.fit(X_train, y_train)
 
-    a, b = searcher.pred_pairs
-    print(b)
+    Y_true, Y_pred = optimizer.oos_pairs
 
     #correction = BBCCV(random_state=0)
     #correction.loss(searcher.predictions, y_train)
