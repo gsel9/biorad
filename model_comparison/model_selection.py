@@ -8,15 +8,18 @@
 
 # Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
 
+import os
 import time
+import utils
 import pickle
 import logging
+
 import numpy as np
+
+from scipy import stats
 
 from datetime import datetime
 from collections import OrderedDict
-
-from scipy import stats
 
 from hyperopt import hp
 from hyperopt import tpe
@@ -28,29 +31,28 @@ from hyperopt import STATUS_OK
 from hyperopt.pyll.base import scope
 
 from sklearn.base import clone
-from sklearn.base import is_classifier
-from sklearn.metrics import make_scorer
 from sklearn.model_selection import StratifiedKFold
 
 
-# TODO:
-# * include algorithm run time for plotting.
 def model_selection(
+    X, y,
     algo,
     model,
     space,
     score_func,
+    path_tmp_results,
     cv,
     oob,
     max_evals,
     shuffle,
     verbose=0,
-    random_state,
+    random_state=None,
     alpha=0.05,
-    balancing=True
+    balancing=True,
     error_score=np.nan,
 ):
     """
+    Work function for parallelizable model selection experiments.
 
     Args:
 
@@ -60,20 +62,18 @@ def model_selection(
 
     """
     path_case_file = os.path.join(
-        path_tmp_results, '{}_{}_{}'.format(
-            estimator.__name__, selector.name, random_state
-        )
+        path_tmp_results, 'experiment_{}'.format(random_state)
     )
-    # Check if 
+    # Determine if results already produced, or if initiating new experiment.
     if os.path.isfile(path_case_file):
         results = ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        # Apply SMOTE to balance target class distributions.
+        # Balance target class distributions with SMOTE procedure.
         if balancing:
-            X, y = fwutils.balance_data(X, y, random_state)
+            X, y = utils.sampling.balance_data(X, y, random_state)
 
-        # Bookeeping results.
+        # Experimental results container.
         outputs = {'exp_id': random_state}
 
         if verbose > 0:
@@ -101,14 +101,17 @@ def model_selection(
         bbc_cv = BootstrapBiasCorrectedCV(
             random_state=random_state,
             score_func=score_func,
-            oob=oob,
             alpha=alpha,
+            oob=oob,
         )
+        # TEMP: Y_true, Y_pred = optimizer.oos_pairs
+        # Returns results directly.
         outputs.update(bbc_cv.evaluate(optimizer.oos_pairs))
 
         if verbose > 0:
-            dur = datetime.now() - start_time
-            print('Experiment {} completed in {}'.format(random_state, dur))
+            durat = datetime.now() - start_time
+            results['exp_duration'] = durat
+            print('Experiment {} completed in {}'.format(random_state, durat))
 
     return outputs
 
@@ -155,8 +158,9 @@ class BootstrapBiasCorrectedCV:
         """
         # Generate bootstrapped matrices.
         if self._sampler is None:
-            self._sampler = OOBSampler(self.oob, self.random_state)
-
+            self._sampler = utils.sampling.OOBSampler(
+                self.oob, self.random_state
+            )
         bbc_scores = []
         for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
             best_config = self.criterion(
@@ -210,46 +214,6 @@ class BootstrapBiasCorrectedCV:
         lower_idx = self.alpha / 2 * len(scores)
 
         return asc_scores[int(lower_idx)], asc_scores[int(upper_idx)]
-
-
-class OOBSampler:
-    """A bootstrap Out-of-Bag resampler.
-
-    Args:
-        n_splits (int): The number of resamplings to perform.
-        random_state (int): Seed for the pseudo-random number generator.
-
-    """
-
-    def __init__(self, n_splits, random_state):
-
-        self.n_splits = n_splits
-        self.random_state = random_state
-
-    def split(self, X, y, **kwargs):
-        """Generates Out-of-Bag samples.
-
-        Args:
-            X (array-like): The predictor data.
-            y (array-like): The target data.
-
-        Returns:
-            (generator): An iterable with X and y sample indicators.
-
-        """
-        rgen = np.random.RandomState(self.random_state)
-
-        nrows, _ = np.shape(X)
-        sample_indicators = np.arange(nrows)
-        for _ in range(self.n_splits):
-            train_idx = rgen.choice(
-                sample_indicators, size=nrows, replace=True
-            )
-            # Oberervations not part of training set defines test set.
-            test_idx = np.array(
-                list(set(sample_indicators) - set(train_idx)), dtype=int
-            )
-            yield train_idx, test_idx
 
 
 class ParameterSearchCV:
@@ -491,18 +455,20 @@ if __name__ == '__main__':
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
-    optimizer = ParameterSearchCV(
-        tpe.suggest, pipe, space, score_func=roc_auc_score, random_state=0
+    results = model_selection(
+        X_train, y_train,
+        algo=tpe.suggest,
+        model=pipe,
+        space=space,
+        score_func=roc_auc_score,
+        path_tmp_results='./',
+        cv=5,
+        oob=5,
+        max_evals=7,
+        shuffle=True,
+        verbose=1,
+        random_state=0,
+        alpha=0.05,
+        balancing=True,
+        error_score=np.nan
     )
-    optimizer.fit(X_train, y_train)
-
-    Y_true, Y_pred = optimizer.oos_pairs
-
-    corr = BootstrapBiasCorrectedCV(score_func=roc_auc_score, random_state=0)
-    results = corr.evaluate(Y_true, Y_pred)
-
-    print(optimizer.trials.results)
-
-    #print(results['avg_score'])
-    #print(results['median_score'])
-    #print(results['bootstrap_ci'])
