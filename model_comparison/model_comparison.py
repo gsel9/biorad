@@ -94,20 +94,22 @@ def model_comparison(
                 for random_state in random_states
             )
         )
-        # Tear down temporary dirs after succesfully written results to disk.
-        #_save_and_cleanup(results, path_to_results)
+        # Tear down temporary dirs after saving current results to disk.
+        _save_and_cleanup(path_to_results, results)
 
     return None
 
 
-def _save_and_cleanup(results, path_to_results):
+def _save_and_cleanup(path_to_results, results):
+    # Write final results to disk and remove temporary directory if process
+    # completed succesfully.
+
+    global TMP_RESULTS_DIR
 
     ioutil.write_final_results(path_to_results, results)
-
-    # Remove temporary directory if process completed succesfully.
     ioutil.teardown_tempdir(TMP_RESULTS_DIR)
 
-    return results
+    return None
 
 
 """
