@@ -28,70 +28,6 @@ from sklearn.preprocessing import StandardScaler
 from mlxtend.feature_selection import SequentialFeatureSelector
 
 
-class Selector(TransformerMixin):
-    """Representation of a feature selection procedure.
-
-    Args:
-        name (str): Name of feature selection procedure.
-        func (function): The feature selection procedure.
-        params (dict): Parameters passed to the feature selection function.
-
-    Returns:
-        (tuple): Training subset, test subset and selected features support
-            indicators.
-
-    """
-
-    def __init__(self, name, func, params, random_state):
-
-        self.name = name
-        self.func = func
-        self.random_state = random_state
-
-        # NOTE:
-        self._X_train = None
-        self._X_test = None
-        self._support = None
-
-    def fit(self, X, y, **kwargs):
-
-        # Execute feature selection procedure.
-        self._X_train, self._X_test, self._support = self.func(X, y, **kwargs)
-
-        return self
-
-    def transform(self):
-        """"""
-
-        # Formatting of output includes error handling.
-        support = self._check_support(self._support, self._X_train)
-
-        # Support should be a non-empty vector (ensured by _check_support).
-        return fwutils.check_train_test(
-            self._X_train[:, support],  self._X_test[:, support]
-        )
-
-    @staticmethod
-    def _check_support(support, X):
-        # Formatting of indicators subset.
-        if not isinstance(support, np.ndarray):
-            support = np.array(support, dtype=int)
-
-        # NB: Default mechanism includes all features if none were selected.
-        if len(support) - 1 < 1:
-            support = np.arange(X.shape[1], dtype=int)
-        else:
-            if np.ndim(support) > 1:
-                support = np.squeeze(support)
-            if np.ndim(support) < 1:
-                support = support[np.newaxis]
-            if np.ndim(support) != 1:
-                raise RuntimeError(
-                    'Invalid dimension {} to support.'.format(np.ndim(support))
-                )
-        return support
-
-
 def permutation_selection(
         X_train, X_test, y_train, y_test,
         score_func,
@@ -252,7 +188,9 @@ def relieff_selection(
     return X_train_std, X_test_std, selector.top_features[:num_features]
 
 
-# Cloned from: https://github.com/danielhomola/mifs
+# NOTE:
+# * Cloned from: https://github.com/danielhomola/mifs
+# * Requirements: TODO
 def mrmr_selection(X_train, X_test, y_train, y_test, k, num_features, **kwargs):
     """Minimum redundancy maximum relevancy.
 

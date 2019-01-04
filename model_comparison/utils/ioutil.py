@@ -29,6 +29,7 @@ def setup_tempdir(tempdir, root=None):
         root = os.getcwd()
 
     path_tempdir = os.path.join(root, tempdir)
+
     if not os.path.isdir(path_tempdir):
         os.mkdir(path_tempdir)
 
