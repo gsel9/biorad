@@ -446,4 +446,7 @@ if __name__ == '__main__':
 
     #hp_space = trees_param_space()
     #print(hp_space)
-    pass
+    def name_func():
+        # Accepts a label from the pipeline estimator/transformer and merges
+        # with the variable name in the hparam space function.
+        pass

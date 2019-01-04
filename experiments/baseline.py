@@ -62,22 +62,26 @@ import numpy as np
 import pandas as pd
 
 
-# NOTE: To utils
-def read_target(path_to_target, index_col=0):
+# TODO: To utils?
+def load_target(path_to_target, index_col=0):
 
     var = pd.read_csv(path_to_target, index_col=index_col)
     return np.squeeze(var.values).astype(np.float32)
 
 
-# NOTE: To utils
-def read_predictors(path_to_data, index_col=0):
+# TODO: To utils?
+# TODO: Add option to filter features based on reexes (e.g. only clinical and PET)
+def load_predictors(path_to_data, index_col=0, regex=None):
 
     data = pd.read_csv(path_to_data, index_col=index_col)
-    return np.array(data.values, dtype=np.float32)
-
+    if regex is None:
+        return np.array(data.values, dtype=np.float32)
+    else:
+        target_features = data.filter(regex=regex)
+        return np.array(data.loc[:, target_features].values, dtype=np.float32)
 
 if __name__ == '__main__':
-    # TODO: Move to backend.
+    # TODO: Move to backend?
     import sys
     sys.path.append('./../model_comparison')
 
@@ -87,26 +91,23 @@ if __name__ == '__main__':
     from model_selection import bbc_cv_selection
     from model_comparison import model_comparison
 
-    from sklearn.metrics import roc_auc_score, matthews_corrcoef, precision_recall_fscore_support
+    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import matthews_corrcoef
+    from sklearn.metrics import precision_recall_fscore_support
+
+    from sklearn.ensemble import RandomForestClassifier
 
     from hyperopt import hp
     from hyperopt import tpe
     from hyperopt.pyll.base import scope
 
-    from sklearn.datasets import load_breast_cancer
-    from sklearn.model_selection import train_test_split
+    # TEMP:
     from sklearn.pipeline import Pipeline
-    from sklearn.metrics import roc_auc_score
+    from sklearn.datasets import load_breast_cancer
     from sklearn.preprocessing import StandardScaler
 
-    # TEMP:
-    from sklearn.feature_selection.univariate_selection import SelectPercentile, chi2
-    from sklearn.ensemble import RandomForestClassifier
-
     X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=0
-    )
+
     # NOTE: Include StandardScaler in pipeline.
     pipe = Pipeline([
         ('kbest', SelectPercentile(chi2)),
@@ -115,14 +116,14 @@ if __name__ == '__main__':
     ])
 
     # FEATURE SET:
-    X = feature_set('./../../data_source/to_analysis/complete_decorr.csv')
+    #X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
 
     # TARGET:
-    #y = target('./../../data_source/to_analysis/target_lrr.csv')
-    y = target('./../../data_source/to_analysis/target_dfs.csv')
+    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
+    #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../../data_source/experiments/no_filtering_dfs.csv'
+    #path_to_results = './../../data_source/experiments/no_filtering_dfs.csv'
 
     # SETUP:
     CV = 10
@@ -142,14 +143,24 @@ if __name__ == '__main__':
         'svc': SVC,
     }
     selectors = {
-        # Use RF permutation importance with hyperparam opt
-        'permutation': feature_selection.permutation_selection,
-        'wlcx': feature_selection.wilcoxon_selection,
-        'relieff': feature_selection.relieff_selection,
-        'mrmr': feature_selection.mrmr_selection
+        'permutation': feature_selection.PermutationSelection,
+        'wlcx': feature_selection.WilcoxonSelection,
+        'relieff': feature_selection.ReliefFSelection,
+        'mrmr': feature_selection.MRMRSelection
     }
 
+    def setup_experiment(
+        X, y,
+        estimators,
+        selectors=None,
+        *args
+    ):
+        pass
 
+    # Pass params not counted as hyperparams?
+
+    # TODO:
+    """
     model_comparison(
         model_selection.bbc_cv_selection,
         X_train, y_train,
@@ -170,3 +181,4 @@ if __name__ == '__main__':
         n_jobs=-1,
         path_to_results='test_results'
     )
+    """

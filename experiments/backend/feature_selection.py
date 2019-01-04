@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# selectors.py
+# feature_selection.py
 #
 
 """
@@ -19,16 +19,22 @@ import pandas as pd
 
 from scipy import stats
 from ReliefF import ReliefF
-from sklearn import feature_selection
 
+from sklearn.utils import check_X_y
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from mlxtend.feature_selection import SequentialFeatureSelector
-
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class BaseSelector:
+    """Base representation of a feature selection algorithm.
+
+    Args:
+        error_handling (str, array-like): Determines feature selection error
+            handling mechanism.
+
+    """
+
+    VALID_ERROR_MECHANISMS = ['return_all']
 
     def __init__(self, error_handling='return_all'):
 
@@ -36,6 +42,10 @@ class BaseSelector:
 
         self.X = None
         self.y = None
+
+        if not self.error_handling in self.VALID_ERROR_MECHANISMS:
+            raise ValueError('Invalid error handling mechanism {}'
+                             ''.format(self.error_handling))
 
     @property
     def support(self):
@@ -46,11 +56,11 @@ class BaseSelector:
 
         return np.array(self._support, dtype=int)
 
-    # TODO:
     @staticmethod
     def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
 
-        return X, y
+        return check_X_y(X, y)
 
     @staticmethod
     def check_subset(X):
@@ -63,8 +73,6 @@ class BaseSelector:
             (array-like): Formatted feature subset.
 
         """
-
-        # Check training set.
         if np.ndim(X) > 2:
             if np.ndim(np.squeeze(X)) > 2:
                 raise RuntimeError('X train ndim {}'.format(np.ndim(X)))
@@ -95,7 +103,8 @@ class BaseSelector:
 
         # NB: Include all features if none were selected.
         if len(support) - 1 < 1:
-            support = np.arange(X.shape[1], dtype=int)
+            if self.error_handling == 'return_all':
+                support = np.arange(X.shape[1], dtype=int)
         else:
             if np.ndim(support) > 1:
                 support = np.squeeze(support)
@@ -108,6 +117,8 @@ class BaseSelector:
         return support
 
 
+# TransformerMixin incorporates fit_transform().
+# BaseEstimator provides grid-searchable hyperparameters.
 class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
     """Perform feature selection by feature permutation importance.
 
@@ -147,6 +158,10 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
             self.model.set_params(**self.hparams)
 
         self._support = None
+
+    def __name__(self):
+
+        return 'PermutationSelection'
 
     def fit(self, X, y):
 
@@ -218,6 +233,10 @@ class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
         self.thresh = thresh
         self.bf_correction = bf_correction
 
+    def __name__(self):
+
+        return 'WilcoxonSelection'
+
     def fit(self, X, y=None):
 
         self.X, self.y = self._check_X_y(X, y)
@@ -255,18 +274,19 @@ class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
             for num in range(ncols):
                 # If p-value > thresh: same distribution.
                 _, pval = stats.wilcoxon(self.X[:, num], self.y)
-                    if pval <= self.thresh / ncols:
-                        support.append(num)
+                if pval <= self.thresh / ncols:
+                    support.append(num)
         else:
             for num in range(ncols):
                 # If p-value > thresh: same distribution.
                 _, pval = stats.wilcoxon(self.X[:, num], self.y)
-                    if pval <= self.thresh:
-                        support.append(num)
+                if pval <= self.thresh:
+                    support.append(num)
 
         return np.array(support, dtype=int)
 
 
+# pip install ReliefF
 class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
     def __init__(
@@ -280,6 +300,10 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         self.num_neighbors = num_neighbors
         self.num_features = num_features
+
+    def __name__(self):
+
+        return 'ReliefFSelection'
 
     def fit(self, X, y=None):
 
@@ -301,7 +325,7 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
 # NOTE:
 # * Cloned from: https://github.com/danielhomola/mifs
-# * Requirements: TODO
+# * Use conda to install bottleneck=1.2.1 and pip to install local mifs clone.
 class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
     """Perform feature selection with the minimum redundancy maximum relevancy
     algortihm.
@@ -326,6 +350,10 @@ class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         self.k = k
         self.num_features = num_features
+
+    def __name__(self):
+
+        return 'MRMRSelection'
 
     def fit(self, X, y=None):
 
