@@ -57,6 +57,7 @@ def _format_hparams(params, kind='estimator'):
 
 import sys
 import time
+import backend
 
 import numpy as np
 import pandas as pd
@@ -80,6 +81,7 @@ def load_predictors(path_to_data, index_col=0, regex=None):
         target_features = data.filter(regex=regex)
         return np.array(data.loc[:, target_features].values, dtype=np.float32)
 
+
 if __name__ == '__main__':
     # TODO: Move to backend?
     import sys
@@ -102,18 +104,13 @@ if __name__ == '__main__':
     from hyperopt.pyll.base import scope
 
     # TEMP:
+    from sklearn.pipeline import make_pipeline
     from sklearn.pipeline import Pipeline
+
     from sklearn.datasets import load_breast_cancer
     from sklearn.preprocessing import StandardScaler
 
     X, y = load_breast_cancer(return_X_y=True)
-
-    # NOTE: Include StandardScaler in pipeline.
-    pipe = Pipeline([
-        ('kbest', SelectPercentile(chi2)),
-        ('clf_scaler', StandardScaler()),
-        ('clf', RandomForestClassifier(random_state=0))
-    ])
 
     # FEATURE SET:
     #X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
@@ -135,6 +132,7 @@ if __name__ == '__main__':
     np.random.seed(0)
     random_states = np.random.randint(1000, size=40)
 
+    """
     estimators = {
         'logreg': LogisticRegression,
         'rf': RandomForestClassifier,
@@ -143,12 +141,23 @@ if __name__ == '__main__':
         'svc': SVC,
     }
     selectors = {
-        'permutation': feature_selection.PermutationSelection,
-        'wlcx': feature_selection.WilcoxonSelection,
-        'relieff': feature_selection.ReliefFSelection,
-        'mrmr': feature_selection.MRMRSelection
+        'rf_permutation': backend.feature_selection.PermutationSelection,
+        'wlcx': backend.feature_selection.WilcoxonSelection,
+        'relieff': backend.feature_selection.ReliefFSelection,
+        'mrmr': backend.feature_selection.MRMRSelection
+    }
+    """
+
+    estimators = {
+        'rf_permutation_logreg': make_pipeline(
+            backend.feature_selection.PermutationSelection(
+                model=RandomForestClassifier()
+            ),
+            LogisticRegression()
+        )
     }
 
+    """
     def setup_experiment(
         X, y,
         estimators,
@@ -156,10 +165,8 @@ if __name__ == '__main__':
         *args
     ):
         pass
+    """
 
-    # Pass params not counted as hyperparams?
-
-    # TODO:
     """
     model_comparison(
         model_selection.bbc_cv_selection,

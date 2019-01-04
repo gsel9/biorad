@@ -170,6 +170,7 @@ class BootstrapBiasCorrectedCV:
 
         self._sampler = None
 
+    # TODO: Get GPU speed with TensorFlow.
     def evaluate(self, Y_pred, Y_true):
         """Bootstrap bias corrected cross-validation proposed by .
 
@@ -190,6 +191,7 @@ class BootstrapBiasCorrectedCV:
                 self.oob, self.random_state
             )
         bbc_scores = []
+        # Divide each sampling round (e.g. X500) across TensorFlow GPU backend.
         for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
             best_config = self.criterion(
                 Y_true[sample_idx, :], Y_pred[sample_idx, :]

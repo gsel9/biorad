@@ -112,50 +112,6 @@ def _save_and_cleanup(path_to_results, results):
     return None
 
 
-"""
-TODO:
-* Create separate functions for pairing classifiers + FS in pipelines.
-* Give each pipeline a unique name.
-* Include a flag in each FS class whether or not should standardize data in
-  advance.
-
-
-# Instantiate selector representation for pipeline compatibility.
-#selector = feature_selection.Selector(selector_id, procedure)
-# Combine parameter grids.
-#param_grid = [
-#    _format_hparams(selector_params[selector_id]),
-#    _format_hparams(estimator_params[estimator_id])
-#]
-# Create estiamtor pipeline.
-#pipeline = Pipeline([
-#    (SELECTOR_ID, selector(random_state=random_state)),
-#    (ESTIMATOR_ID, estimator(random_state=random_state))
-#])
-
-
-def _format_hparams(params, kind='estimator'):
-    # Format parameter names to scikit Pipeline compatibility.
-
-    global ESTIMATOR_ID, SELECTOR_ID
-
-    if kind == 'estimator':
-        ext = ESTIMATOR_ID
-    elif kind == 'selector':
-        ext = SELECTOR_ID
-    else:
-        raise ValueError('Invalid kind {} not in (`estimator`, `selector`)'
-                         ''.format(kind))
-    # Update keys.
-    for set_key,  param_set in hparams.items():
-        hparams[set_key] = {
-            key.replace(key, ('__').join((ext, key)): params
-            for key, params in param_set.items()
-        }
-    return hparams
-"""
-
-
 if __name__ == '__main__':
     # Demo run:
     # * 97.80 % accuracy seems to be a fairly good score.

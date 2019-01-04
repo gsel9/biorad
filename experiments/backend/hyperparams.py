@@ -5,6 +5,7 @@
 
 
 """
+Hyperparameter generators.
 
 Notes:
 * How can determine optimal cache size?
@@ -16,11 +17,6 @@ HYPERPARAMETER DISTRIBUTIONS
 """
 
 from hyperopt import hp
-
-
-###############################################
-##==== Hyperparameter generators ====##
-###############################################
 
 
 # Log-uniform between 1e-9 and 1e-4
@@ -101,12 +97,6 @@ def _trees_min_samples_leaf(name):
     ])
 
 
-# NOTE: Need only use bool space.
-def _trees_bootstrap(name):
-
-    return hp.choice(name, [True, False])
-
-
 # ERROR:
 # Random forest hyperparameters search space
 def trees_param_space(
@@ -150,7 +140,7 @@ def trees_param_space(
             if min_samples_leaf is None else min_samples_leaf
         ),
         bootstrap=(
-            _trees_bootstrap(name_func('bootstrap'))
+            hp_bool(name_func('bootstrap'))
             if bootstrap is None else bootstrap
         ),
         # Default settings defined according to descriptions found in
