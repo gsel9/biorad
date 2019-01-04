@@ -53,8 +53,8 @@ def point_632plus_selection():
 def bbc_cv_selection(
     X, y,
     algo,
+    model_id,
     model,
-    model_id
     param_space,
     score_func,
     path_tmp_results,
@@ -84,9 +84,9 @@ def bbc_cv_selection(
             random_state, model_id
         )
     )
-    # Determine if results already produced, or if initiating new experiment.
+    # Determine if results already exists.
     if os.path.isfile(path_case_file):
-        results = ioutil.read_prelim_result(path_case_file)
+        output = utils.ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
         # Balance target class distributions with SMOTE procedure.
@@ -139,7 +139,7 @@ def bbc_cv_selection(
                   ''.format(random_state, duration))
 
         if write_prelim:
-            utils.ioutil.write_prelim_results(output)
+            utils.ioutil.write_prelim_results(path_case_file, output)
 
     return output
 
@@ -407,8 +407,8 @@ class ParameterSearchCV:
         test_loss, train_loss, _preds, _trues = [], [], [], []
         for train_index, test_index in kfolds.split(self.X, self.y):
 
-            X_train, X_test = X[train_index], X[test_index]
-            y_train, y_test = y[train_index], y[test_index]
+            X_train, X_test = self.X[train_index], self.X[test_index]
+            y_train, y_test = self.y[train_index], self.y[test_index]
 
             # Clone model to ensure independency.
             _model = clone(self.model)
@@ -498,11 +498,12 @@ if __name__ == '__main__':
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
-    results = model_selection(
+    results = bbc_cv_selection(
         X_train, y_train,
         algo=tpe.suggest,
+        model_id='',
         model=pipe,
-        space=space,
+        param_space=space,
         score_func=roc_auc_score,
         path_tmp_results='./',
         cv=5,
