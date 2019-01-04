@@ -7,6 +7,7 @@
 # Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
 
 # Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
+# Checkout: https://github.com/tmadl/highdimensional-decision-boundary-plot
 
 import os
 import time
@@ -34,6 +35,7 @@ from sklearn.base import clone
 from sklearn.model_selection import StratifiedKFold
 
 
+# TODO: Need seed + clf + selector name for unique ID to prelim results files.
 def model_selection(
     X, y,
     algo,
@@ -49,6 +51,7 @@ def model_selection(
     random_state=None,
     alpha=0.05,
     balancing=True,
+    write_prelim=True,
     error_score=np.nan,
 ):
     """
@@ -74,7 +77,7 @@ def model_selection(
             X, y = utils.sampling.balance_data(X, y, random_state)
 
         # Experimental results container.
-        outputs = {'exp_id': random_state}
+        output = {'exp_id': random_state}
 
         if verbose > 0:
             print('Initiating experiment: {}'.format(random_state))
@@ -94,11 +97,13 @@ def model_selection(
         )
         optimizer.fit(X, y)
 
-        outputs.update(optimizer.test_loss)
-        outputs.update(optimizer.train_loss)
-        outputs.update(optimizer.test_loss_var)
-        outputs.update(optimizer.train_loss_var)
-        outputs.update(optimizer.best_params)
+        # Add available and potentially interesting results to output.
+        output.update(optimizer.test_loss)
+        output.update(optimizer.train_loss)
+        output.update(optimizer.test_loss_var)
+        output.update(optimizer.train_loss_var)
+        output.update(optimizer.best_params)
+        output.update(optimizer.params)
 
         # Evaluate model performance with BBC-CV method.
         bbc_cv = BootstrapBiasCorrectedCV(
@@ -108,14 +113,18 @@ def model_selection(
             oob=oob,
         )
         # Returns results directly.
-        outputs.update(bbc_cv.evaluate(*optimizer.oos_pairs))
+        output.update(bbc_cv.evaluate(*optimizer.oos_pairs))
 
         if verbose > 0:
-            durat = datetime.now() - start_time
-            outputs['exp_duration'] = durat
-            print('Experiment {} completed in {}'.format(random_state, durat))
+            duration = datetime.now() - start_time
+            output['exp_duration'] = duration
+            print('Experiment {} completed in {}'
+                  ''.format(random_state, duration))
 
-    return outputs
+        if write_prelim:
+            utils.ioutil.write_prelim_results(output)
+
+    return output
 
 
 class BootstrapBiasCorrectedCV:
@@ -174,10 +183,10 @@ class BootstrapBiasCorrectedCV:
                 )
             )
         return {
-            'avg_score': np.mean(bbc_scores),
-            'std_score': np.std(bbc_scores),
-            'median_score': np.median(bbc_scores),
-            'bootstrap_ci': self.bootstrap_ci(bbc_scores),
+            'oob_avg_score': np.mean(bbc_scores),
+            'oob_std_score': np.std(bbc_scores),
+            'oob_median_score': np.median(bbc_scores),
+            'oob_score_ci': self.bootstrap_ci(bbc_scores),
         }
 
     def _score(self, y_true, y_pred):
@@ -265,6 +274,14 @@ class ParameterSearchCV:
         """Returns the optimal hyperparameters."""
 
         return {'model_params': self._best_params}
+
+    @property
+    def params(self):
+
+        params = {
+            num: res['hparams'] for num, res in enumerate(self.trials.results)
+        }
+        return {'params': params}
 
     @property
     def best_model(self):
@@ -419,10 +436,9 @@ class ParameterSearchCV:
 
 
 if __name__ == '__main__':
-    # TODO:
-    # * Write work function sewing together param search and BBC-CV class that can
-    #   be passed to model_comparison.
-
+    # Demo run:
+    # * 97.80 % accuracy seems to be a fairly good score.
+    #
 
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
@@ -479,5 +495,6 @@ if __name__ == '__main__':
         random_state=0,
         alpha=0.05,
         balancing=True,
+        write_prelim=False,
         error_score=np.nan
     )
