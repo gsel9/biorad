@@ -271,31 +271,60 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
         return self.support.formatting.check_subset(self.X[:, self.support])
 
 
-
-# NOTE:
-# * Cloned from: https://github.com/danielhomola/mifs
-# * Requirements: TODO
-def mrmr_selection(X_train, X_test, y_train, y_test, k, num_features, **kwargs):
-    """Minimum redundancy maximum relevancy.
+class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
+    """Perform feature selection with the minimum redundancy maximum relevancy
+    algortihm.
 
     Args:
-        X_train (array-like): Training predictor set.
-        X_test (array-like): Test predictor set.
-        y_train (array-like): Training target set.
-        y_test (array-like): Test target set.
-
-    Returns:
-        (tuple): Training subset, test subset and selected features support
-            indicators.
+        k (int):
+        num_features (): If `auto`, the number of is determined based on the
+            amount of mutual information the previously selected features share
+            with the target classes.
 
     """
-    # Z-score transformation.
-    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
-    # If 'auto': n_features is determined based on the amount of mutual
-    # information the previously selected features share with y.
-    selector = mifs.MutualInformationFeatureSelector(
-        method='MRMR', k=5, n_features=num_features, categorical=True,
-    )
-    selector.fit(X_train_std, y_train)
 
-    return X_train_std, X_test_std, np.where(selector.support_ == True)
+    # NOTE:
+    # * Cloned from: https://github.com/danielhomola/mifs
+    # * Requirements: TODO
+
+    def __init__(
+        self,
+        z_scoring,
+        k,
+        num_features,
+        error_handling='return_all'
+    ):
+
+        super().__init__(z_scoring, error_handling)
+
+        self.z_scoring = z_scoring
+        self.k = k
+        self.num_features = num_features
+
+    def fit(self, X, y=None):
+
+        self.X, self.y = self._check_X_y(X, y)
+
+        # Perform Z-score transformation.
+        if self.z_scoring and self._scaler is not None:
+            self.X = self._scaler.fit_transform(self.X)
+
+        # If 'auto': n_features is determined based on the amount of mutual
+        # information the previously selected features share with y.
+        selector = mifs.MutualInformationFeatureSelector(
+            method='MRMR',
+            k=self.k,
+            n_features=self.num_features,
+            categorical=True,
+        )
+        selector.fit(X_train_std, y_train)
+
+        _support = np.where(selector.support_ == True)
+
+        self.support = utils.formatting.check_support(_support, self.X)
+
+        return self
+
+    def transform(self):
+
+        return self.support.formatting.check_subset(self.X[:, self.support])
