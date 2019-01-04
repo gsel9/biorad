@@ -4,13 +4,18 @@
 #
 
 """
-Implement wrappers for pipelining.
+Construct pipelines comprising:
+1. preprocessing
+2. dimensionality reduction
+3. postprocessing
+4. classificationg
 
 Notes:
-* https://github.com/automl/SMAC3/blob/master/examples/svm.py
+* Each pipeline must have a unique ID.
 
 """
 
+# https://github.com/automl/SMAC3/blob/master/examples/svm.py
 def svc_from_config(config):
     pass
 

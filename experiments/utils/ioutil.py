@@ -63,3 +63,43 @@ def write_prelim_results(path_to_file, results):
         writer.writerow(results)
 
     return None
+
+
+def update_prelim_results(*args):
+    """Auxillary function to update results and write preliminary results to
+    disk as backup."""
+    (
+        path_tmp_results,
+        avg_train_score, avg_test_score,
+        train_scores, test_scores,
+        estimator_name, hparams,
+        selector_name,
+        support_votes,
+        support,
+        random_state,
+        results
+    ) = args
+    # Update results dict.
+    results.update(
+        {
+            'avg_train_score': avg_train_score,
+            'avg_test_score': avg_test_score,
+            'train_scores': train_scores,
+            'test_scores': test_scores,
+            'estimator': estimator_name,
+            'hyperparameters': hparams,
+            'selector_name': selector_name,
+            'feature_votes': support_votes,
+            'feature_support': support,
+            'experiment_id': random_state,
+        }
+    )
+    # Write preliminary results to disk.
+    path_case_file = os.path.join(
+        path_tmp_results, '{}_{}_{}'.format(
+            estimator_name, selector_name, random_state
+        )
+    )
+    write_prelim_results(path_case_file, results)
+
+    return results
