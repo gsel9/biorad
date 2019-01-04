@@ -71,7 +71,7 @@ def check_train_test(X_train, X_test):
 
 
 def check_subset(X):
-    """Perform formatting and type checking of feature subset.
+    """Formatting and type checking of feature subset.
 
     Args:
         X (array-like):
@@ -98,11 +98,20 @@ def check_subset(X):
 
 
 def check_support(support, X):
-    # Formatting of indicators subset.
+    """Formatting of feature subset indicators.
+
+    Args:
+        support (array-like): Feature subset indicators.
+        X (array-like): Original feature matrix.
+
+    Returns:
+        (array-like): Formatted indicators of feature subset.
+
+    """
     if not isinstance(support, np.ndarray):
         support = np.array(support, dtype=int)
 
-    # NB: Default mechanism includes all features if none were selected.
+    # NB: Include all features if none were selected.
     if len(support) - 1 < 1:
         support = np.arange(X.shape[1], dtype=int)
     else:
