@@ -70,6 +70,33 @@ def check_train_test(X_train, X_test):
     )
 
 
+def check_subset(X):
+    """Perform formatting and type checking of feature subset.
+
+    Args:
+        X (array-like):
+
+    Returns:
+        (array-like): Formatted feature subset.
+
+    """
+
+    # Check training set.
+    if np.ndim(X) > 2:
+        if np.ndim(np.squeeze(X)) > 2:
+            raise RuntimeError('X train ndim {}'.format(np.ndim(X)))
+        else:
+            X = np.squeeze(X)
+    if np.ndim(X) < 2:
+        if np.ndim(X.reshape(-1, 1)) == 2:
+            X = X.reshape(-1, 1)
+        else:
+            raise RuntimeError('X train ndim {}'.format(np.ndim(X_train)))
+
+    return np.array(X, dtype=float)
+
+
+
 def check_support(support, X):
     # Formatting of indicators subset.
     if not isinstance(support, np.ndarray):
