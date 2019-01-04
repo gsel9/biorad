@@ -1,13 +1,23 @@
-# hyperopt with sklearn
-# http://steventhornton.ca/hyperparameter-tuning-with-hyperopt-in-python/
+# -*- coding: utf-8 -*-
+#
+# model_selection.py
+#
 
-# Parallelizing Evaluations During Search via MongoDB
-# https://github.com/hyperopt/hyperopt/wiki/Parallelizing-Evaluations-During-Search-via-MongoDB
+"""
+hyperopt with sklearn
+http://steventhornton.ca/hyperparameter-tuning-with-hyperopt-in-python/
 
-# Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
+Parallelizing Evaluations During Search via MongoDB
+https://github.com/hyperopt/hyperopt/wiki/Parallelizing-Evaluations-During-Search-via-MongoDB
 
-# Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
-# Checkout: https://github.com/tmadl/highdimensional-decision-boundary-plot
+Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
+
+Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
+Checkout: https://github.com/tmadl/highdimensional-decision-boundary-plot
+"""
+
+__author__ = 'Severin Langberg'
+__email__ = 'langberg91@gmail.com'
 
 import os
 import time
@@ -35,12 +45,17 @@ from sklearn.base import clone
 from sklearn.model_selection import StratifiedKFold
 
 
-# TODO: Need seed + clf + selector name for unique ID to prelim results files.
-def model_selection(
+# TODO:
+def point_632plus_selection():
+    pass
+
+
+def bbc_cv_selection(
     X, y,
     algo,
     model,
-    space,
+    model_id
+    param_space,
     score_func,
     path_tmp_results,
     cv,
@@ -65,7 +80,9 @@ def model_selection(
 
     """
     path_case_file = os.path.join(
-        path_tmp_results, 'experiment_{}'.format(random_state)
+        path_tmp_results, 'experiment_{}_{}'.format(
+            random_state, model_id
+        )
     )
     # Determine if results already produced, or if initiating new experiment.
     if os.path.isfile(path_case_file):
@@ -87,7 +104,7 @@ def model_selection(
         optimizer = ParameterSearchCV(
             algo=algo,
             model=model,
-            space=space,
+            space=param_space,
             score_func=score_func,
             cv=cv,
             max_evals=max_evals,
@@ -439,6 +456,7 @@ if __name__ == '__main__':
     # Demo run:
     # * 97.80 % accuracy seems to be a fairly good score.
     #
+    # TODO: Need seed + clf + selector name for unique ID to prelim results files.
 
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
