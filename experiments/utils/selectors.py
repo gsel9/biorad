@@ -30,7 +30,35 @@ from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class PermutationSelection(BaseEstimator, TransformerMixin):
+class BaseSelector:
+
+    def __init__(self, z_scoring, error_handling='return_all'):
+
+        self.z_scoring = z_scoring
+        self.error_handling = error_handling
+
+        # Apply Z-score transformation to data.
+        if self.z_scoring:
+            self._scaler = StandardScaler()
+        else:
+            self._scaler = None
+
+    @property
+    def support(self):
+
+        if self._support is None:
+            return
+
+        return np.array(self._support, dtype=int)
+
+    # TODO:
+    @staticmethod
+    def _check_X_y(X, y):
+
+        return X, y
+
+
+class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
     """Perform feature selection by feature permutation importance.
 
     Args:
@@ -54,6 +82,8 @@ class PermutationSelection(BaseEstimator, TransformerMixin):
         random_state=None,
     ):
 
+        super().__init__(z_scoring, error_handling)
+
         self.score_func = score_func
         self.num_rounds = num_rounds
         self.test_size = test_size
@@ -68,25 +98,12 @@ class PermutationSelection(BaseEstimator, TransformerMixin):
         if self.hparams is not None:
             self.model.set_params(**self.hparams)
 
-        # Apply Z-score transformation to data.
-        if self.z_scoring:
-            self._scaler = StandardScaler()
-        else:
-            self._scaler = None
-
         self._support = None
-
-    @property
-    def support(self):
-
-        if self._support is None:
-            return
-
-        return np.array(self._support, dtype=int)
 
     def fit(self, X, y):
 
         self.X, self.y = self._check_X_y(X, y)
+
         # Perform train-test splitting.
         X_train, X_test, y_train, y_test = train_test_split(
             self.X, self.y,
@@ -104,23 +121,17 @@ class PermutationSelection(BaseEstimator, TransformerMixin):
         except:
             pass
 
-
         avg_imp = self.feature_permutation_importance(X_test, y_test)
         # Return features contributing to model performance as support.
         _support = np.where(avg_imp > 0)
-        self.support = utils.formatting.check_support(_support, X_train)
+        # Formatting and error handling.
+        self.support = utils.formatting.check_support(_support, self.X)
 
         return self
 
     def transform(self):
 
         return self.support.formatting.check_subset(self.X[:, self.support])
-
-    # TODO:
-    @staticmethod
-    def _check_X_y(X, y):
-
-        return X, y
 
     def _feature_permutation_importance(self, X, y):
         # Returns average feature permutation importance.
@@ -145,97 +156,120 @@ class PermutationSelection(BaseEstimator, TransformerMixin):
         return importance / num_rounds
 
 
-class WilcoxonSelection:
+class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
+    """Perform feature selection by Wilcoxon signed-rank test.
 
-    def __init__(self, thresh=0.05):
+    Args:
+        bf_correction (bool): Determine to apply Bonferroni correction for
+            multiple testing.
+
+    """
+
+    def __init__(
+        self,
+        z_scoring,
+        thresh=0.05,
+        bf_correction=True,
+        error_handling='return_all'
+    ):
+
+        super().__init__(z_scoring, error_handling)
 
         self.thresh = thresh
+        self.z_scoring = z_scoring
+        self.bf_correction = bf_correction
 
-    def fit():
+    def fit(self, X, y=None):
+
+        self.X, self.y = self._check_X_y(X, y)
+
+        # Perform Z-score transformation.
+        if self.z_scoring and self._scaler is not None:
+            self.X = self._scaler.fit_transform(self.X)
+
+        _support = self.wilcoxon_signed_rank()
+        # Formatting and error handling.
+        self.support = utils.formatting.check_support(_support, self.X)
+
+        return self
+
+    def transform(self):
+
+        return self.support.formatting.check_subset(self.X[:, self.support])
+
+    def wilcoxon_signed_rank(self):
+        """The Wilcoxon signed-rank test to determine if two dependent samples were
+        selected from populations having the same distribution. Includes
+
+        H0: The distribution of the differences x - y is symmetric about zero.
+        H1: The distribution of the differences x - y is not symmetric about zero.
+
+        Args:
+            X (array-like): Predictor observations.
+            y (array-like): Ground truths.
+            thresh (float):
+
+        Returns:
+            (numpy.ndarray): Support indicators.
+
+        """
+        _, ncols = np.shape(self.X)
+
+        support, pvals = [], []
+        # Apply Bonferroni correction.
+        if bf_correction:
+            for num in range(ncols):
+                # If p-value > thresh: same distribution.
+                _, pval = stats.wilcoxon(self.X[:, num], self.y)
+                    if pval <= self.thresh / ncols:
+                        support.append(num)
+        else:
+            for num in range(ncols):
+                # If p-value > thresh: same distribution.
+                _, pval = stats.wilcoxon(self.X[:, num], self.y)
+                    if pval <= self.thresh:
+                        support.append(num)
+
+        return np.array(support, dtype=int)
 
 
+class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
-def wilcoxon_selection(
-        X_train, X_test, y_train, y_test, thresh=0.05, **kwargs
+    def __init__(
+        self,
+        z_scoring,
+        num_neighbors,
+        num_features,
+        error_handling='return_all'
     ):
-    """Perform feature selection by the Wilcoxon signed-rank.
 
-    Args:
-        X_train (array-like): Training predictor set.
-        X_test (array-like): Test predictor set.
-        y_train (array-like): Training target set.
-        y_test (array-like): Test target set.
-        thresh (float):
+        super().__init__(z_scoring, error_handling)
 
-    Returns:
-        (tuple): Training subset, test subset and selected features support
-            indicators.
+        self.z_scoring = z_scoring
+        self.num_neighbors = num_neighbors
+        self.num_features = num_features
 
-    """
-    # Z-score transformation.
-    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
+    def fit(self, X, y=None):
 
-    support = wilcoxon_signed_rank(
-        X_train_std, y_train, thresh=thresh, **kwargs
-    )
-    return X_train_std, X_test_std, support
+        self.X, self.y = self._check_X_y(X, y)
 
+        # Perform Z-score transformation.
+        if self.z_scoring and self._scaler is not None:
+            self.X = self._scaler.fit_transform(self.X)
 
-def wilcoxon_signed_rank(X, y, thresh=0.05, **kwargs):
-    """The Wilcoxon signed-rank test to determine if two dependent samples were
-    selected from populations having the same distribution. Includes
+        selector = ReliefF(n_neighbors=self.num_neighbors)
+        selector.fit(self.X, self.y)
 
-    H0: The distribution of the differences x - y is symmetric about zero.
-    H1: The distribution of the differences x - y is not symmetric about zero.
+        _support = selector.top_features[:self.num_features]
 
-    Args:
-        X (array-like): Predictor observations.
-        y (array-like): Ground truths.
-        thresh (float):
+        self.support = utils.formatting.check_support(_support, self.X)
 
-    Returns:
-        (numpy.ndarray): Support indicators.
+        return self
 
-    """
-    _, ncols = np.shape(X)
+    def transform(self):
 
-    support, pvals = [], []
-    for num in range(ncols):
-        # If p-value > thresh: same distribution.
-        _, pval = stats.wilcoxon(X[:, num], y)
-        # Bonferroni correction.
-        if pval <= thresh / ncols:
-            support.append(num)
+        return self.support.formatting.check_subset(self.X[:, self.support])
 
-    return np.array(support, dtype=int)
-
-
-def relieff_selection(
-        X_train, X_test, y_train, y_test, num_neighbors, num_features, **kwargs
-    ):
-    """A wrapper for the ReliefF feature selection algorithm.
-
-    Args:
-        X_train (array-like): Training predictor set.
-        X_test (array-like): Test predictor set.
-        y_train (array-like): Training target set.
-        y_test (array-like): Test target set.
-        num_neighbors (int): The number of neighbors to consider when assigning
-            feature importance scores.
-        num_features (): The number of features to select.
-
-    Returns:
-        (tuple): Training subset, test subset and selected features support
-            indicators.
-
-    """
-    # Z-score transformation.
-    X_train_std, X_test_std = fwutils.train_test_z_scores(X_train, X_test)
-
-    selector = ReliefF(n_neighbors=num_neighbors)
-    selector.fit(X_train_std, y_train)
-
-    return X_train_std, X_test_std, selector.top_features[:num_features]
 
 
 # NOTE:
