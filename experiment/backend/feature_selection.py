@@ -31,7 +31,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class BaseSelector:
+class BaseSelector(BaseEstimator, TransformerMixin):
     """Base representation of a feature selection algorithm.
 
     Args:
@@ -86,8 +86,7 @@ class BaseSelector:
 
         return np.array(X, dtype=float)
 
-    @staticmethod
-    def check_support(support, X):
+    def check_support(self, support, X):
         """Formatting of feature subset indicators.
 
         Args:
@@ -121,7 +120,7 @@ class BaseSelector:
         return support
 
 
-class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
+class PermutationSelection(BaseSelector):
     """Perform feature selection by feature permutation importance.
 
     Args:
@@ -191,7 +190,7 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
         try:
             selector.fit(X_train, y_train)
         except:
-            return self.check_support([])
+            return self.check_support([], X_train)
 
         avg_imp = self.feature_permutation_importance(X_test, y_test)
         # Return features contributing to model performance as support.
@@ -281,7 +280,7 @@ class RFPermutationSelection(PermutationSelection):
         return 'PermutationSelectionRF'
 
 
-class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
+class WilcoxonSelection(BaseSelector):
     """Perform feature selection by Wilcoxon signed-rank test.
 
     Args:
@@ -362,7 +361,7 @@ class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
 
 # pip install ReliefF
-class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
+class ReliefFSelection(BaseSelector):
     """
 
     The algorithm is notably sensitive to feature interactions [1], [2]. It is
@@ -443,7 +442,7 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 # NOTE:
 # * Cloned from: https://github.com/danielhomola/mifs
 # * Use conda to install bottleneck=1.2.1 and pip to install local mifs clone.
-class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
+class MRMRSelection(BaseSelector):
     """Perform feature selection with the minimum redundancy maximum relevancy
     algortihm.
 

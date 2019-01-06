@@ -112,6 +112,7 @@ def bbc_cv_selection(
             random_state=random_state,
             error_score=error_score,
         )
+        # Error handling
         optimizer.fit(X, y)
 
         # Add available and potentially interesting results to output.
@@ -381,7 +382,7 @@ class ParameterSearchCV:
         #pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
         #trials = pickle.load(open('TEMP_RESULTS_FILE', 'rb'))
 
-        # Run the hyperparameter search.
+        # Error handling.
         self._best_params = fmin(
             self.objective,
             self.space,
@@ -414,12 +415,9 @@ class ParameterSearchCV:
 
             # Clone model to ensure independency between folds.
             _model = clone(self.model)
-            # Error handling mechanism.
-            try:
-                _model.set_params(**hparams)
-                _model.fit(X_train, y_train)
-            except:
-                return self.error_score
+            # TODO: Error handling mechanism.
+            _model.set_params(**hparams)
+            _model.fit(X_train, y_train)
 
             _y_test = _model.predict(X_test)
             _y_train = _model.predict(X_train)

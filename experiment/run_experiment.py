@@ -130,7 +130,8 @@ if __name__ == '__main__':
         selectors, classifiers
     )
     # ERROR:
-    # * https://stackoverflow.com/questions/45267282/feature-names-from-sklearn-pipeline-not-fitted-error
+    # Try fitting and predicting with each pipeline.
+    """
     comparison_frame.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
@@ -150,3 +151,4 @@ if __name__ == '__main__':
         n_jobs=-1,
         #path_to_results='testing'
     )
+    """
