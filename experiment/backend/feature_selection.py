@@ -223,6 +223,62 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
         return importance / num_rounds
 
 
+class RFPermutationSelection(PermutationSelection):
+    """Random forest classifier permutation importance feature selection.
+
+    Args:
+
+    """
+
+    def __init__(
+        self,
+        score_func=None,
+        num_rounds=10,
+        test_size=None,
+        n_estimators=None,
+        max_features=None,
+        max_depth=None,
+        min_samples_split=None,
+        min_samples_leaf=None,
+        bootstrap=None,
+        oob_score=False,
+        n_jobs=-1,
+        verbose=False,
+        error_handling='return_all',
+    ):
+
+        # Wrap model hyperparameter arguments. Need to specify all RF
+        # hyperparameters in constructor if hyperopt is going to treat these
+        # parameters as part of the optimization problem.
+        model_params = dict(
+            n_estimators=n_estimators,
+            max_features=max_features,
+            max_depth=max_depth,
+            min_samples_split=min_samples_split,
+            min_samples_leaf=min_samples_leaf,
+            bootstrap=bootstrap,
+            oob_score=oob_score,
+            n_jobs=n_jobs,
+            verbose=verbose,
+        )
+        # Pass arguments to permutation importance base class.
+        super().__init__(
+            score_func=score_func,
+            num_rounds=num_rounds,
+            test_size=test_size,
+            model=RandomForestClassifier(),
+            model_params=model_params,
+            error_handling=error_handling,
+            random_state=random_state
+        )
+
+    def __name__(self):
+
+        return 'PermutationSelectionRF'
+
+
+
+
 class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
     """Perform feature selection by Wilcoxon signed-rank test.
 
