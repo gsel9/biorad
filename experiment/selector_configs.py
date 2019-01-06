@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 #
-# classification.py
+# selector_configs.py
 #
 
 """
 To do's:
-* Algorithm setup including hyperparameters.
+* Determine the intial number of features to select from.
 
 """
 
@@ -41,6 +41,7 @@ def sklearn_roc_auc_score(*args, **kwargs):
 
 
 selectors = {
+    # Random forest classifier permutation importance selection.
     RFPermutationSelection.__name__: {
         # NOTE: Algorithm wraps a Random Forest Classifier with associated
         # hyperparams as part of the feature selection optimization problem.
