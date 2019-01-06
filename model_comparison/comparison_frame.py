@@ -28,8 +28,7 @@ def model_comparison(
     comparison_scheme,
     X, y,
     algo,
-    estimators,
-    param_space,
+    pipes_and_params,
     score_func,
     cv,
     oob,
@@ -71,15 +70,15 @@ def model_comparison(
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else cpu_count()
 
     results = []
-    for name, estimator in estimators.items():
+    for pipe_label, estimator_items in pipes_and_params.items():
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
                     X, y,
                     algo,
-                    name,
-                    estimator,
-                    param_space,
+                    pipe_label,
+                    estimator_items['pipe'],
+                    estimator_items['params'],
                     score_func,
                     path_tmp_results,
                     cv, oob, max_evals,
