@@ -16,20 +16,7 @@ Notes:
 import numpy as np
 
 from hyperopt import hp
-
-
-# Log-uniform between 1e-9 and 1e-4
-#space['clf__alpha'] = hp.loguniform('clf__alpha', -9*np.log(10), -4*np.log(10))
-# Random integer in 20:5:80
-#space['clf__n_iter'] = 20 + 5 * hp.randint('clf__n_iter', 12)
-# Random number between 50 and 100
-#space['clf__class_weight'] = hp.choice('clf__class_weight', [None,]) #'balanced']),
-# Discrete uniform distribution
-#space['clf__n_estimators'] = scope.int(hp.quniform('clf__n_estimators', 20, 500, 5))
-# Discrete uniform distribution
-#space['clf__max_leaf_nodes'] = scope.int(hp.quniform('clf__max_leaf_nodes', 30, 150, 1))
-# Discrete uniform distribution
-#space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
+from hyperopt.pyll import scope
 
 
 np.random.seed(0)
@@ -240,8 +227,6 @@ def _svm_C(name):
     return hp.loguniform(name, np.log(1e-5), np.log(1e5))
 
 
-# ERROR:
-# Support vector classifier hyperparameters search space.
 # TODO:
 # * Checkout how can make gamme independent of num features.
 def svc_param_space(
@@ -515,13 +500,13 @@ def plsr_hparam_space(
     return param_space
 
 
-def permutation_hparam_space(
-    name_func,
-    test_size=None,
-    model=None,
-    **kwargs
+def rf_permutation_param_space(
+    procedure_params,
+    model_params
 ):
-    """
+    """Random forest classifier permutation importance feature selection
+    hyperparameter search space.
+
     Args:
         test_size (float): Proportion of samples to use as test data.
 
@@ -529,13 +514,14 @@ def permutation_hparam_space(
         Arguments to wrapped model hyperparameter space.
 
     """
-    #if model.__name__ == 'RandomForest':
-    #    hparams = trees_param_space(**kwargs)
+    # Set permutation importance procedure specific parameters.
 
-    # NOTE: Possible to speficy model + hparam space in experimental setup or
-    # in selector module?
+    # Merge parameters for permutation importance function and the wrapped
+    # model hyperparameters.
+    param_space = procedure_params.copy()
+    param_space.update(model_params)
 
-    pass
+    return param_space
 
 
 def _relieff_num_neighbors(name):
@@ -567,7 +553,7 @@ def relieff_hparam_space(
             if num_neighbors is None else num_neighbors
         ),
         num_features=(
-            _num_features(name_func('num_features'), max_num_features)
+            hp_num_features(name_func('num_features'), max_num_features)
             if num_features is None else num_features
         )
     )
@@ -599,7 +585,7 @@ def mrmr_hparam_space(
             _mrmr_k(name_func('k')) if k is None else k
         ),
         num_features=(
-            _num_features(name_func('num_features'), max_num_features)
+            hp_num_features(name_func('num_features'), max_num_features)
             if num_features is None else num_features
         )
     )
