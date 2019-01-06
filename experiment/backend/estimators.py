@@ -19,21 +19,18 @@ Notes:
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-def estimator_from_config():
+def pipelines_from_configs():
+    pass
+
+
+def _pipe_from_config():
+    pass
+
+
+def _pipe_label():
     pass
 
 
 # https://github.com/automl/SMAC3/blob/master/examples/svm.py
 def svc_from_config(config):
     pass
-
-
-def gnb_from_config(config):
-    pass
-
-
-pipe1 = Pipeline([
-    ('cv', CountVectorizer()),
-    ('tfidf', TfidfTransformer()),
-    ('logit', LogisticRegression()),
-])

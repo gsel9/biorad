@@ -88,7 +88,7 @@ if __name__ == '__main__':
     sys.path.append('./../model_comparison')
 
     import os
-    import feature_selection
+    import backend
 
     from model_selection import bbc_cv_selection
     from model_comparison import model_comparison
@@ -98,6 +98,7 @@ if __name__ == '__main__':
     from sklearn.metrics import precision_recall_fscore_support
 
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
 
     from hyperopt import hp
     from hyperopt import tpe
@@ -132,30 +133,110 @@ if __name__ == '__main__':
     np.random.seed(0)
     random_states = np.random.randint(1000, size=40)
 
+    # Specify:
+    # * estimator + hparam space (Specify only the predetermined params. Other
+    # params are sampled from distribution.)
+    # * Preprocessing steps (scaling and feature selection) + hparams
+
+    # TODO: Move this setup to separate module.
     """
     estimators = {
-        'logreg': LogisticRegression,
+        (
+            'clf': LogisticRegression,
+            # NOTE: S
+            'params': hyperparams.logreg_hparam_space(
+                name_func=name_func,
+                dual=False,
+                solver='liblinear’',
+                fit_intercept=True,
+                intercept_scaling=1,
+                class_weight=None,
+                multi_class='ovr',
+                max_iter=-1,
+                verbose=0,
+                warm_start=False,
+                n_jobs=-1
+            )
+        )
         'rf': RandomForestClassifier,
         'plsr': PLSRegression,
         'gnb': GaussianNB,
         'svc': SVC,
     }
-    selectors = {
-        'rf_permutation': backend.feature_selection.PermutationSelection,
+    preprocessors = {
+        (
+            'scaler': StandardScaler(),
+            'rf_permutation': backend.feature_selection.PermutationSelection,
+            'scaler': StandardScaler()
+        )
         'wlcx': backend.feature_selection.WilcoxonSelection,
         'relieff': backend.feature_selection.ReliefFSelection,
         'mrmr': backend.feature_selection.MRMRSelection
     }
     """
 
+    # TODO:
+    # * Add feature selection hyperparameter spaces.
+    # * Need to get a hold of labels of all elements in pipeline for
+    #   reference/passing to hparam spaces.
+    # * Handle hyperparameter flow (also for the random forest clssifier in
+    #   the permutation selector).
+    # * Use formater funtion to check for random states and adjust n_components
+    #   in subspace methods.
+    # *
     estimators = {
         'rf_permutation_logreg': make_pipeline(
+            StandardScaler(),
             backend.feature_selection.PermutationSelection(
+                # tree params
                 model=RandomForestClassifier()
             ),
+            StandardScaler(),
+            LogisticRegression()
+        ),
+        'wilcoxon_logreg': make_pipeline(
+            StandardScaler(),
+            backend.feature_selection.WilcoxonSelection(),
+            StandardScaler(),
+            LogisticRegression()
+        ),
+        'relieff_logreg': make_pipeline(
+            StandardScaler(),
+            backend.feature_selection.ReliefFSelection(),
+            StandardScaler(),
+            LogisticRegression()
+        ),
+        'mrmr_logreg': make_pipeline(
+            StandardScaler(),
+            backend.feature_selection.MRMRSelection(),
+            StandardScaler(),
             LogisticRegression()
         )
+
     }
+
+    param_spaces = {
+        'rf_permutation_logreg': hyperparams.trees_param_space()
+    }
+
+    # Parameter search space
+    space = {}
+    # Random number between 50 and 100
+    space['kbest__percentile'] = hp.uniform('kbest__percentile', 50, 100)
+    # Random number between 0 and 1
+    #space['clf__l1_ratio'] = hp.uniform('clf__l1_ratio', 0.0, 1.0)
+    # Log-uniform between 1e-9 and 1e-4
+    #space['clf__alpha'] = hp.loguniform('clf__alpha', -9*np.log(10), -4*np.log(10))
+    # Random integer in 20:5:80
+    #space['clf__n_iter'] = 20 + 5 * hp.randint('clf__n_iter', 12)
+    # Random number between 50 and 100
+    space['clf__class_weight'] = hp.choice('clf__class_weight', [None,]) #'balanced']),
+    space['clf__n_estimators'] = scope.int(hp.quniform('clf__clf__n_estimators', 20, 500, 5))
+    # Discrete uniform distribution
+    space['clf__max_leaf_nodes'] = scope.int(hp.quniform('clf__max_leaf_nodes', 30, 150, 1))
+    # Discrete uniform distribution
+    space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
+
 
     """
     def setup_experiment(
@@ -189,3 +270,14 @@ if __name__ == '__main__':
         path_to_results='test_results'
     )
     """
+
+    pipes = {}
+    for estimator in estimators:
+        for selector in selectors:
+            pipe_label = '{}_{}'.format(selector.__name__, estimator.__name__)
+            pipe = Pipeline(
+                [
+                    (selector.__name__, selector()),
+                    (estimator.__name__, estiamtor())
+                ]
+            )

@@ -133,10 +133,10 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        score_func,
-        num_rounds,
-        test_size,
-        model,
+        score_func=None,
+        num_rounds=10,
+        test_size=None,
+        model=None,
         hparams=None,
         error_handling='return_all',
         random_state=None,
@@ -291,8 +291,8 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        num_neighbors,
-        num_features,
+        num_neighbors=None,
+        num_features=None,
         error_handling='return_all'
     ):
 
@@ -340,9 +340,8 @@ class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        z_scoring,
-        k,
-        num_features,
+        k=None,
+        num_features=None,
         error_handling='return_all'
     ):
 

@@ -11,7 +11,6 @@ To do's:
 * Add feature selection hyperparam spaces.
 
 Notes:
-* Based on configurations specified in hyperopt-sklearn package.
 * How can determine optimal cache size?
 
 """
@@ -50,28 +49,30 @@ def hp_bool(name):
 ######################################################
 
 
-def _trees_n_estimators(name):
-    # Equivalent to exp(uniform(low, high)).
-    return scope.int(hp.qloguniform(name, np.log(9.5), np.log(3000.5), 1))
-
-
 def _trees_criterion(name):
+    """The search space for the function to measure the quality of a split in a
+    random forest.
+
+    Args:
+        (name):
+
+    """
     return hp.choice(name, ['gini', 'entropy'])
 
 
+# Range a bit short?
+def _trees_n_estimators(name):
+
+    return scope.int(hp.qloguniform(name, np.log(9.5), np.log(3000.5), 1))
+
+
 def _trees_max_features(name):
-    return hp.pchoice(
-        name,
-        [
-            # Most common choice.
-            (0.2, 'sqrt'),
-            # Less common choice.
-            (0.1, 'log2'),
-            # All features, less common choice.
-            (0.1, None),
-            (0.6, hp.uniform(name + '.frac', 0., 1.))
-        ]
-    )
+    return hp.pchoice(name, [
+        (0.2, 'sqrt'),  # most common choice.
+        (0.1, 'log2'),  # less common choice.
+        (0.1, None),  # all features, less common choice.
+        (0.6, hp.uniform(name + '.frac', 0., 1.))
+    ])
 
 
 def _trees_max_depth(name):
@@ -84,37 +85,19 @@ def _trees_max_depth(name):
     ])
 
 
-def _trees_max_depth(name):
-    return hp.pchoice(
-        name,
-        [
-            # Most common choice.
-            (0.7, None),
-            # Try some shallow trees.
-            (0.1, 2),
-            (0.1, 3),
-            (0.1, 4),
-        ]
-    )
-
-
 def _trees_min_samples_split(name):
-
     return 2
 
 
 def _trees_min_samples_leaf(name):
     return hp.choice(name, [
-        # Most common choice.
-        1,
+        1,  # most common choice.
         scope.int(hp.qloguniform(name + '.gt1', np.log(1.5), np.log(50.5), 1))
     ])
 
 
-def _trees_bootstrap(name):
-    return hp.choice(name, [True, False])
-
-
+# ERROR:
+# Random forest hyperparameters search space
 def trees_param_space(
     name_func,
     n_estimators=None,
@@ -132,21 +115,6 @@ def trees_param_space(
 
     Args:
         name_func (function): Parameter label formatting function.
-        n_estimators (int):
-            Drawn from a exp(uniform(low, high)) distribution unless specified.
-        criterion (str):
-            Drawn randomly as `gini` or `entropy`.
-        max_features (): Check scikit docs for common choices.
-        max_depth (): Check scikit docs for common choices.
-        min_samples_split (int):
-            Defaults to two ... unless specified.
-        min_samples_leaf ():
-            Drawn randomly as one or from a exp(uniform(low, high))
-            distribution.
-        bootstrap (bool):
-            Drawn randomly as true or false.
-        oob_score (bool):
-            Defults to false (check if recom at scikit docs).
 
     """
     param_space = dict(
@@ -174,6 +142,8 @@ def trees_param_space(
             hp_bool(name_func('bootstrap'))
             if bootstrap is None else bootstrap
         ),
+        # Default settings defined according to descriptions found in
+        # scikit-learn documentation.
         oob_score=oob_score,
         n_jobs=n_jobs,
         verbose=verbose,
@@ -188,37 +158,31 @@ def trees_param_space(
 
 
 def _svm_gamma(name, n_features=1):
-    # Generator of default gamma values for SVMs. Equivalent to
-    # exp(uniform(low, high)).
-    #
-    # This setting is based on the following rationales:
-    # 1.  The gamma hyperparameter can be considered an amplifier of the
-    #     original dot product or L2 norm.
-    # 2.  The original dot product or L2 norm shall be normalized by
-    #     the number of features first.
-    # Args:
-    #    name (str):
-    #    n_features (int):
-    #    -- making these non-conditional variables
-    #       probably helps the GP algorithm generalize
+    """Generator of default gamma values for SVMs.
+
+    This setting is based on the following rationales:
+    1.  The gamma hyperparameter can be considered an amplifier of the
+        original dot product or L2 norm.
+    2.  The original dot product or L2 norm shall be normalized by
+        the number of features first.
+
+    """
+    # -- making these non-conditional variables
+    #    probably helps the GP algorithm generalize
+    # assert n_features >= 1
     return hp.loguniform(
-        name, np.log(1e-3 / n_features),  np.log(1e3 / n_features)
+        name, np.log(1. / n_features * 1e-3), np.log(1. / n_features * 1e3)
     )
 
 
 def _svm_degree(name):
-    # Equivalent to round(uniform(low, high) / q) * q
+
     return hp.quniform(name, 1.5, 6.5, 1)
 
 
 def _svm_tol(name):
-    # Equivalent to exp(uniform(low, high)).
-    return hp.loguniform(name, np.log(1e-5), np.log(1e-2))
 
-
-def _svm_C(name):
-    # Equivalent to exp(uniform(low, high)).
-    return hp.loguniform(name, np.log(1e-5), np.log(1e5))
+    return hp.loguniform(name, np.log(1 + 1e-5), np.log(1 + 1e-2))
 
 
 # ERROR:
@@ -227,66 +191,42 @@ def _svm_C(name):
 # * Checkout how can make gamme independent of num features.
 def svc_param_space(
     name_func,
-    gamma=None,
-    degree=None,
-    tol=None,
-    C=None,
-    shrinking=None,
-    coef0=None,
-    kernel='rbf',
+    kernel,
     n_features=1,
+    C=None,
+    gamma=None,
+    coef0=None,
+    degree=None,
+    shrinking=None,
+    tol=None,
     class_weight='balanced',
     max_iter=-1,
     verbose=False,
-    cache_size=512
+    cache_size=300
 ):
     """
     Generate SVM hyperparamters search space.
-
-    Args:
-        name_func (): param...
-        gamma (): param...
-            Gamma only apllies to the RBF, polynomial and sigmoid kernels.
-            Drawn from a exp(uniform(low, high)) distribution unless specified.
-        degree (): param...
-            Degree only applies to a polynomial kernel.
-            Drawn from a round(uniform(low, high) / q) * q distribution
-            unless specified.
-        tol (): param...
-            Drawn from a exp(uniform(low, high)) distribution unless specified.
-        C (): param...
-            Drawn from a exp(uniform(low, high)) distribution unless specified.
-        shrinking (): param...
-            Determined by boolean random choice unless specified.
-        coef0 (): param...
-            Coef only applies to polynomial and sigmoid kernels.
-            Drawn from a gamma scaled uniform distribution depending on the
-            specified kernel with 70 % probability, and 30 % probability of
-            being defined equal to zero.
-        kernel (): Defaults to RBF kernel.
-        n_features (): Defaults to one feature.
-        class_weight: Defaults to `balanced`.
-        max_iter: Defaults to unlimited number of iterations for convergance.
-        verbose: Defaults to false.
-        cache_size: Defults to 512 as default SVM cache size specified in
-            hyperopt package.
-
     """
+    # Degree only applies to the polynomial kernel.
     if kernel in ['linear', 'rbf', 'sigmoid']:
         _degree = 1
     else:
         _degree = (
             _svm_degree(name_func('degree')) if degree is None else degree
         )
+    # Gamma only apllies to the RBF, polynomial and sigmoid kernels.
     if kernel in ['linear']:
-        _gamma_ = 'auto'
+        _gamma = 'auto'
     else:
-        _gamma_ = (
-            _svm_gamma(name_func('gamma'), n_features=1)
+        _gamma = (
+            _svm_gamma(name_func('gamma'), n_features=n_features)
             if gamma is None else gamma
         )
+        # TODO: Why?
         # Render gamma independent of n_features.
         _gamma = _gamma / n_features
+
+    # Coef only applies to polynomial and sigmoid kernels.
     if kernel in ['linear', 'rbf']:
         _coef0 = 0.0
     elif coef0 is None:
@@ -295,7 +235,7 @@ def svc_param_space(
                 name_func('coef0'),
                 [
                     (0.3, 0),
-                    (0.7, _gamma * hp.uniform(name_func('coef0val'), 0., 10.))
+                    (0.7, _gamma * hp.uniform(name_func('coef0val'), 0, 10))
                 ]
             )
         elif kernel == 'sigmoid':
@@ -303,16 +243,16 @@ def svc_param_space(
                 name_func('coef0'),
                 [
                     (0.3, 0),
-                    (0.7, _gamma * hp.uniform(name_func('coef0val'), -10., 10.))
+                    (0.7, _gamma * hp.uniform(name_func('coef0val'), -10, 10))
                 ]
             )
         else:
             pass
     else:
         _coef0 = coef0
-    # Generate actual hparam space.
+
     param_space = dict(
-        kernel=kernel,
+        kernel=_kernel,
         gamma=_gamma,
         coef0=_coef0,
         degree=_degree,
@@ -322,9 +262,11 @@ def svc_param_space(
             if shrinking is None else shrinking
         ),
         tol=_svm_tol(name_func('tol')) if tol is None else tol,
+        # Default settings defined according to descriptions found in
+        # scikit-learn documentation.
+        verbose=verbose,
         class_weight=class_weight,
         cache_size=cache_size,
-        verbose=verbose,
         max_iter=max_iter,
     )
     return param_space
@@ -338,27 +280,22 @@ def svc_param_space(
 
 def _gnb_var_smoothing(name):
 
-    # Equivalent to exp(uniform(low, high)).
-    return hp.loguniform(name, np.log(1e-12), np.log(1e-7))
+    return hp.loguniform(
+        name, np.log(1 + 1e-12), np.log(1 + 1e-7)
+    )
 
 
+# ERROR:
+# Gaussian Naive Bayes hyperparameters search space
 def gnb_param_space(name_func, priors=None, var_smoothing=None):
-    """
-    Generate Gaussian NB hyperparamters search space.
 
-    Args:
-        name_func (): param...
-        priors ():
-        var_smoothing ():
-            Drawn randomly from exp(uniform(low, high)) distribution unless
-            specified.
-
-    """
     param_space = dict(
         var_smoothing=(
             _gnb_var_smoothing(name_func('var_smoothing'))
             if var_smoothing is None else var_smoothing
         ),
+        # Default settings defined according to descriptions found in
+        # scikit-learn documentation.
         priors=priors
     )
     return param_space
