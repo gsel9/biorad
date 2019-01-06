@@ -129,7 +129,8 @@ if __name__ == '__main__':
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
-    #
+    # ERROR:
+    # * https://stackoverflow.com/questions/45267282/feature-names-from-sklearn-pipeline-not-fitted-error
     comparison_frame.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,

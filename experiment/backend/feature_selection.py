@@ -177,7 +177,7 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return check_X_y(X, y)
 
-    def fit(self, X, y):
+    def fit(self, X, y, *args, **kwargs):
 
         self.X, self.y = self._check_X_y(X, y)
 
@@ -199,7 +199,7 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self):
+    def transform(self, *args, **kwargs):
 
         return self.check_subset(self.X[:, self.support])
 
@@ -312,7 +312,7 @@ class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return check_X_y(X, y)
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, *args, **kwargs):
 
         self.X, self.y = self._check_X_y(X, y)
 
@@ -321,7 +321,7 @@ class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self):
+    def transform(self, *args, **kwargs):
 
         return self.check_subset(self.X[:, self.support])
 
@@ -417,7 +417,7 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return X, y
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, *args, **kwargs):
 
         # NOTE: Includes scaling to [0, 1] range.
         self.X, self.y = self._check_X_y(X, y)
@@ -435,7 +435,7 @@ class ReliefFSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self):
+    def transform(self, *args, **kwargs):
 
         return self.check_subset(self.X[:, self.support])
 
@@ -472,7 +472,7 @@ class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
 
         return 'MRMRSelection'
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, *args, **kwargs):
 
         self.X, self.y = self._check_X_y(X, y)
 
@@ -495,7 +495,7 @@ class MRMRSelection(BaseSelector, BaseEstimator, TransformerMixin):
         )
         return self
 
-    def transform(self):
+    def transform(self, *args, **kwargs):
 
         return self.check_subset(self.X[:, self.support])
 
