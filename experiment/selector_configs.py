@@ -12,6 +12,9 @@ To do's:
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
+
+from hyperopt.pyll import scope
+
 from backend import hyperparams
 
 from backend.feature_selection import RFPermutationSelection
@@ -23,14 +26,19 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 
-from hyperopt.pyll import scope
-
 
 # Globals
 CLF_LABEL = 'selector'
-# NB WIP:
+# NB WIP: The initial number of features to select from.
 NUM_ORIG_FEATURES = 10
-NAME_FUNC = lambda param_name: '{}__{}'.format(CLF_LABEL, param_name)
+
+
+@scope.define
+def selector_name_func(param_name):
+
+    global CLF_LABEL
+
+    return '{}__{}'.format(CLF_LABEL, param_name)
 
 
 @scope.define
@@ -45,7 +53,7 @@ selectors = {
     RFPermutationSelection.__name__: {
         # NOTE: Algorithm wraps a Random Forest Classifier with associated
         # hyperparams as part of the feature selection optimization problem.
-        'pipe': [
+        'selector': [
             (CLF_LABEL, RFPermutationSelection())
         ],
         # Mergeing of permutation importance procedure parameters with
@@ -54,12 +62,12 @@ selectors = {
         # the hyperparams rf_permutation_param_space backend function.
         'params': hyperparams.rf_permutation_param_space(
             procedure_params = {
-                NAME_FUNC('score_func'): sklearn_roc_auc_score,
-                NAME_FUNC('num_rounds'): 10,
-                NAME_FUNC('test_size'): 0.2,
+                selector_name_func('score_func'): sklearn_roc_auc_score,
+                selector_name_func('num_rounds'): 10,
+                selector_name_func('test_size'): 0.2,
             },
             model_params=hyperparams.trees_param_space(
-                NAME_FUNC,
+                selector_name_func,
                 n_estimators=None,
                 max_features=None,
                 max_depth=None,
@@ -74,7 +82,7 @@ selectors = {
     },
     # Wilcoxon feature selection
     WilcoxonSelection.__name__: {
-        'pipe': [
+        'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, WilcoxonSelection(
                 thresh=0.05, bf_correction=True,
@@ -84,12 +92,12 @@ selectors = {
     },
     # ReliefF feature selection
     ReliefFSelection.__name__: {
-        'pipe': [
+        'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, ReliefFSelection())
         ],
         'params': hyperparams.relieff_hparam_space(
-            NAME_FUNC,
+            selector_name_func,
             num_neighbors=None,
             num_features=None,
             max_num_features=NUM_ORIG_FEATURES
@@ -97,12 +105,12 @@ selectors = {
     },
     # Maximum relevance minimum redundancy selection
     MRMRSelection.__name__: {
-        'pipe': [
+        'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, MRMRSelection())
         ],
         'params': hyperparams.mrmr_hparam_space(
-            NAME_FUNC,
+            selector_name_func,
             k=None,
             num_features=None,
             max_num_features=NUM_ORIG_FEATURES

@@ -281,8 +281,6 @@ class RFPermutationSelection(PermutationSelection):
         return 'PermutationSelectionRF'
 
 
-
-
 class WilcoxonSelection(BaseSelector, BaseEstimator, TransformerMixin):
     """Perform feature selection by Wilcoxon signed-rank test.
 
