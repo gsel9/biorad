@@ -543,7 +543,15 @@ def relieff_hparam_space(
     num_features=None
     max_num_features=1
 ):
+    """
 
+    Args:
+        name_func ():
+        num_neighbors (int): 
+        num_features (int): The number of features select.
+        max_num_features (int): Size of the original feature space.
+
+    """
     param_space = dict(
         num_neighbors=(
             _relieff_num_neighbors(name_func('num_neighbors'))
@@ -557,11 +565,36 @@ def relieff_hparam_space(
     return param_space
 
 
+def _mrmr_k(name):
+
+    return scope.int(hp.quniform(name, 3, 10, 1))
+
+
 def mrmr_hparam_space(
     name_func,
     k=None,
     num_features=None,
-): pass
+    max_num_features=1
+):
+    """
+
+    Args:
+        name_func ():
+        k (int): Kraskov et al. recommend a small integer between 3 and 10.
+        num_features (int): The number of features select.
+        max_num_features (int): Size of the original feature space.
+
+    """
+    param_space = dict(
+        k=(
+            _mrmr_k(name_func('k')) if k is None else k
+        ),
+        num_features=(
+            _num_features(name_func('num_features'), max_num_features)
+            if num_features is None else num_features
+        )
+    )
+    return param_space
 
 
 
