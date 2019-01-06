@@ -19,9 +19,6 @@ from hyperopt import hp
 from hyperopt.pyll import scope
 
 
-np.random.seed(0)
-
-
 def hp_bool(name):
     """The search space for a boolean hyperparameter.
 
@@ -148,35 +145,31 @@ def trees_param_space(
             Defults to false (check if recom at scikit docs).
 
     """
-    param_space = dict(
-        n_estimators=(
-            _trees_n_estimators(name_func('n_estimators'))
-            if n_estimators is None else n_estimators
-        ),
-        max_features=(
-            _trees_max_features(name_func('max_features'))
-            if max_features is None else max_features
-        ),
-        max_depth=(
-            _trees_max_depth(name_func('max_depth'))
-            if max_depth is None else max_depth
-        ),
-        min_samples_split=(
-            _trees_min_samples_split(name_func('min_samples_split'))
-            if min_samples_split is None else min_samples_split
-        ),
-        min_samples_leaf=(
-            _trees_min_samples_leaf(name_func('min_samples_leaf'))
-            if min_samples_leaf is None else min_samples_leaf
-        ),
-        bootstrap=(
-            hp_bool(name_func('bootstrap'))
-            if bootstrap is None else bootstrap
-        ),
-        oob_score=oob_score,
-        n_jobs=n_jobs,
-        verbose=verbose,
-    )
+    param_space = {
+        name_func('n_estimators'): _trees_n_estimators(
+            name_func('n_estimators')
+        )
+        if n_estimators is None else n_estimators,
+        name_func('max_features'): _trees_max_features(
+            name_func('max_features')
+        )
+        if max_features is None else max_features,
+        name_func('max_depth'): _trees_max_depth(name_func('max_depth'))
+        if max_depth is None else max_depth,
+        name_func('min_samples_split'): _trees_min_samples_split(
+            name_func('min_samples_split')
+        )
+        if min_samples_split is None else min_samples_split,
+        name_func('min_samples_leaf'): _trees_min_samples_leaf(
+            name_func('min_samples_leaf')
+        )
+        if min_samples_leaf is None else min_samples_leaf,
+        name_func('bootstrap'): hp_bool(name_func('bootstrap'))
+        if bootstrap is None else bootstrap,
+        name_func('oob_score'): oob_score,
+        name_func('n_jobs'): n_jobs,
+        name_func('verbose'): verbose,
+    }
     return param_space
 
 
@@ -184,13 +177,6 @@ def trees_param_space(
 ##########################################################################
 ##==== Support Vector Machines hyperparameter generators ====##
 #########################################################################
-
-
-def _svm_kernel(name):
-    # NOTE: Have to choose kernel a priori and cannot pass a distribution of
-    # kernel options as parameter space because the space generator function is
-    # not evaluated at each search, but only at initialization.
-    return np.random.choice(name, ['linear', 'rbf', 'poly', 'sigmoid'])
 
 
 def _svm_gamma(name, n_features=1):
@@ -231,13 +217,13 @@ def _svm_C(name):
 # * Checkout how can make gamme independent of num features.
 def svc_param_space(
     name_func,
+    kernel=None,
     gamma=None,
     degree=None,
     tol=None,
     C=None,
     shrinking=None,
     coef0=None,
-    kernel='rbf',
     n_features=1,
     class_weight='balanced',
     max_iter=-1,
@@ -276,18 +262,18 @@ def svc_param_space(
             hyperopt package.
 
     """
-    # NOTE: Choose kernel initially as this param constrains the others.
+    # NB: Choose kernel initially as this param constrains the others.
     if kernel in ['linear', 'rbf', 'sigmoid']:
         _degree = 1
     else:
         _degree = (
             _svm_degree(name_func('degree')) if degree is None else degree
-        )
+        ),
     if kernel in ['linear']:
-        _gamma_ = 'auto'
+        _gamma = 'auto'
     else:
-        _gamma_ = (
-            _svm_gamma(name_func('gamma'), n_features=1)
+        _gamma = (
+            _svm_gamma(name_func('gamma'), n_features=n_features)
             if gamma is None else gamma
         )
         # Render gamma independent of n_features.
@@ -316,22 +302,19 @@ def svc_param_space(
     else:
         _coef0 = coef0
     # Generate actual hparam space.
-    param_space = dict(
-        kernel=kernel,
-        gamma=_gamma,
-        coef0=_coef0,
-        degree=_degree,
-        C=_svm_C(name_func('C')) if C is None else C,
-        shrinking=(
-            hp_bool(name_func('shrinking'))
-            if shrinking is None else shrinking
-        ),
-        tol=_svm_tol(name_func('tol')) if tol is None else tol,
-        class_weight=class_weight,
-        cache_size=cache_size,
-        verbose=verbose,
-        max_iter=max_iter,
-    )
+    param_space = {
+        name_func('kernel'): kernel,
+        name_func('gamma'): _gamma,
+        name_func('coef0'): _coef0,
+        name_func('C'): _svm_C(name_func('C')) if C is None else C,
+        name_func('shrinking'): hp_bool(name_func('shrinking'))
+                                if shrinking is None else shrinking,
+        name_func('tol'): _svm_tol(name_func('tol')) if tol is None else tol,
+        name_func('class_weight'): class_weight,
+        name_func('cache_size'): cache_size,
+        name_func('verbose'): verbose,
+        name_func('max_iter'): max_iter
+    }
     return param_space
 
 
@@ -359,13 +342,13 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
             specified.
 
     """
-    param_space = dict(
-        var_smoothing=(
-            _gnb_var_smoothing(name_func('var_smoothing'))
-            if var_smoothing is None else var_smoothing
-        ),
-        priors=priors
-    )
+    param_space = {
+        name_func('var_smoothing'): _gnb_var_smoothing(
+            name_func('var_smoothing')
+        )
+        if var_smoothing is None else var_smoothing,
+        name_func('priors'): priors
+    }
     return param_space
 
 
@@ -425,33 +408,26 @@ def logreg_hparam_space(
             Use OvR for binary classification problem.
 
     """
-    # TODO:
+    # NOTE:
     #if fit_intercept:
     #    intercept_scaling =
-    param_space = dict(
-        penalty=(
-            _logreg_penalty(name_func('penalty'))
-            if penalty is None else penalty
-        ),
-        C=(
-            _logreg_C(name_func('C')) if C is None else C
-        ),
-        tol=(
-            _logreg_tol(name_func('tol')) if tol is None else tol
-        ),
-        dual=dual,
-        solver=solver,
-        max_iter=max_iter,
-        multi_class=multi_class,
-        class_weight=class_weight,
-        # TODO: Can be randomly selected.
-        fit_intercept=fit_intercept,
+    param_space = {
+        name_func('penalty'): _logreg_penalty(name_func('penalty'))
+        if penalty is None else penalty,
+        name_func('C'): _logreg_C(name_func('C')) if C is None else C,
+        name_func('tol'): _logreg_tol(name_func('tol')) if tol is None else tol,
+        name_func('dual'): dual,
+        name_func('solver'): solver,
+        name_func('max_iter'): max_iter,
+        name_func('multi_class'): multi_class,
+        # Can be randomly selected.
+        name_func('fit_intercept'): fit_intercept,
         # Can be randomly selected if fit_intercept.
-        intercept_scaling=intercept_scaling,
-        verbose=verbose,
-        warm_start=warm_start,
-        n_jobs=n_jobs
-    )
+        name_func('intercept_scaling'): intercept_scaling,
+        name_func('verbose'): verbose,
+        name_func('warm_start'): warm_start,
+        name_func('n_jobs'): n_jobs
+    }
     return param_space
 
 
@@ -483,20 +459,14 @@ def plsr_hparam_space(
     """
     Generate Logistic Regression hyperparamters search space.
     """
-    param_space = dict(
-        n_components=(
-            _plsr_n_components(
-                name_func('n_components'), n_features=n_features
-            )
-            if n_components is None else n_components
-        ),
-        tol=(
-            _plsr_tol(name_func('tol')) if tol is None else tol
-        ),
-        max_iter=max_iter,
-        scale=scale,
-        copy=copy
-    )
+    param_space = {
+        name_func('n_components'): _plsr_n_components(
+            name_func('n_components'), n_features=n_features
+        )
+        if n_components is None else n_components,
+        name_func('tol'): _plsr_tol(name_func('tol')) if tol is None else tol
+
+    }
     return param_space
 
 
@@ -506,18 +476,16 @@ def plsr_hparam_space(
 
 
 
-def rf_permutation_param_space(
-    procedure_params,
-    model_params
-):
+def rf_permutation_param_space(procedure_params, model_params):
     """Random forest classifier permutation importance feature selection
     hyperparameter search space.
 
     Args:
-        test_size (float): Proportion of samples to use as test data.
+        procedure_params ():
+        model_params ():
 
-    Kwargs:
-        Arguments to wrapped model hyperparameter space.
+    Returns:
+        (dict):
 
     """
     # Set permutation importance procedure specific parameters.
@@ -558,16 +526,16 @@ def relieff_hparam_space(
         max_num_features (int): Size of the original feature space.
 
     """
-    param_space = dict(
-        num_neighbors=(
-            _relieff_num_neighbors(name_func('num_neighbors'))
-            if num_neighbors is None else num_neighbors
-        ),
-        num_features=(
-            hp_num_features(name_func('num_features'), max_num_features)
-            if num_features is None else num_features
+    param_space = {
+        name_func('num_neighbors'): _relieff_num_neighbors(
+            name_func('num_neighbors')
         )
-    )
+        if num_neighbors is None else num_neighbors,
+        name_func('num_features'): hp_num_features(
+            name_func('num_features'), max_num_features
+        )
+        if num_features is None else num_features
+    }
     return param_space
 
 
@@ -596,15 +564,13 @@ def mrmr_hparam_space(
         max_num_features (int): Size of the original feature space.
 
     """
-    param_space = dict(
-        k=(
-            _mrmr_k(name_func('k')) if k is None else k
-        ),
-        num_features=(
-            hp_num_features(name_func('num_features'), max_num_features)
-            if num_features is None else num_features
+    param_space = {
+        name_func('k'): _mrmr_k(name_func('k')) if k is None else k,
+        name_func('num_features'): hp_num_features(
+            name_func('num_features'), max_num_features
         )
-    )
+        if num_features is None else num_features
+    }
     return param_space
 
 
