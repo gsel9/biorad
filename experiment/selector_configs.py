@@ -14,37 +14,49 @@ __email__ = 'langberg91@gmail.com'
 
 from backend import hyperparams
 
-from backend.feature_selection import PermutationSelection
+from backend.feature_selection import RFPermutationSelection
 from backend.feature_selection import WilcoxonSelection
-from backend.feature_selection import
-from backend.feature_selection import
+from backend.feature_selection import ReliefFSelection
+from backend.feature_selection import MRMRSelection
 
 from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+
+from hyperopt.pyll import scope
 
 
 # Globals
 CLF_LABEL = 'selector'
-NAME_FUNC = lambda param_name: '{}__{}'.format(CLF_LABEL, param_name),
+# NB WIP:
+NUM_ORIG_FEATURES = 10
+NAME_FUNC = lambda param_name: '{}__{}'.format(CLF_LABEL, param_name)
+
+
+@scope.define
+def sklearn_roc_auc_score(*args, **kwargs):
+    """Wrapper for sklearn ROC AUC classifier performance metric function."""
+
+    return roc_auc_score(*args, **kwargs)
 
 
 selectors = {
-    # Feature Permutation Importance Selection.
-    PermutationSelection.__name__: {
-        'pipe': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PermutationSelection())
-        ],
+    RFPermutationSelection.__name__: {
         # NOTE: Algorithm wraps a Random Forest Classifier with associated
         # hyperparams as part of the feature selection optimization problem.
-        'params': hyperparams.permutation_param_space(
-            NAME_FUNC,
-            score_func=roc_auc_score,
-            # NOTE: Number of repeated feature permutations is
-            # arbitrarily/randomly chosen.
-            num_rounds=10,
-            # NOTE: Test size is arbitrarily/randomly chosen.
-            test_size=0.2,
-            model=RandomForestClassifier(),
+        'pipe': [
+            (CLF_LABEL, RFPermutationSelection())
+        ],
+        # Mergeing of permutation importance procedure parameters with
+        # wrapped RF classifier hyperparameters (rendering the RF
+        # hyperparamters part of the TPE classification problem) occurs in
+        # the hyperparams rf_permutation_param_space backend function.
+        'params': hyperparams.rf_permutation_param_space(
+            procedure_params = {
+                NAME_FUNC('score_func'): sklearn_roc_auc_score,
+                NAME_FUNC('num_rounds'): 10,
+                NAME_FUNC('test_size'): 0.2,
+            },
             model_params=hyperparams.trees_param_space(
                 NAME_FUNC,
                 n_estimators=None,
@@ -57,13 +69,42 @@ selectors = {
                 n_jobs=-1,
                 verbose=False,
             )
-        )
+        ),
     },
+    # Wilcoxon feature selection
     WilcoxonSelection.__name__: {
         'pipe': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, WilcoxonSelection(thresh=0.05))
+            (CLF_LABEL, WilcoxonSelection(
+                thresh=0.05, bf_correction=True,
+            ))
         ],
         'params': {},
     },
+    # ReliefF feature selection
+    ReliefFSelection.__name__: {
+        'pipe': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, ReliefFSelection())
+        ],
+        'params': hyperparams.relieff_hparam_space(
+            NAME_FUNC,
+            num_neighbors=None,
+            num_features=None,
+            max_num_features=NUM_ORIG_FEATURES
+        ),
+    },
+    # Maximum relevance minimum redundancy selection
+    MRMRSelection.__name__: {
+        'pipe': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, MRMRSelection())
+        ],
+        'params': hyperparams.mrmr_hparam_space(
+            NAME_FUNC,
+            k=None,
+            num_features=None,
+            max_num_features=NUM_ORIG_FEATURES
+        ),
+    }
 }
