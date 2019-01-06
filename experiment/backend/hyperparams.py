@@ -7,14 +7,13 @@
 """
 Hyperparameter generators.
 
-To do's:
-* Add feature selection hyperparam spaces.
-
 Notes:
 * Based on configurations specified in hyperopt-sklearn package.
-* How can determine optimal cache size?
+* How can determine optimal cache size for SVM?
 
 """
+
+import numpy as np
 
 from hyperopt import hp
 
@@ -32,6 +31,8 @@ from hyperopt import hp
 # Discrete uniform distribution
 #space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
+
+np.random.seed(0)
 
 
 def hp_bool(name):
@@ -198,6 +199,13 @@ def trees_param_space(
 #########################################################################
 
 
+def _svm_kernel(name):
+    # NOTE: Have to choose kernel a priori and cannot pass a distribution of
+    # kernel options as parameter space because the space generator function is
+    # not evaluated at each search, but only at initialization.
+    return np.random.choice(name, ['linear', 'rbf', 'poly', 'sigmoid'])
+
+
 def _svm_gamma(name, n_features=1):
     # Generator of default gamma values for SVMs. Equivalent to
     # exp(uniform(low, high)).
@@ -283,6 +291,7 @@ def svc_param_space(
             hyperopt package.
 
     """
+    # NOTE: Choose kernel initially as this param constrains the others.
     if kernel in ['linear', 'rbf', 'sigmoid']:
         _degree = 1
     else:
@@ -540,14 +549,14 @@ def _relieff_num_neighbors(name):
 def relieff_hparam_space(
     name_func,
     num_neighbors=None,
-    num_features=None
+    num_features=None,
     max_num_features=1
 ):
     """
 
     Args:
         name_func ():
-        num_neighbors (int): 
+        num_neighbors (int):
         num_features (int): The number of features select.
         max_num_features (int): Size of the original feature space.
 
