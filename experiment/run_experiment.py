@@ -71,7 +71,6 @@ def load_target(path_to_target, index_col=0):
 
 
 # TODO: To utils?
-# TODO: Add option to filter features based on reexes (e.g. only clinical and PET)
 def load_predictors(path_to_data, index_col=0, regex=None):
 
     data = pd.read_csv(path_to_data, index_col=index_col)
@@ -89,19 +88,19 @@ if __name__ == '__main__':
 
     import os
     import backend
+    import model_selection
+    import comparison_frame
+
+    from selector_configs import selectors
+    from estimator_configs import classifiers
 
     from hyperopt import tpe
-
-    from model_selection import bbc_cv_selection
-    from model_comparison import model_comparison
 
     from sklearn.metrics import roc_auc_score
     from sklearn.metrics import matthews_corrcoef
     from sklearn.metrics import precision_recall_fscore_support
 
     # TEMP:
-    from sklearn.pipeline import make_pipeline
-    from sklearn.pipeline import Pipeline
     from sklearn.datasets import load_breast_cancer
     from sklearn.preprocessing import StandardScaler
 
@@ -126,78 +125,27 @@ if __name__ == '__main__':
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
     random_states = np.random.randint(1000, size=40)
-
-
-    from selector_configs import selectors
-    from estimator_configs import classifiers
-
-
-    # TODO:
-    # * Combine all pipes and corresponding params in a dict so that in
-    #   model comparison loop a pipeline with (key, model) is unpacked together
-    #   with a hparam space of key__param_name.
-    # * Use pipe label + random state in prelim file name.
-
-    from collections import OrderedDict
-
-    pipes_and_params = OrderedDict()
-    for classifier_name, clf_setup in classifiers.items():
-        for selector_name, sel_setup in selectors.items():
-            pipe_label = '{}_{}'.format(selector_name, classifier_name)
-            # Joining two lists of selector and estimator pipe elements.
-            pipe_elem = [*sel_setup['selector'], *clf_setup['estimator']]
-             # Joining two dicts of selector and estimator parameters.
-            pipe_param_space = {**sel_setup['params'], **clf_setup['params']}
-            # Format for model comparison experiments.
-            pipes_and_params['pipe_label'] = {
-                'pipe': pipe_elem, 'params': pipe_param_space
-            }
-
-    print(pipes_and_params)
-
-
-
-    """
-    # Parameter search space
-    space = {}
-    # Random number between 50 and 100
-    space['kbest__percentile'] = hp.uniform('kbest__percentile', 50, 100)
-    # Random number between 0 and 1
-    #space['clf__l1_ratio'] = hp.uniform('clf__l1_ratio', 0.0, 1.0)
-    # Log-uniform between 1e-9 and 1e-4
-    #space['clf__alpha'] = hp.loguniform('clf__alpha', -9*np.log(10), -4*np.log(10))
-    # Random integer in 20:5:80
-    #space['clf__n_iter'] = 20 + 5 * hp.randint('clf__n_iter', 12)
-    # Random number between 50 and 100
-    space['clf__class_weight'] = hp.choice('clf__class_weight', [None,]) #'balanced']),
-    space['clf__n_estimators'] = scope.int(hp.quniform('clf__clf__n_estimators', 20, 500, 5))
-    # Discrete uniform distribution
-    space['clf__max_leaf_nodes'] = scope.int(hp.quniform('clf__max_leaf_nodes', 30, 150, 1))
-    # Discrete uniform distribution
-    space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
-    """
-
-
-
-    """
-    model_comparison(
+    #
+    pipes_and_params = backend.formatting.pipelines_from_configs(
+        selectors, classifiers
+    )
+    #
+    comparison_frame.model_comparison(
         model_selection.bbc_cv_selection,
-        X_train, y_train,
+        X, y,
         tpe.suggest,
-        pipes,
-        space,
+        pipes_and_params,
         SCORING,
         CV,
         OOB,
         MAX_EVALS,
         shuffle=True,
         verbose=1,
-        random_states=random_states,
+        random_states=np.arange(2),
         alpha=0.05,
         balancing=True,
         write_prelim=True,
         error_score=np.nan,
         n_jobs=-1,
-        path_to_results='test_results'
+        #path_to_results='testing'
     )
-    """

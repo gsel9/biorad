@@ -12,7 +12,25 @@ Notes:
 
 To Dos:
 * Include check_train_test() in model selection functions
-* Include check_support() in FS estimator.
+
+TEMP:
+# Parameter search space
+space = {}
+# Random number between 50 and 100
+space['kbest__percentile'] = hp.uniform('kbest__percentile', 50, 100)
+# Random number between 0 and 1
+#space['clf__l1_ratio'] = hp.uniform('clf__l1_ratio', 0.0, 1.0)
+# Log-uniform between 1e-9 and 1e-4
+#space['clf__alpha'] = hp.loguniform('clf__alpha', -9*np.log(10), -4*np.log(10))
+# Random integer in 20:5:80
+#space['clf__n_iter'] = 20 + 5 * hp.randint('clf__n_iter', 12)
+# Random number between 50 and 100
+space['clf__class_weight'] = hp.choice('clf__class_weight', [None,]) #'balanced']),
+space['clf__n_estimators'] = scope.int(hp.quniform('clf__clf__n_estimators', 20, 500, 5))
+# Discrete uniform distribution
+space['clf__max_leaf_nodes'] = scope.int(hp.quniform('clf__max_leaf_nodes', 30, 150, 1))
+# Discrete uniform distribution
+space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
 """
 
@@ -29,16 +47,35 @@ from numba import jit
 from collections import OrderedDict
 
 from imblearn import over_sampling
+
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 
 def pipelines_from_configs(selector_configs, estimator_configs):
-    # Iterate through configs and build pipelines in <dict>.
-    pass
+    """
 
+    Args:
+        selector_configs (dict):
+        estimator_configs (dict):
 
-def _pipeline_from_config(config):
-    pass
+    Returns:
+        (dict):
+
+    """
+    pipes_and_params = OrderedDict()
+    for classifier_name, clf_setup in estimator_configs.items():
+        for selector_name, sel_setup in selector_configs.items():
+            pipe_label = '{}_{}'.format(selector_name, classifier_name)
+            # Joining two lists of selector and estimator pipe elements.
+            pipe_elem = [*sel_setup['selector'], *clf_setup['estimator']]
+             # Joining two dicts of selector and estimator parameters.
+            pipe_param_space = {**sel_setup['params'], **clf_setup['params']}
+            # Format for model comparison experiments.
+            pipes_and_params[pipe_label] = {
+                'pipe': Pipeline(pipe_elem), 'params': pipe_param_space
+            }
+    return pipes_and_params
 
 
 def check_train_test(X_train, X_test):
