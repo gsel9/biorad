@@ -32,6 +32,15 @@ from imblearn import over_sampling
 from sklearn.preprocessing import StandardScaler
 
 
+def pipelines_from_configs(selector_configs, estimator_configs):
+    # Iterate through configs and build pipelines in <dict>.
+    pass
+
+
+def _pipeline_from_config(config):
+    pass
+
+
 def check_train_test(X_train, X_test):
     """Formatting checking of training and test predictor sets.
 
