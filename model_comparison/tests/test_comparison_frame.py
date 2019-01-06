@@ -1,61 +1,24 @@
-# -*- coding: utf-8 -*-
-#
-# test_model_selection.py
-#
-
-"""
-Model selection test module.
-"""
-
-__author__ = 'Severin Langberg'
-__email__ = 'langberg91@gmail.com'
-
-
-import sys
-sys.path.append('../')
-
-import pytest
-
-import numpy as np
-import feature_selection as selection
-
-from sklearn.metrics import roc_auc_score
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-
-
-@pytest.fixture
-def clf():
-
-    return RandomForestClassifier(random_state=0)
-
-
-@pytest.fixture
-def data():
-
-    X, y = make_classification(
-        n_samples=100,
-        n_features=3,
-        n_informative=2,
-        n_redundant=1,
-        n_repeated=0,
-        n_classes=2,
-        n_clusters_per_class=1,
-        random_state=0,
-        shuffle=True
-    )
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.1, random_state=1, stratify=y
-    )
-    return X_train, X_test, y_train, y_test
-
-
 if __name__ == '__main__':
+    # ToDos:
+    # * Make Pipeline encompassing feature selection and classifcaiton.
+    #   Remember to include StandardScaler at appropriate locations.
+    # *
+    # * Determine reasonable distributions for hparams (figure out how
+    #   distribution boundaries are determined by sklearn).
+    # *
+
+    from sklearn.datasets import mnist
+
+    X =
     # Demo run:
     # * 97.80 % accuracy seems to be a fairly good score.
     #
     # TODO: Need seed + clf + selector name for unique ID to prelim results files.
+    import model_selection
+
+    from hyperopt import hp
+    from hyperopt import tpe
+    from hyperopt.pyll.base import scope
 
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
@@ -77,6 +40,10 @@ if __name__ == '__main__':
         ('clf', RandomForestClassifier(random_state=0))
     ])
 
+    pipes = {
+        'test': pipe
+    }
+
     # Can specify hparam distr in config files that acn direclty be read into
     # Python dict with hyperopt distirbutions?
 
@@ -92,27 +59,29 @@ if __name__ == '__main__':
     #space['clf__n_iter'] = 20 + 5 * hp.randint('clf__n_iter', 12)
     # Random number between 50 and 100
     space['clf__class_weight'] = hp.choice('clf__class_weight', [None,]) #'balanced']),
+    space['clf__n_estimators'] = scope.int(hp.quniform('clf__clf__n_estimators', 20, 500, 5))
     # Discrete uniform distribution
     space['clf__max_leaf_nodes'] = scope.int(hp.quniform('clf__max_leaf_nodes', 30, 150, 1))
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
 
-    results = bbc_cv_selection(
+    model_comparison(
+        model_selection.bbc_cv_selection,
         X_train, y_train,
-        algo=tpe.suggest,
-        model_id='',
-        model=pipe,
-        param_space=space,
-        score_func=roc_auc_score,
-        path_tmp_results='./',
+        tpe.suggest,
+        pipes,
+        space,
+        roc_auc_score,
         cv=5,
         oob=5,
-        max_evals=7,
+        max_evals=5,
         shuffle=True,
         verbose=1,
-        random_state=0,
+        random_states=np.arange(2),
         alpha=0.05,
         balancing=True,
-        write_prelim=False,
-        error_score=np.nan
+        write_prelim=True,
+        error_score=np.nan,
+        n_jobs=-1,
+        path_to_results='test_results'
     )
