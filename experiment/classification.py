@@ -22,27 +22,27 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
 
 
-# QUESTION: How to?
-def name_func():
-    pass
+# Globals
+CLF_LABEL = 'clf'
+NAME_FUNC = lambda param_name: '{}__{}'.format(CLF_LABEL, param_name),
 
 
-estimators = {
+classifiers = {
     # Support Vector Machines
     SVC.__name__: {
         'pipe': [
-                ('clf_scaler', StandardScaler())
-                ('clf': SVC()):
-            ],
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, SVC())
+        ],
         'params': hyperparams.svc_param_space(
-            name_func,
+            NAME_FUNC,
             gamma=None,
             degree=None,
             tol=None,
             C=None,
             shrinking=None,
             coef0=None,
-            kernel='rbf',
+            kernel=None,
             n_features=1,
             class_weight='balanced',
             max_iter=-1,
@@ -53,10 +53,10 @@ estimators = {
     # Random Forest Classifier
     RandomForestClassifier.__name__: {
         'pipe': [
-                ('clf': RandomForestClassifier()):
-            ],
+            (CLF_LABEL, RandomForestClassifier())
+        ],
         'params': hyperparams.trees_param_space(
-            name_func,
+            NAME_FUNC,
             n_estimators=None,
             max_features=None,
             max_depth=None,
@@ -68,22 +68,24 @@ estimators = {
             verbose=False,
         )
     },
+    # Gaussian Naive Bayes.
     GaussianNB.__name__: {
         'pipe': [
-                ('clf_scaler', StandardScaler())
-                ('clf': GaussianNB()):
-            ],
+            ('{]_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, GaussianNB())
+        ],
         'params': hyperparams.gnb_param_space(
             name_func, priors=None, var_smoothing=None
         )
     },
+    # Logistic Regression
     LogisticRegression.__name__: {
         'pipe': [
-                ('clf_scaler', StandardScaler())
-                ('clf': LogisticRegression()):
-            ],
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, LogisticRegression())
+        ],
         'params': hyperparams.logreg_hparam_space(
-            name_func,
+            NAME_FUNC,
             penalty=None,
             C=None,
             tol=None,
@@ -99,13 +101,14 @@ estimators = {
             n_jobs=-1
         )
     },
+    # Partial Least Squares Regression
     PLSRegression.__name__: {
         'pipe': [
-                ('clf_scaler', StandardScaler())
-                ('clf': PLSRegression()):
-            ],
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PLSRegression())
+        ],
         'params': hyperparams.plsr_hparam_space(
-            name_func,
+            NAME_FUNC,
             n_components=None,
             tol=None,
             n_features=1,
