@@ -156,6 +156,11 @@ class PermutationSelection(BaseSelector, BaseEstimator, TransformerMixin):
         # Set model hyperparameters.
         if self.model_params is not None:
             self.model.set_params(**self.model_params)
+        # If stochastic algorithm.
+        try:
+            self.model.random_state = self.random_state
+        except:
+            pass
 
         self._support = None
 
