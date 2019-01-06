@@ -90,6 +90,8 @@ if __name__ == '__main__':
     import os
     import backend
 
+    from hyperopt import tpe
+
     from model_selection import bbc_cv_selection
     from model_comparison import model_comparison
 
@@ -97,17 +99,9 @@ if __name__ == '__main__':
     from sklearn.metrics import matthews_corrcoef
     from sklearn.metrics import precision_recall_fscore_support
 
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.linear_model import LogisticRegression
-
-    from hyperopt import hp
-    from hyperopt import tpe
-    from hyperopt.pyll.base import scope
-
     # TEMP:
     from sklearn.pipeline import make_pipeline
     from sklearn.pipeline import Pipeline
-
     from sklearn.datasets import load_breast_cancer
     from sklearn.preprocessing import StandardScaler
 
@@ -133,92 +127,37 @@ if __name__ == '__main__':
     np.random.seed(0)
     random_states = np.random.randint(1000, size=40)
 
-    # Specify:
-    # * estimator + hparam space (Specify only the predetermined params. Other
-    # params are sampled from distribution.)
-    # * Preprocessing steps (scaling and feature selection) + hparams
 
-    # TODO: Move this setup to separate module.
-    """
-    estimators = {
-        (
-            'clf': LogisticRegression,
-            # NOTE: S
-            'params': hyperparams.logreg_hparam_space(
-                name_func=name_func,
-                dual=False,
-                solver='liblinear’',
-                fit_intercept=True,
-                intercept_scaling=1,
-                class_weight=None,
-                multi_class='ovr',
-                max_iter=-1,
-                verbose=0,
-                warm_start=False,
-                n_jobs=-1
-            )
-        )
-        'rf': RandomForestClassifier,
-        'plsr': PLSRegression,
-        'gnb': GaussianNB,
-        'svc': SVC,
-    }
-    preprocessors = {
-        (
-            'scaler': StandardScaler(),
-            'rf_permutation': backend.feature_selection.PermutationSelection,
-            'scaler': StandardScaler()
-        )
-        'wlcx': backend.feature_selection.WilcoxonSelection,
-        'relieff': backend.feature_selection.ReliefFSelection,
-        'mrmr': backend.feature_selection.MRMRSelection
-    }
-    """
+    from selector_configs import selectors
+    from estimator_configs import classifiers
+
 
     # TODO:
-    # * Add feature selection hyperparameter spaces.
-    # * Need to get a hold of labels of all elements in pipeline for
-    #   reference/passing to hparam spaces.
-    # * Handle hyperparameter flow (also for the random forest clssifier in
-    #   the permutation selector).
-    # * Use formater funtion to check for random states and adjust n_components
-    #   in subspace methods.
-    # *
-    estimators = {
-        'rf_permutation_logreg': make_pipeline(
-            StandardScaler(),
-            backend.feature_selection.PermutationSelection(
-                # tree params
-                model=RandomForestClassifier()
-            ),
-            StandardScaler(),
-            LogisticRegression()
-        ),
-        'wilcoxon_logreg': make_pipeline(
-            StandardScaler(),
-            backend.feature_selection.WilcoxonSelection(),
-            StandardScaler(),
-            LogisticRegression()
-        ),
-        'relieff_logreg': make_pipeline(
-            StandardScaler(),
-            backend.feature_selection.ReliefFSelection(),
-            StandardScaler(),
-            LogisticRegression()
-        ),
-        'mrmr_logreg': make_pipeline(
-            StandardScaler(),
-            backend.feature_selection.MRMRSelection(),
-            StandardScaler(),
-            LogisticRegression()
-        )
+    # * Combine all pipes and corresponding params in a dict so that in
+    #   model comparison loop a pipeline with (key, model) is unpacked together
+    #   with a hparam space of key__param_name.
+    # * Use pipe label + random state in prelim file name.
 
-    }
+    from collections import OrderedDict
 
-    param_spaces = {
-        'rf_permutation_logreg': hyperparams.trees_param_space()
-    }
+    pipes_and_params = OrderedDict()
+    for classifier_name, clf_setup in classifiers.items():
+        for selector_name, sel_setup in selectors.items():
+            pipe_label = '{}_{}'.format(selector_name, classifier_name)
+            # Joining two lists of selector and estimator pipe elements.
+            pipe_elem = [*sel_setup['selector'], *clf_setup['estimator']]
+             # Joining two dicts of selector and estimator parameters.
+            pipe_param_space = {**sel_setup['params'], **clf_setup['params']}
+            # Format for model comparison experiments.
+            pipes_and_params['pipe_label'] = {
+                'pipe': pipe_elem, 'params': pipe_param_space
+            }
 
+    print(pipes_and_params)
+
+
+
+    """
     # Parameter search space
     space = {}
     # Random number between 50 and 100
@@ -236,17 +175,9 @@ if __name__ == '__main__':
     space['clf__max_leaf_nodes'] = scope.int(hp.quniform('clf__max_leaf_nodes', 30, 150, 1))
     # Discrete uniform distribution
     space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 20, 500, 5))
+    """
 
 
-    """
-    def setup_experiment(
-        X, y,
-        estimators,
-        selectors=None,
-        *args
-    ):
-        pass
-    """
 
     """
     model_comparison(
@@ -270,14 +201,3 @@ if __name__ == '__main__':
         path_to_results='test_results'
     )
     """
-
-    pipes = {}
-    for estimator in estimators:
-        for selector in selectors:
-            pipe_label = '{}_{}'.format(selector.__name__, estimator.__name__)
-            pipe = Pipeline(
-                [
-                    (selector.__name__, selector()),
-                    (estimator.__name__, estiamtor())
-                ]
-            )
