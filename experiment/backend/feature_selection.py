@@ -23,6 +23,9 @@ from ReliefF import ReliefF
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+
+from sklearn.ensemble import RandomForestClassifier
+
 # TransformerMixin incorporates fit_transform().
 # BaseEstimator provides grid-searchable hyperparameters.
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -244,6 +247,7 @@ class RFPermutationSelection(PermutationSelection):
         oob_score=False,
         n_jobs=-1,
         verbose=False,
+        random_state=None,
         error_handling='return_all',
     ):
 
