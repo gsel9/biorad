@@ -500,6 +500,12 @@ def plsr_hparam_space(
     return param_space
 
 
+###################################################################
+##==== RandomForestClassifier Permutaiton Importance  ====##
+###################################################################
+
+
+
 def rf_permutation_param_space(
     procedure_params,
     model_params
@@ -522,6 +528,11 @@ def rf_permutation_param_space(
     param_space.update(model_params)
 
     return param_space
+
+
+###################################################################
+##==== ReliefF hyperparameter generators ====##
+###################################################################
 
 
 def _relieff_num_neighbors(name):
@@ -558,6 +569,11 @@ def relieff_hparam_space(
         )
     )
     return param_space
+
+
+###################################################################
+##==== MRMR hyperparameter generators ====##
+###################################################################
 
 
 def _mrmr_k(name):
