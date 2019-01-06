@@ -11,38 +11,53 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
-from backend import hyperparams
+import numpy as np
 
-from sklearn.preprocessing import StandardScaler
+from hyperopt.pyll import scope
+
+from backend import hyperparams
 
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from sklearn.cross_decomposition import PLSRegression
 
 
 # Globals
 CLF_LABEL = 'clf'
-NAME_FUNC = lambda param_name: '{}__{}'.format(CLF_LABEL, param_name),
+# NB WIP: The initial number of features to select from.
+NUM_ORIG_FEATURES = 10
+
+
+@scope.define
+def estimator_name_func(param_name):
+
+    global CLF_LABEL
+
+    return '{}__{}'.format(CLF_LABEL, param_name)
 
 
 classifiers = {
     # Support Vector Machines
     SVC.__name__: {
-        'pipe': [
+        'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, SVC())
         ],
         'params': hyperparams.svc_param_space(
-            NAME_FUNC,
+            estimator_name_func,
+            # NOTE: Have to choose kernel a priori and cannot pass a distribution of
+            # kernel options as parameter space because the space generator function is
+            # not evaluated at each search, but only at initialization.
+            kernel='rbf',
             gamma=None,
             degree=None,
             tol=None,
             C=None,
             shrinking=None,
             coef0=None,
-            kernel=None,
             n_features=1,
             class_weight='balanced',
             max_iter=-1,
@@ -52,11 +67,11 @@ classifiers = {
     },
     # Random Forest Classifier
     RandomForestClassifier.__name__: {
-        'pipe': [
+        'estimator': [
             (CLF_LABEL, RandomForestClassifier())
         ],
         'params': hyperparams.trees_param_space(
-            NAME_FUNC,
+            estimator_name_func,
             n_estimators=None,
             max_features=None,
             max_depth=None,
@@ -70,22 +85,22 @@ classifiers = {
     },
     # Gaussian Naive Bayes.
     GaussianNB.__name__: {
-        'pipe': [
-            ('{]_scaler'.format(CLF_LABEL), StandardScaler()),
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, GaussianNB())
         ],
         'params': hyperparams.gnb_param_space(
-            name_func, priors=None, var_smoothing=None
+            estimator_name_func, priors=None, var_smoothing=None
         )
     },
     # Logistic Regression
     LogisticRegression.__name__: {
-        'pipe': [
+        'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, LogisticRegression())
         ],
         'params': hyperparams.logreg_hparam_space(
-            NAME_FUNC,
+            estimator_name_func,
             penalty=None,
             C=None,
             tol=None,
@@ -103,12 +118,12 @@ classifiers = {
     },
     # Partial Least Squares Regression
     PLSRegression.__name__: {
-        'pipe': [
+        'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, PLSRegression())
         ],
         'params': hyperparams.plsr_hparam_space(
-            NAME_FUNC,
+            estimator_name_func,
             n_components=None,
             tol=None,
             n_features=1,
