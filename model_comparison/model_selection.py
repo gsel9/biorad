@@ -412,15 +412,14 @@ class ParameterSearchCV:
             X_train, X_test = self.X[train_index], self.X[test_index]
             y_train, y_test = self.y[train_index], self.y[test_index]
 
-            # Clone model to ensure independency.
+            # Clone model to ensure independency between folds.
             _model = clone(self.model)
             # Error handling mechanism.
             try:
                 _model.set_params(**hparams)
                 _model.fit(X_train, y_train)
             except:
-                # Use error score
-                pass
+                return self.error_score
 
             _y_test = _model.predict(X_test)
             _y_train = _model.predict(X_train)
