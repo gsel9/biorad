@@ -70,11 +70,9 @@ def pipelines_from_configs(selector_configs, estimator_configs):
             # Joining two lists of selector and estimator pipe elements.
             pipe_elem = [*sel_setup['selector'], *clf_setup['estimator']]
              # Joining two dicts of selector and estimator parameters.
-            pipe_param_space = {**sel_setup['params'], **clf_setup['params']}
+            param_space = {**sel_setup['params'], **clf_setup['params']}
             # Format for model comparison experiments.
-            pipes_and_params[pipe_label] = {
-                'pipe': Pipeline(pipe_elem), 'params': pipe_param_space
-            }
+            pipes_and_params[pipe_label] = (Pipeline(pipe_elem), param_space)
     return pipes_and_params
 
 
