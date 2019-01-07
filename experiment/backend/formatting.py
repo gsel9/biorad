@@ -37,7 +37,6 @@ space['clf__min_samples_leaf'] = scope.int(hp.quniform('clf__min_samples_leaf', 
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-
 import numpy as np
 
 from numba import int32
@@ -50,6 +49,79 @@ from imblearn import over_sampling
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
+from sklearn.base import BaseEstimator
+from sklearn.base import MetaEstimatorMixin
+
+
+class PipeEstimator(BaseEstimator, MetaEstimatorMixin):
+    """A scikit-learn estimator wrapper enabling intermediate configuration of
+    the wrapped model between pipeline steps.
+
+    In particular, configrations are necessary with respect to:
+    - Adjusting the number of components to keep in decomposition methods
+      should the previous pipeline transformer reduce the feature set resulting
+      in an expected number of cmoponents exceed the number of available
+      features.
+
+    Args:
+        model ():
+
+    """
+
+    def __init__(self, model=None, params=None):
+
+        super().__init__()
+
+        self.model = model
+        self.params = params
+
+    def __name__(self):
+
+        return self.model.__name__
+
+    def set_params(self, **params):
+        """Update estimator hyperparamter configuration.
+
+        Kwargs:
+            params (dict): Hyperparameter settings.
+
+        """
+
+        # Update hyperparameters and estimator configuration.
+        self.params = params
+        self.model.set_params(**self.params)
+
+        return self
+
+    def get_params(self, deep=True):
+        """Returns hyperparameter configurations."""
+
+        return self.model.get_params(deep=deep)
+
+    def fit(self, X, y=None, **kwargs):
+
+        self._set_estimator_config(X, y=y, **kwargs)
+        self.model.fit(X, y, **kwargs)
+
+        return self
+
+    def predict(self, X):
+
+        return self.model.predict(X)
+
+    def _set_estimator_config(self, X, y=None, **kwargs):
+        # Validate model configuration.
+
+        # Update hyperparameter settings.
+        if 'n_components' in self.params:
+            if self.params['n_components'] > X.shape[1]:
+                self.params['n_components'] = X.shape[1]
+
+        # Update hyperparameters.
+        self.model.set_params(**self.params)
+
+        return self
 
 
 def pipelines_from_configs(selector_configs, estimator_configs):
