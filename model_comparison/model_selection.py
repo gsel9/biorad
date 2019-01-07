@@ -28,6 +28,7 @@ import logging
 import numpy as np
 
 from scipy import stats
+from copy import deepcopy
 
 from datetime import datetime
 from collections import OrderedDict
@@ -42,6 +43,7 @@ from hyperopt import STATUS_OK
 from hyperopt.pyll.base import scope
 
 from sklearn.base import clone
+from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
 
 
@@ -50,6 +52,7 @@ def point_632plus_selection():
     pass
 
 
+# TODO: Set random states in pipeline estimators.
 def bbc_cv_selection(
     X, y,
     algo,
@@ -57,7 +60,6 @@ def bbc_cv_selection(
     model,
     param_space,
     score_func,
-    path_tmp_results,
     cv,
     oob,
     max_evals,
@@ -66,7 +68,7 @@ def bbc_cv_selection(
     random_state=None,
     alpha=0.05,
     balancing=True,
-    write_prelim=True,
+    path_tmp_results=None,
     error_score=np.nan,
 ):
     """
@@ -79,11 +81,14 @@ def bbc_cv_selection(
         max_evals (int): The number of iterations in hyperparameter search.
 
     """
-    path_case_file = os.path.join(
-        path_tmp_results, 'experiment_{}_{}'.format(
-            random_state, model_id
+    if path_tmp_results is not None:
+        path_case_file = os.path.join(
+            path_tmp_results, 'experiment_{}_{}'.format(
+                random_state, model_id
+            )
         )
-    )
+    else:
+        path_case_file = ''
     # Determine if results already exists.
     if os.path.isfile(path_case_file):
         output = utils.ioutil.read_prelim_result(path_case_file)
@@ -99,6 +104,8 @@ def bbc_cv_selection(
         if verbose > 0:
             print('Initiating experiment: {}'.format(random_state))
             start_time = datetime.now()
+
+        # TODO: Set random states in pipeline estimators.
 
         # Perform cross-validated hyperparameter optimization.
         optimizer = ParameterSearchCV(
@@ -139,12 +146,13 @@ def bbc_cv_selection(
             print('Experiment {} completed in {}'
                   ''.format(random_state, duration))
 
-        if write_prelim:
+        if path_tmp_results is not None:
             utils.ioutil.write_prelim_results(path_case_file, output)
 
     return output
 
 
+# TODO: Get GPU speed with TensorFlow.
 class BootstrapBiasCorrectedCV:
     """
 
@@ -247,6 +255,8 @@ class BootstrapBiasCorrectedCV:
         return asc_scores[int(lower_idx)], asc_scores[int(upper_idx)]
 
 
+# ERROR: Error is raised if attmepting to clone wrapped estimator.
+# TODO: Collect ground truths and predictions for BBC-CV procedure.
 class ParameterSearchCV:
     """Perform K-fold cross-validated hyperparameter search with the Bayesian
     optimization Tree Parzen Estimator.
@@ -258,7 +268,7 @@ class ParameterSearchCV:
 
     """
 
-    # NOTE: For pickling.
+    # NOTE: For pickling results stored in hyperopt Trials() object.
     TEMP_RESULTS_FILE = './tmp_trials.p'
 
     def __init__(
@@ -279,14 +289,17 @@ class ParameterSearchCV:
         self.shuffle = shuffle
         self.score_func = score_func
         self.error_score = error_score
-
         self.cv = int(cv)
         self.max_evals = int(max_evals)
         self.random_state = int(random_state)
 
+        # NOTE:
         self.X = None
         self.y = None
         self.trials = None
+        # Ground truths and predictions for BBC-CV procedure.
+        self._preds = None
+        self._grtruths = None
         self._best_params = None
 
     @property
@@ -378,6 +391,10 @@ class ParameterSearchCV:
         if self.trials is None:
             self.trials = Trials()
 
+        # The first n_samples % n_splits folds have size
+        # n_samples // n_splits + 1, other folds have size
+        # n_samples // n_splits, where n_samples is the number of samples.
+
         # For saving prelim results: https://github.com/hyperopt/hyperopt/issues/267
         #pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
         #trials = pickle.load(open('TEMP_RESULTS_FILE', 'rb'))
@@ -407,28 +424,32 @@ class ParameterSearchCV:
 
         kfolds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
 
-        test_loss, train_loss, _preds, _trues = [], [], [], []
+        test_loss, train_loss = [], []
         for train_index, test_index in kfolds.split(self.X, self.y):
 
             X_train, X_test = self.X[train_index], self.X[test_index]
             y_train, y_test = self.y[train_index], self.y[test_index]
 
             # Clone model to ensure independency between folds.
-            _model = clone(self.model)
-            # TODO: Error handling mechanism.
+            _model = deepcopy(self.model) #clone(self.model)
+
+            # Configure and train model with suggested hyperparamter setting.
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
 
-            _y_test = _model.predict(X_test)
-            _y_train = _model.predict(X_train)
+            pred_y_test = _model.predict(X_test)
+            pred_y_train = _model.predict(X_train)
 
-            test_loss.append(1.0 - self.score_func(y_test, _y_test))
-            train_loss.append(1.0 - self.score_func(y_train, _y_train))
+            print(np.shape(_model.predict(X_test)))
+
+            test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
+            train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
             # Collect ground truths and predictions for BBC-CV procedure.
-            _trues = np.hstack((_trues, y_test))
-            _preds = np.hstack((_preds, _y_test))
+            self._grtruths.append(y_test)
+            self._preds.append(pred_y_test)
 
+        """
         return OrderedDict(
             [
                 ('status', STATUS_OK),
@@ -442,10 +463,73 @@ class ParameterSearchCV:
                 ('hparams', hparams)
             ]
         )
+        """
 
-    # TODO:
     @staticmethod
     def _check_X_y(X, y):
-        # Type checking of predictor and target data.
+        # A wrapper around sklearn formatter.
 
-        return X, y
+        return check_X_y(X, y)
+
+
+if __name__ == '__main__':
+
+    # TODO: Move to backend?
+    import sys
+    sys.path.append('./../experiment')
+
+    import os
+    import backend
+    import model_selection
+    import comparison_frame
+
+    from selector_configs import selectors
+    from estimator_configs import classifiers
+
+    from hyperopt import tpe
+
+    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import matthews_corrcoef
+    from sklearn.metrics import precision_recall_fscore_support
+
+    # TEMP:
+    from sklearn.datasets import load_breast_cancer
+    from sklearn.preprocessing import StandardScaler
+
+    X, y = load_breast_cancer(return_X_y=True)
+
+    # SETUP:
+    CV = 10
+    OOB = 500
+    MAX_EVALS = 100
+    SCORING = roc_auc_score
+    #
+    pipes_and_params = backend.formatting.pipelines_from_configs(
+        selectors, classifiers
+    )
+    pipe, params = pipes_and_params['PermutationSelection_PLSRegression']
+
+    """
+
+    # TODO: Collect ground truths and predictions for BBC-CV procedure.
+    bbc_cv_selection(
+        X, y,
+        tpe.suggest,
+        'PermutationSelection_PLSRegression',
+        pipe,
+        params,
+        SCORING,
+        CV,
+        OOB,
+        MAX_EVALS,
+        shuffle=True,
+        verbose=0,
+        random_state=0,
+        alpha=0.05,
+        balancing=True,
+        error_score=np.nan,
+        path_tmp_results=None,
+    )
+    """
+    print(np.shape(X))
+    print(np.size(y) / )
