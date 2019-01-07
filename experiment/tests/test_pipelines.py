@@ -71,5 +71,16 @@ if __name__ == '__main__':
         selectors, classifiers
     )
     for label, (pipe, params) in pipes_and_params.items():
+
         pipe.fit(X_train, y_train)
-        pipe.predict(X_test)
+        #pipe.predict(X_test)
+        """
+        print()
+        print()
+        print('3' * 30)
+        print(pipe)
+        print(pipe.get_params())
+        print('3' * 30)
+        print()
+        print()
+        """
