@@ -124,14 +124,12 @@ if __name__ == '__main__':
 
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
-    random_states = np.random.randint(1000, size=40)
+    #random_states = np.random.randint(1000, size=40)
+    random_states = np.arange(2)
     #
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
-    # ERROR:
-    # Try fitting and predicting with each pipeline.
-    """
     comparison_frame.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
@@ -143,12 +141,13 @@ if __name__ == '__main__':
         MAX_EVALS,
         shuffle=True,
         verbose=1,
-        random_states=np.arange(2),
+        random_states=random_states,
         alpha=0.05,
         balancing=True,
         write_prelim=True,
         error_score=np.nan,
         n_jobs=-1,
-        #path_to_results='testing'
+        path_final_results='./test_results'
     )
-    """
+    pipe, params = pipes_and_params['PermutationSelectionRF_PLSRegression']
+    #print(params)

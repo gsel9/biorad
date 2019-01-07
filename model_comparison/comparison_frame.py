@@ -34,14 +34,14 @@ def model_comparison(
     oob,
     max_evals,
     shuffle=True,
-    verbose=1,
-    random_states=np.arange(2),
+    verbose=0,
+    random_states=None,
     alpha=0.05,
     balancing=True,
     write_prelim=True,
     error_score=np.nan,
     n_jobs=1,
-    path_to_results=None
+    path_final_results=None
 ):
     """
     Compare model performances with optional feature selection.
@@ -93,20 +93,18 @@ def model_comparison(
                 for random_state in random_states
             )
         )
-        # Tear down temporary dirs after saving current results to disk.
-        _save_and_cleanup(path_to_results, results)
+    # Tear down temporary dirs after saving final results to disk.
+    _save_and_cleanup(path_final_results, path_tmp_results, results)
 
     return None
 
 
-def _save_and_cleanup(path_to_results, results):
-    # Write final results to disk and remove temporary directory if process
-    # completed succesfully.
+def _save_and_cleanup(path_final_results, path_tmp_results, results):
 
-    global TMP_RESULTS_DIR
-
-    ioutil.write_final_results(path_to_results, results)
-    ioutil.teardown_tempdir(TMP_RESULTS_DIR)
+    # Write final results to disk.
+    utils.ioutil.write_final_results(path_final_results, results)
+    # Remove temporary directory if process completed succesfully.
+    utils.ioutil.teardown_tempdir(path_tmp_results)
 
     return None
 
