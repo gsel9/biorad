@@ -138,32 +138,24 @@ class PermutationSelection(BaseSelector):
 
     def __init__(
         self,
-        score_func=None,
-        num_rounds=10,
-        test_size=None,
         model=None,
-        model_params=None,
+        test_size=None,
+        num_rounds=None,
+        score_func=None,
         error_handling='return_all',
-        random_state=None,
+        random_state=None
     ):
 
         super().__init__(error_handling)
 
-        self.score_func = score_func
-        self.num_rounds = num_rounds
-        self.test_size = test_size
         self.model = model
-        self.model_params = model_params
+        self.test_size = test_size
+        self.num_rounds = num_rounds
+        self.score_func = score_func
         self.random_state = random_state
 
-        self.rgen = np.random.RandomState(self.random_state)
+        self.rgen = None
         self.support = None
-
-        # If algorithm is stochastic.
-        try:
-            self.model.random_state = self.random_state
-        except:
-            pass
 
     def __name__(self):
 
@@ -181,14 +173,29 @@ class PermutationSelection(BaseSelector):
 
         return check_X_y(X, y)
 
+    def set_params(self, **params):
+
+        self.random_state = params['random_state']
+        self.model.set_params(**params)
+
+        return self
+
+    def get_params(self, deep=True):
+
+        return self.model.get_params(deep=deep)
+
     def fit(self, X, y, *args, **kwargs):
 
         X, y = self._check_X_y(X, y)
+
+        if self.rgen is None:
+            self.rgen = np.random.RandomState(self.random_state)
 
         # Perform train-test splitting.
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=self.test_size, random_state=self.random_state
         )
+        # Update model hyperparamters and configuration.
         self.model.fit(X_train, y_train)
 
         avg_imp = self._feature_permutation_importance(X_test, y_test)
@@ -218,75 +225,6 @@ class PermutationSelection(BaseSelector):
                 importance[col_idx] += baseline - new_score
 
         return importance / self.num_rounds
-
-
-class PermutationSelectionRF(PermutationSelection):
-    """Random forest classifier permutation importance feature selection.
-
-    Args:
-
-    """
-
-    def __init__(
-        self,
-        score_func=None,
-        num_rounds=10,
-        test_size=None,
-        n_estimators=None,
-        max_features=None,
-        max_depth=None,
-        min_samples_split=None,
-        min_samples_leaf=None,
-        bootstrap=None,
-        oob_score=False,
-        n_jobs=-1,
-        verbose=False,
-        random_state=None,
-        error_handling='return_all',
-    ):
-
-        # TEMP: Hack to enable passing of score function. Should be able to
-        # pass customized score functions.
-        #if score_func == 'roc_auc':
-        #    _score_func = roc_auc_score
-        #else:
-        #    raise ValueError('Invalid score label {}'.format(score_func))
-
-        # Wrap model hyperparameter arguments. Need to specify all RF
-        # hyperparameters in constructor if hyperopt is going to treat these
-        # parameters as part of the optimization problem.
-        model_params = dict(
-            n_estimators=n_estimators,
-            max_features=max_features,
-            max_depth=max_depth,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            bootstrap=bootstrap,
-            oob_score=oob_score,
-            n_jobs=n_jobs,
-            verbose=verbose,
-        )
-        # Pass arguments to permutation importance base class.
-        super().__init__(
-            score_func=score_func,
-            num_rounds=num_rounds,
-            test_size=test_size,
-            model=RandomForestClassifier(),
-                #n_estimators=4, criterion='gini', max_depth=4,
-                #min_samples_split=2, min_samples_leaf=1,
-                #min_weight_fraction_leaf=0.0, max_features='auto',
-                #max_leaf_nodes=4, min_impurity_decrease=0.0,
-                #min_impurity_split=2, bootstrap=True,
-                #oob_score=False, n_jobs=-1, random_state=1,
-                #verbose=0, warm_start=False, class_weight=None),
-            model_params=model_params,
-            error_handling=error_handling,
-            random_state=random_state
-        )
-
-    def __name__(self):
-
-        return 'PermutationSelectionRF'
 
 
 class WilcoxonSelection(BaseSelector):

@@ -40,6 +40,10 @@ def hp_num_features(name, max_num_features=1):
     return scope.int(hp.randint(name, max_num_features))
 
 
+def hp_random_state(name):
+
+    return hp.randint(name, 1000)
+
 
 ######################################################
 ##==== Random forest hyperparameter generators ====##
@@ -68,16 +72,6 @@ def _trees_max_features(name):
             (0.6, hp.uniform(name + '.frac', 0., 1.))
         ]
     )
-
-
-def _trees_max_depth(name):
-    return hp.pchoice(name, [
-        (0.7, None),  # most common choice.
-        # Try some shallow trees.
-        (0.1, 2),
-        (0.1, 3),
-        (0.1, 4),
-    ])
 
 
 def _trees_max_depth(name):
@@ -118,9 +112,11 @@ def trees_param_space(
     n_estimators=None,
     max_features=None,
     max_depth=None,
+    criterion=None,
     min_samples_split=None,
     min_samples_leaf=None,
     bootstrap=None,
+    random_state=None,
     oob_score=False,
     n_jobs=-1,
     verbose=False
@@ -148,26 +144,39 @@ def trees_param_space(
 
     """
     param_space = {
+        # n_estimators
         name_func('n_estimators'): _trees_n_estimators(
             name_func('n_estimators')
         )
         if n_estimators is None else n_estimators,
+        # criterion
+        name_func('criterion'): _trees_criterion(name_func('criterion'))
+        if criterion is None else criterion,
+        # max_features
         name_func('max_features'): _trees_max_features(
             name_func('max_features')
         )
         if max_features is None else max_features,
+        # max_depth
         name_func('max_depth'): _trees_max_depth(name_func('max_depth'))
         if max_depth is None else max_depth,
+        # min_samples_split
         name_func('min_samples_split'): _trees_min_samples_split(
             name_func('min_samples_split')
         )
         if min_samples_split is None else min_samples_split,
+        # min_samples_leaf
         name_func('min_samples_leaf'): _trees_min_samples_leaf(
             name_func('min_samples_leaf')
         )
         if min_samples_leaf is None else min_samples_leaf,
+        # bootstrap
         name_func('bootstrap'): hp_bool(name_func('bootstrap'))
         if bootstrap is None else bootstrap,
+        # random_state
+        name_func('random_state'): hp_random_state(name_func('random_state'))
+        if random_state is None else random_state,
+        # Predefined parameters.
         name_func('oob_score'): oob_score,
         name_func('n_jobs'): n_jobs,
         name_func('verbose'): verbose,
@@ -226,6 +235,7 @@ def svc_param_space(
     C=None,
     shrinking=None,
     coef0=None,
+    random_state=None,
     n_features=1,
     class_weight='balanced',
     max_iter=-1,
@@ -310,12 +320,14 @@ def svc_param_space(
         name_func('coef0'): _coef0,
         name_func('C'): _svm_C(name_func('C')) if C is None else C,
         name_func('shrinking'): hp_bool(name_func('shrinking'))
-                                if shrinking is None else shrinking,
+        if shrinking is None else shrinking,
         name_func('tol'): _svm_tol(name_func('tol')) if tol is None else tol,
         name_func('class_weight'): class_weight,
         name_func('cache_size'): cache_size,
         name_func('verbose'): verbose,
-        name_func('max_iter'): max_iter
+        name_func('max_iter'): max_iter,
+        name_func('random_state'): hp_random_state(name_func('random_state'))
+        if random_state is None else random_state,
     }
     return param_space
 
@@ -381,6 +393,7 @@ def logreg_hparam_space(
     C=None,
     tol=None,
     dual=False,
+    random_state=None,
     solver='liblinear',
     fit_intercept=True,
     intercept_scaling=1,
@@ -428,7 +441,10 @@ def logreg_hparam_space(
         name_func('intercept_scaling'): intercept_scaling,
         name_func('verbose'): verbose,
         name_func('warm_start'): warm_start,
-        name_func('n_jobs'): n_jobs
+        name_func('n_jobs'): n_jobs,
+        name_func('random_state'): hp_random_state(
+            name_func('random_state') if random_state is None else random_state
+        )
     }
     return param_space
 

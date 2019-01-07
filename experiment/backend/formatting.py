@@ -118,6 +118,8 @@ class PipeEstimator(BaseEstimator, MetaEstimatorMixin):
             if self.params['n_components'] > X.shape[1]:
                 self.params['n_components'] = X.shape[1]
 
+        # Set random state?
+
         # Update hyperparameters.
         self.model.set_params(**self.params)
 
