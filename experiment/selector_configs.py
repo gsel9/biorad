@@ -22,7 +22,7 @@ from backend.feature_selection import WilcoxonSelection
 from backend.feature_selection import ReliefFSelection
 from backend.feature_selection import MRMRSelection
 
-from sklearn.metrics import roc_auc_score
+#from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 
@@ -62,7 +62,7 @@ selectors = {
         # the hyperparams rf_permutation_param_space backend function.
         'params': hyperparams.permutation_param_space(
             procedure_params = {
-                selector_name_func('score_func'): sklearn_roc_auc_score,
+                selector_name_func('score_func'): 'roc_auc', #sklearn_roc_auc_score,
                 selector_name_func('num_rounds'): 10,
                 selector_name_func('test_size'): 0.2,
                 #selector_name_func('model'): RandomForestClassifier()
