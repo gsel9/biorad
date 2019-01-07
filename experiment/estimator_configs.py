@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-# classification.py
+# estimator_configs.py
 #
 
 """
 Classification algorithm setup including hyperparameter configurations.
+
+Notes:
+* Make sure to update the number of original features in the data set.
+* The safe_predict functino assumes classifiers are labeled with `clf`.
+
 """
 
 __author__ = 'Severin Langberg'
@@ -16,6 +21,7 @@ import numpy as np
 from hyperopt.pyll import scope
 
 from backend import hyperparams
+from backend.formatting import PipeEstimator
 
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
@@ -28,7 +34,7 @@ from sklearn.cross_decomposition import PLSRegression
 # Globals
 CLF_LABEL = 'clf'
 # NB WIP: The initial number of features to select from.
-NUM_ORIG_FEATURES = 10
+NUM_ORIG_FEATURES = 30
 
 
 @scope.define
@@ -44,7 +50,7 @@ classifiers = {
     SVC.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, SVC())
+            (CLF_LABEL, PipeEstimator(SVC()))
         ],
         'params': hyperparams.svc_param_space(
             estimator_name_func,
@@ -58,7 +64,7 @@ classifiers = {
             C=None,
             shrinking=None,
             coef0=None,
-            n_features=1,
+            n_features=NUM_ORIG_FEATURES,
             class_weight='balanced',
             max_iter=-1,
             verbose=False,
@@ -68,7 +74,7 @@ classifiers = {
     # Random Forest Classifier
     RandomForestClassifier.__name__: {
         'estimator': [
-            (CLF_LABEL, RandomForestClassifier())
+            (CLF_LABEL, PipeEstimator(RandomForestClassifier()))
         ],
         'params': hyperparams.trees_param_space(
             estimator_name_func,
@@ -87,7 +93,7 @@ classifiers = {
     GaussianNB.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, GaussianNB())
+            (CLF_LABEL, PipeEstimator(GaussianNB()))
         ],
         'params': hyperparams.gnb_param_space(
             estimator_name_func, priors=None, var_smoothing=None
@@ -97,7 +103,7 @@ classifiers = {
     LogisticRegression.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, LogisticRegression())
+            (CLF_LABEL, PipeEstimator(LogisticRegression()))
         ],
         'params': hyperparams.logreg_hparam_space(
             estimator_name_func,
@@ -120,13 +126,13 @@ classifiers = {
     PLSRegression.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PLSRegression())
+            (CLF_LABEL, PipeEstimator(PLSRegression()))
         ],
         'params': hyperparams.plsr_hparam_space(
             estimator_name_func,
             n_components=None,
             tol=None,
-            n_features=1,
+            n_features=NUM_ORIG_FEATURES,
             max_iter=-1,
             scale=True,
             copy=True
