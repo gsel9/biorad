@@ -21,6 +21,7 @@ from scipy import stats
 from ReliefF import ReliefF
 
 from sklearn.utils import check_X_y
+from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
@@ -209,7 +210,7 @@ class PermutationSelection(BaseSelector):
                 # Feature is likely important if new score < baseline.
                 importance[col_idx] += baseline - new_score
 
-        return importance / num_rounds
+        return importance / self.num_rounds
 
 
 class PermutationSelectionRF(PermutationSelection):
@@ -221,7 +222,7 @@ class PermutationSelectionRF(PermutationSelection):
 
     def __init__(
         self,
-        score_func=None,
+        score_func='roc_auc',
         num_rounds=10,
         test_size=None,
         n_estimators=None,
@@ -237,6 +238,12 @@ class PermutationSelectionRF(PermutationSelection):
         error_handling='return_all',
     ):
 
+        # TEMP: Hack to enable passing of score function. Should be able to
+        # pass customized score functions.
+        if score_func == 'roc_auc':
+            _score_func = roc_auc_score
+        else:
+            raise ValueError('Invalid score label {}'.format(score_func))
         # Wrap model hyperparameter arguments. Need to specify all RF
         # hyperparameters in constructor if hyperopt is going to treat these
         # parameters as part of the optimization problem.
@@ -251,20 +258,19 @@ class PermutationSelectionRF(PermutationSelection):
             n_jobs=n_jobs,
             verbose=verbose,
         )
-        from hyperopt.pyll import scope
         # Pass arguments to permutation importance base class.
         super().__init__(
-            score_func=score_func,
+            score_func=_score_func,
             num_rounds=num_rounds,
             test_size=test_size,
-            model=RandomForestClassifier(
-                n_estimators=4, criterion='gini', max_depth=4,
-                min_samples_split=2, min_samples_leaf=1,
-                min_weight_fraction_leaf=0.0, max_features='auto',
-                max_leaf_nodes=4, min_impurity_decrease=0.0,
-                min_impurity_split=2, bootstrap=True,
-                oob_score=False, n_jobs=-1, random_state=1,
-                verbose=0, warm_start=False, class_weight=None),
+            model=RandomForestClassifier(),
+                #n_estimators=4, criterion='gini', max_depth=4,
+                #min_samples_split=2, min_samples_leaf=1,
+                #min_weight_fraction_leaf=0.0, max_features='auto',
+                #max_leaf_nodes=4, min_impurity_decrease=0.0,
+                #min_impurity_split=2, bootstrap=True,
+                #oob_score=False, n_jobs=-1, random_state=1,
+                #verbose=0, warm_start=False, class_weight=None),
             model_params=model_params,
             error_handling=error_handling,
             random_state=random_state

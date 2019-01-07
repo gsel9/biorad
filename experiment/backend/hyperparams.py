@@ -111,6 +111,8 @@ def _trees_bootstrap(name):
     return hp.choice(name, [True, False])
 
 
+# NOTE: The min_impurity_split parameter is deprecated and will be removed in
+# version 0.21. Use the min_impurity_decrease parameter instead.
 def trees_param_space(
     name_func,
     n_estimators=None,
