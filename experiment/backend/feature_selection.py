@@ -147,8 +147,8 @@ class PermutationSelection(BaseSelector):
         self.rgen = np.random.RandomState(self.random_state)
 
         # Set model hyperparameters.
-        if self.model_params is not None:
-            self.model.set_params(**self.model_params)
+        #if self.model_params is not None:
+        #    self.model.set_params(**self.model_params)
         # If stochastic algorithm.
         try:
             self.model.random_state = self.random_state
@@ -177,9 +177,9 @@ class PermutationSelection(BaseSelector):
             test_size=self.test_size,
             random_state=self.random_state
         )
-        selector.fit(self.X, self.y)
+        self.model.fit(X_train, y_train)
 
-        avg_imp = self.feature_permutation_importance(X_test, y_test)
+        avg_imp = self._feature_permutation_importance(X_test, y_test)
         # Return features contributing to model performance as support.
         self.support = self.check_support(np.where(avg_imp > 0), self.X)
 
@@ -212,7 +212,7 @@ class PermutationSelection(BaseSelector):
         return importance / num_rounds
 
 
-class RFPermutationSelection(PermutationSelection):
+class PermutationSelectionRF(PermutationSelection):
     """Random forest classifier permutation importance feature selection.
 
     Args:
@@ -251,12 +251,20 @@ class RFPermutationSelection(PermutationSelection):
             n_jobs=n_jobs,
             verbose=verbose,
         )
+        from hyperopt.pyll import scope
         # Pass arguments to permutation importance base class.
         super().__init__(
             score_func=score_func,
             num_rounds=num_rounds,
             test_size=test_size,
-            model=RandomForestClassifier(),
+            model=RandomForestClassifier(
+                n_estimators=4, criterion='gini', max_depth=4,
+                min_samples_split=2, min_samples_leaf=1,
+                min_weight_fraction_leaf=0.0, max_features='auto',
+                max_leaf_nodes=4, min_impurity_decrease=0.0,
+                min_impurity_split=2, bootstrap=True,
+                oob_score=False, n_jobs=-1, random_state=1,
+                verbose=0, warm_start=False, class_weight=None),
             model_params=model_params,
             error_handling=error_handling,
             random_state=random_state
@@ -375,7 +383,7 @@ class ReliefFSelection(BaseSelector):
     """
 
     def __init__(
-        self, num_neighbors=10, num_features=None, error_handling='return_all'
+        self, num_neighbors=10, num_features=1, error_handling='return_all'
     ):
 
         super().__init__(error_handling)
@@ -435,7 +443,7 @@ class MRMRSelection(BaseSelector):
 
     """
 
-    def __init__(self, k=None, num_features=None, error_handling='return_all'):
+    def __init__(self, k=1, num_features=1, error_handling='return_all'):
 
         super().__init__(error_handling)
 

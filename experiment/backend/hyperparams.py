@@ -476,9 +476,8 @@ def plsr_hparam_space(
 
 
 
-def rf_permutation_param_space(procedure_params, model_params):
-    """Random forest classifier permutation importance feature selection
-    hyperparameter search space.
+def permutation_param_space(procedure_params, model_params):
+    """Permutation importance feature selection hyperparameter search space.
 
     Args:
         procedure_params ():
