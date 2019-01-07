@@ -17,7 +17,7 @@ from hyperopt.pyll import scope
 
 from backend import hyperparams
 
-from backend.feature_selection import RFPermutationSelection
+from backend.feature_selection import PermutationSelectionRF
 from backend.feature_selection import WilcoxonSelection
 from backend.feature_selection import ReliefFSelection
 from backend.feature_selection import MRMRSelection
@@ -49,22 +49,24 @@ def sklearn_roc_auc_score(*args, **kwargs):
 
 
 selectors = {
-    # Random forest classifier permutation importance selection.
-    RFPermutationSelection.__name__: {
+        # Random forest classifier permutation importance selection.
+    PermutationSelectionRF.__name__: {
         # NOTE: Algorithm wraps a Random Forest Classifier with associated
         # hyperparams as part of the feature selection optimization problem.
         'selector': [
-            (CLF_LABEL, RFPermutationSelection())
+            (CLF_LABEL, PermutationSelectionRF())
         ],
         # Mergeing of permutation importance procedure parameters with
         # wrapped RF classifier hyperparameters (rendering the RF
         # hyperparamters part of the TPE classification problem) occurs in
         # the hyperparams rf_permutation_param_space backend function.
-        'params': hyperparams.rf_permutation_param_space(
+        'params': hyperparams.permutation_param_space(
             procedure_params = {
                 selector_name_func('score_func'): sklearn_roc_auc_score,
                 selector_name_func('num_rounds'): 10,
                 selector_name_func('test_size'): 0.2,
+                #selector_name_func('model'): RandomForestClassifier()
+                selector_name_func('random_state'): 2,
             },
             model_params=hyperparams.trees_param_space(
                 selector_name_func,
