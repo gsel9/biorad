@@ -19,6 +19,10 @@ import pandas as pd
 from sklearn.externals import joblib
 from multiprocessing import cpu_count
 
+from joblib import Memory
+from shutil import rmtree
+from tempfile import mkdtemp
+
 
 # Name of directory to store temporary results.
 TMP_RESULTS_DIR = 'tmp_model_comparison'
@@ -71,6 +75,11 @@ def model_comparison(
 
     results = []
     for label, (pipe, params) in pipes_and_params.items():
+        # Create a temporary folder to store the state of the pipeline
+        # transformers for quick access.
+        _cachedir = mkdtemp()
+        pipe.memory = Memory(cachedir=_cachedir, verbose=10)
+        #
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
@@ -93,6 +102,8 @@ def model_comparison(
                 for random_state in random_states
             )
         )
+        # Delete the temporary cache before proceeding.
+        rmtree(_cachedir)
     # Tear down temporary dirs after saving final results to disk.
     _save_and_cleanup(path_final_results, path_tmp_results, results)
 
