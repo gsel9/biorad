@@ -53,15 +53,6 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             raise ValueError('Invalid error handling mechanism {}'
                              ''.format(self.error_handling))
 
-    @property
-    def support(self):
-        """Returns numpy.ndarray of feature support indicators."""
-
-        if self._support is None:
-            return
-
-        return np.array(self._support, dtype=int)
-
     @staticmethod
     def check_subset(X):
         """Formatting and type checking of feature subset.
@@ -164,7 +155,7 @@ class PermutationSelection(BaseSelector):
         except:
             pass
 
-        self._support = None
+        self.support = None
 
     def __name__(self):
 
@@ -186,11 +177,7 @@ class PermutationSelection(BaseSelector):
             test_size=self.test_size,
             random_state=self.random_state
         )
-        # Relying on error handling mechanism.
-        try:
-            selector.fit(X_train, y_train)
-        except:
-            return self.check_support([], X_train)
+        selector.fit(self.X, self.y)
 
         avg_imp = self.feature_permutation_importance(X_test, y_test)
         # Return features contributing to model performance as support.
@@ -290,16 +277,15 @@ class WilcoxonSelection(BaseSelector):
     """
 
     def __init__(
-        self,
-        thresh=0.05,
-        bf_correction=True,
-        error_handling='return_all'
+        self, thresh=0.05, bf_correction=True, error_handling='return_all'
     ):
 
         super().__init__(error_handling)
 
         self.thresh = thresh
         self.bf_correction = bf_correction
+
+        self.support = None
 
     def __name__(self):
 
@@ -344,7 +330,7 @@ class WilcoxonSelection(BaseSelector):
 
         support, pvals = [], []
         # Apply Bonferroni correction.
-        if bf_correction:
+        if self.bf_correction:
             for num in range(ncols):
                 # If p-value > thresh: same distribution.
                 _, pval = stats.wilcoxon(self.X[:, num], self.y)
@@ -389,10 +375,7 @@ class ReliefFSelection(BaseSelector):
     """
 
     def __init__(
-        self,
-        num_neighbors=10,
-        num_features=None,
-        error_handling='return_all'
+        self, num_neighbors=10, num_features=None, error_handling='return_all'
     ):
 
         super().__init__(error_handling)
@@ -400,14 +383,15 @@ class ReliefFSelection(BaseSelector):
         self.num_neighbors = num_neighbors
         self.num_features = num_features
 
+        self.support = None
+
         self._scaler = MinMaxScaler()
 
     def __name__(self):
 
         return 'ReliefFSelection'
 
-    @staticmethod
-    def _check_X_y(X, y):
+    def _check_X_y(self, X, y):
         # A wrapper around sklearn formatter.
 
         X, y = check_X_y(X, y)
@@ -422,11 +406,7 @@ class ReliefFSelection(BaseSelector):
         self.X, self.y = self._check_X_y(X, y)
 
         selector = ReliefF(n_neighbors=self.num_neighbors)
-        # Rely on error handling mechanism.
-        try:
-            selector.fit(self.X, self.y)
-        except:
-            return self.check_support([])
+        selector.fit(self.X, self.y)
 
         _support = selector.top_features[:self.num_features]
 
@@ -455,21 +435,24 @@ class MRMRSelection(BaseSelector):
 
     """
 
-    def __init__(
-        self,
-        k=None,
-        num_features=None,
-        error_handling='return_all'
-    ):
+    def __init__(self, k=None, num_features=None, error_handling='return_all'):
 
         super().__init__(error_handling)
 
-        self.k = k
-        self.num_features = num_features
+        self.k = int(k)
+        self.num_features = int(num_features)
+
+        self.support = None
 
     def __name__(self):
 
         return 'MRMRSelection'
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        return check_X_y(X, y)
 
     def fit(self, X, y=None, *args, **kwargs):
 
@@ -483,11 +466,7 @@ class MRMRSelection(BaseSelector):
             n_features=self.num_features,
             categorical=True,
         )
-        # Rely on error handling mechanism.
-        try:
-            selector.fit(self.X, self.y)
-        except:
-            return self.check_support([])
+        selector.fit(self.X, self.y)
 
         self.support = self.check_support(
             np.where(selector.support_ == True), self.X
