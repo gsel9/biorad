@@ -240,10 +240,11 @@ class PermutationSelectionRF(PermutationSelection):
 
         # TEMP: Hack to enable passing of score function. Should be able to
         # pass customized score functions.
-        if score_func == 'roc_auc':
-            _score_func = roc_auc_score
-        else:
-            raise ValueError('Invalid score label {}'.format(score_func))
+        #if score_func == 'roc_auc':
+        #    _score_func = roc_auc_score
+        #else:
+        #    raise ValueError('Invalid score label {}'.format(score_func))
+
         # Wrap model hyperparameter arguments. Need to specify all RF
         # hyperparameters in constructor if hyperopt is going to treat these
         # parameters as part of the optimization problem.
@@ -260,7 +261,7 @@ class PermutationSelectionRF(PermutationSelection):
         )
         # Pass arguments to permutation importance base class.
         super().__init__(
-            score_func=_score_func,
+            score_func=score_func,
             num_rounds=num_rounds,
             test_size=test_size,
             model=RandomForestClassifier(),
@@ -364,13 +365,14 @@ class WilcoxonSelection(BaseSelector):
 class ReliefFSelection(BaseSelector):
     """
 
-    The algorithm is notably sensitive to feature interactions [1], [2]. It is
-    recommended that each feature is scaled to the interval [0 1].
-
     Args:
         num_neighbors (int)): Controls the locality of the estimates. The
             proposed default value is ten [3], [4].
         num_features (int)
+
+    Note:
+    - The algorithm is notably sensitive to feature interactions [1], [2].
+    - It is recommended that each feature is scaled to the interval [0 1].
 
     References:
         [1]: Kira, Kenji and Rendell, Larry (1992). The Feature Selection
