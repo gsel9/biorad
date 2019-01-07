@@ -4,8 +4,10 @@
 #
 
 """
-To do's:
-* Determine the intial number of features to select from.
+Feature selection algorithm setup including hyperparameter configurations.
+
+* Make sure to update the number of original features in the data set.
+* The safe_predict functino assumes classifiers are labeled with `clf`.
 
 """
 
@@ -62,7 +64,7 @@ selectors = {
         # the hyperparams rf_permutation_param_space backend function.
         'params': hyperparams.permutation_param_space(
             procedure_params = {
-                selector_name_func('score_func'): roc_auc_score,# 'roc_auc',
+                selector_name_func('score_func'): roc_auc_score,
                 selector_name_func('num_rounds'): 10,
                 selector_name_func('test_size'): 0.2,
                 selector_name_func('random_state'): 2,
