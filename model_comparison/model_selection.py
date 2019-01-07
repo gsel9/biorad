@@ -299,7 +299,8 @@ class ParameterSearchCV:
         self.trials = None
         # Ground truths and predictions for BBC-CV procedure.
         self._preds = None
-        self._grtruths = None
+        self._truths = None
+        self._sample_lim = None
         self._best_params = None
 
     @property
@@ -391,9 +392,8 @@ class ParameterSearchCV:
         if self.trials is None:
             self.trials = Trials()
 
-        # The first n_samples % n_splits folds have size
-        # n_samples // n_splits + 1, other folds have size
-        # n_samples // n_splits, where n_samples is the number of samples.
+        if self._preds and self._truths is None:
+            self._preds, self._truths = self.setup_pred_containers()
 
         # For saving prelim results: https://github.com/hyperopt/hyperopt/issues/267
         #pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
@@ -410,6 +410,23 @@ class ParameterSearchCV:
         )
         return self
 
+    def setup_pred_containers(self):
+
+        nrows, _ = np.shape(self.X)
+
+        # From scikit-learn CV:
+        # The first n_samples % n_splits folds have size
+        # n_samples // n_splits + 1, other folds have size
+        # n_samples // n_splits, where n_samples is the number of samples.
+        self._sample_lim = nrows // self.cv
+
+        # Setup containers from predictions and corresponding ground truths.
+        _preds = np.array((self._sample_lim, self.max_evals), dtype=int)
+        _truths = np.array((self._sample_lim, self.max_evals), dtype=int)
+
+        return _preds, _truths
+
+
     def objective(self, hparams):
         """Objective function to minimize.
 
@@ -422,13 +439,13 @@ class ParameterSearchCV:
         """
         start_time = datetime.now()
 
-        kfolds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+        _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
 
         test_loss, train_loss = [], []
-        for train_index, test_index in kfolds.split(self.X, self.y):
+        for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
 
-            X_train, X_test = self.X[train_index], self.X[test_index]
-            y_train, y_test = self.y[train_index], self.y[test_index]
+            X_train, X_test = self.X[train_idx], self.X[test_idx]
+            y_train, y_test = self.y[train_idx], self.y[test_idx]
 
             # Clone model to ensure independency between folds.
             _model = deepcopy(self.model) #clone(self.model)
@@ -440,14 +457,12 @@ class ParameterSearchCV:
             pred_y_test = _model.predict(X_test)
             pred_y_train = _model.predict(X_train)
 
-            print(np.shape(_model.predict(X_test)))
-
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
             # Collect ground truths and predictions for BBC-CV procedure.
-            self._grtruths.append(y_test)
-            self._preds.append(pred_y_test)
+            #self._preds[:, num] = pred_y_test[:self._sample_lim, :].astype(int)
+            #self._truths[:, num] = y_test[:self._sample_lim, :].astype(int)
 
         """
         return OrderedDict(
@@ -464,6 +479,7 @@ class ParameterSearchCV:
             ]
         )
         """
+
 
     @staticmethod
     def _check_X_y(X, y):
@@ -509,8 +525,6 @@ if __name__ == '__main__':
     )
     pipe, params = pipes_and_params['PermutationSelection_PLSRegression']
 
-    """
-
     # TODO: Collect ground truths and predictions for BBC-CV procedure.
     bbc_cv_selection(
         X, y,
@@ -530,6 +544,3 @@ if __name__ == '__main__':
         error_score=np.nan,
         path_tmp_results=None,
     )
-    """
-    print(np.shape(X))
-    print(np.size(y) / )

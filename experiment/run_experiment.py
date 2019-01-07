@@ -130,6 +130,7 @@ if __name__ == '__main__':
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
+    """
     comparison_frame.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
@@ -151,3 +152,5 @@ if __name__ == '__main__':
     )
     pipe, params = pipes_and_params['PermutationSelectionRF_PLSRegression']
     #print(params)
+    """
+    print(type(pipes_and_params))
