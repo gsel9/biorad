@@ -6,6 +6,11 @@
 """
 Wrapped feature selection algorithms providing API compatible with model
 comparison framework and scikti-learn Pipeline objects.
+
+NOTE:
+* Could it be that feature selectors stores X_train which is returned in
+  predict????
+
 """
 
 __author__ = 'Severin Langberg'
@@ -21,7 +26,6 @@ from scipy import stats
 from ReliefF import ReliefF
 
 from sklearn.utils import check_X_y
-from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
@@ -46,13 +50,11 @@ class BaseSelector(BaseEstimator, TransformerMixin):
     def __init__(self, error_handling='return_all'):
 
         self.error_handling = error_handling
-
-        self.X = None
-        self.y = None
-
         if not self.error_handling in self.VALID_ERROR_MECHANISMS:
             raise ValueError('Invalid error handling mechanism {}'
                              ''.format(self.error_handling))
+
+        self.support = None
 
     @staticmethod
     def check_subset(X):
@@ -65,11 +67,13 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             (array-like): Formatted feature subset.
 
         """
+        # Too high dimensionality.
         if np.ndim(X) > 2:
             if np.ndim(np.squeeze(X)) > 2:
                 raise RuntimeError('X train ndim {}'.format(np.ndim(X)))
             else:
                 X = np.squeeze(X)
+        # # Too low dimensionality.
         if np.ndim(X) < 2:
             if np.ndim(X.reshape(-1, 1)) == 2:
                 X = X.reshape(-1, 1)
@@ -91,25 +95,32 @@ class BaseSelector(BaseEstimator, TransformerMixin):
         """
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
-
-        # NB: Include all features if none were selected.
-        if len(support) - 1 < 1:
+        # Check if support is empty. If so, fall back to error handling
+        # mechanism.
+        if np.size(support) < 1:
             if self.error_handling == 'return_all':
                 support = np.arange(X.shape[1], dtype=int)
             elif self.error_handling == 'return_NaN':
                 support = np.nan
             else:
-                pass
+                raise RuntimeError('Cannot format support: {}'.format(support))
+        # Make sure correct dimensionality of support (otherwise, the support
+        # length cannot be measured correctly).
+        if np.ndim(support) > 1:
+            support = np.squeeze(support)
+        elif np.ndim(support) < 1:
+            support = support[np.newaxis]
         else:
-            if np.ndim(support) > 1:
-                support = np.squeeze(support)
-            if np.ndim(support) < 1:
-                support = support[np.newaxis]
-            if np.ndim(support) != 1:
-                raise RuntimeError(
-                    'Invalid dimension {} to support.'.format(np.ndim(support))
-                )
+            pass
+        # Sanity check.
+        assert np.ndim(support) == 1
+
         return support
+
+    def transform(self, X):
+
+        # Method is shared by all subclasses.
+        return self.check_subset(X[:, self.support])
 
 
 class PermutationSelection(BaseSelector):
@@ -146,21 +157,23 @@ class PermutationSelection(BaseSelector):
         self.random_state = random_state
 
         self.rgen = np.random.RandomState(self.random_state)
+        self.support = None
 
-        # Set model hyperparameters.
-        #if self.model_params is not None:
-        #    self.model.set_params(**self.model_params)
-        # If stochastic algorithm.
+        # If algorithm is stochastic.
         try:
             self.model.random_state = self.random_state
         except:
             pass
 
-        self.support = None
-
     def __name__(self):
 
         return 'PermutationSelection'
+
+    @property
+    def num_sel_features(self):
+        """Returns the size of the reduced feature set."""
+
+        return np.size(self.support)
 
     @staticmethod
     def _check_X_y(X, y):
@@ -170,25 +183,19 @@ class PermutationSelection(BaseSelector):
 
     def fit(self, X, y, *args, **kwargs):
 
-        self.X, self.y = self._check_X_y(X, y)
+        X, y = self._check_X_y(X, y)
 
         # Perform train-test splitting.
         X_train, X_test, y_train, y_test = train_test_split(
-            self.X, self.y,
-            test_size=self.test_size,
-            random_state=self.random_state
+            X, y, test_size=self.test_size, random_state=self.random_state
         )
         self.model.fit(X_train, y_train)
 
         avg_imp = self._feature_permutation_importance(X_test, y_test)
         # Return features contributing to model performance as support.
-        self.support = self.check_support(np.where(avg_imp > 0), self.X)
+        self.support = self.check_support(np.where(avg_imp > 0), X)
 
         return self
-
-    def transform(self, *args, **kwargs):
-
-        return self.check_subset(self.X[:, self.support])
 
     def _feature_permutation_importance(self, X, y):
         # Returns average feature permutation importance.
@@ -222,7 +229,7 @@ class PermutationSelectionRF(PermutationSelection):
 
     def __init__(
         self,
-        score_func='roc_auc',
+        score_func=None,
         num_rounds=10,
         test_size=None,
         n_estimators=None,
@@ -306,6 +313,12 @@ class WilcoxonSelection(BaseSelector):
 
         return 'WilcoxonSelection'
 
+    @property
+    def num_sel_features(self):
+        """Returns the size of the reduced feature set."""
+
+        return np.size(self.support)
+
     @staticmethod
     def _check_X_y(X, y):
         # A wrapper around sklearn formatter.
@@ -314,18 +327,15 @@ class WilcoxonSelection(BaseSelector):
 
     def fit(self, X, y=None, *args, **kwargs):
 
-        self.X, self.y = self._check_X_y(X, y)
+        X, y = self._check_X_y(X, y)
 
         # Formatting and error handling.
-        self.support = self.check_support(self.wilcoxon_signed_rank(), self.X)
+        _support = self.wilcoxon_signed_rank(X, y)
+        self.support = self.check_support(_support, X)
 
         return self
 
-    def transform(self, *args, **kwargs):
-
-        return self.check_subset(self.X[:, self.support])
-
-    def wilcoxon_signed_rank(self):
+    def wilcoxon_signed_rank(self, X, y):
         """The Wilcoxon signed-rank test to determine if two dependent samples were
         selected from populations having the same distribution. Includes
 
@@ -341,20 +351,20 @@ class WilcoxonSelection(BaseSelector):
             (numpy.ndarray): Support indicators.
 
         """
-        _, ncols = np.shape(self.X)
+        _, ncols = np.shape(X)
 
         support, pvals = [], []
         # Apply Bonferroni correction.
         if self.bf_correction:
             for num in range(ncols):
                 # If p-value > thresh: same distribution.
-                _, pval = stats.wilcoxon(self.X[:, num], self.y)
+                _, pval = stats.wilcoxon(X[:, num], y)
                 if pval <= self.thresh / ncols:
                     support.append(num)
         else:
             for num in range(ncols):
                 # If p-value > thresh: same distribution.
-                _, pval = stats.wilcoxon(self.X[:, num], self.y)
+                _, pval = stats.wilcoxon(X[:, num], y)
                 if pval <= self.thresh:
                     support.append(num)
 
@@ -407,6 +417,12 @@ class ReliefFSelection(BaseSelector):
 
         return 'ReliefFSelection'
 
+    @property
+    def num_sel_features(self):
+        """Returns the size of the reduced feature set."""
+
+        return np.size(self.support)
+
     def _check_X_y(self, X, y):
         # A wrapper around sklearn formatter.
 
@@ -419,20 +435,16 @@ class ReliefFSelection(BaseSelector):
     def fit(self, X, y=None, *args, **kwargs):
 
         # NOTE: Includes scaling to [0, 1] range.
-        self.X, self.y = self._check_X_y(X, y)
+        X, y = self._check_X_y(X, y)
 
         selector = ReliefF(n_neighbors=self.num_neighbors)
-        selector.fit(self.X, self.y)
+        selector.fit(X, y)
 
         _support = selector.top_features[:self.num_features]
 
-        self.support = self.check_support(_support, self.X)
+        self.support = self.check_support(_support, X)
 
         return self
-
-    def transform(self, *args, **kwargs):
-
-        return self.check_subset(self.X[:, self.support])
 
 
 # NOTE:
@@ -464,6 +476,12 @@ class MRMRSelection(BaseSelector):
 
         return 'MRMRSelection'
 
+    @property
+    def num_sel_features(self):
+        """Returns the size of the reduced feature set."""
+
+        return np.size(self.support)
+
     @staticmethod
     def _check_X_y(X, y):
         # A wrapper around sklearn formatter.
@@ -472,7 +490,7 @@ class MRMRSelection(BaseSelector):
 
     def fit(self, X, y=None, *args, **kwargs):
 
-        self.X, self.y = self._check_X_y(X, y)
+        X, y = self._check_X_y(X, y)
 
         # If 'auto': n_features is determined based on the amount of mutual
         # information the previously selected features share with y.
@@ -482,16 +500,12 @@ class MRMRSelection(BaseSelector):
             n_features=self.num_features,
             categorical=True,
         )
-        selector.fit(self.X, self.y)
+        selector.fit(X, y)
 
         self.support = self.check_support(
-            np.where(selector.support_ == True), self.X
+            np.where(selector.support_ == True), X
         )
         return self
-
-    def transform(self, *args, **kwargs):
-
-        return self.check_subset(self.X[:, self.support])
 
 
 if __name__ == '__main__':
