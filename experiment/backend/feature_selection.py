@@ -67,20 +67,26 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             (array-like): Formatted feature subset.
 
         """
-        # Too high dimensionality.
-        if np.ndim(X) > 2:
-            if np.ndim(np.squeeze(X)) > 2:
-                raise RuntimeError('X train ndim {}'.format(np.ndim(X)))
-            else:
-                X = np.squeeze(X)
-        # # Too low dimensionality.
-        if np.ndim(X) < 2:
-            if np.ndim(X.reshape(-1, 1)) == 2:
-                X = X.reshape(-1, 1)
-            else:
-                raise RuntimeError('X train ndim {}'.format(np.ndim(X_train)))
+        if not isinstance(X, np.ndarray):
+            X = np.array(X, dtype=float)
 
-        return np.array(X, dtype=float)
+        if np.ndim(X) > 2:
+            X = np.squeeze(X)
+
+        # Recommendation from sklearn: Reshape data with array.reshape(-1, 1)
+        # if data has a single feature or array.reshape(1, -1) if it contains
+        # a single sample.
+        if np.ndim(X) < 2:
+            nrows, ncols = np.shape(X)
+            if nrows == 1:
+                X = X.reshape(1, -1)
+            if ncols == 1:
+                X = X.reshape(-1, 1)
+
+        if not np.ndim(X) == 2:
+            raise RuntimeError('Error X ndim {}'.format(np.ndim(X_train)))
+
+        return X
 
     def check_support(self, support, X):
         """Formatting of feature subset indicators.
@@ -379,6 +385,11 @@ class ReliefFSelection(BaseSelector):
 
         # NOTE: Includes scaling to [0, 1] range.
         X, y = self._check_X_y(X, y)
+
+        # Addressing restriction in sklearn KDTree.
+        nrows, _ = np.shape(X)
+        if self.num_neighbors > nrows:
+            self.num_neighbors = nrows - 1
 
         selector = ReliefF(n_neighbors=self.num_neighbors)
         selector.fit(X, y)
