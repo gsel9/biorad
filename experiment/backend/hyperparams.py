@@ -375,7 +375,7 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
 
 def _logreg_penalty(name):
 
-    return hp.pchoice(name, ['l2', 'l1'])
+    return hp.choice(name, ['l1', 'l2'])
 
 
 def _logreg_C(name):
