@@ -48,7 +48,9 @@ selectors = {
         # of the optimization problem.
         'selector': [
             (CLF_LABEL, PermutationSelection(
-                    model=RandomForestClassifier(),
+                    model=RandomForestClassifier(
+                        n_jobs=-1, verbose=False, oob_score=False,
+                    ),
                     score_func=roc_auc_score,
                     num_rounds=1,
                     test_size=0.2,
@@ -67,9 +69,6 @@ selectors = {
             min_samples_leaf=None,
             bootstrap=None,
             random_state=None,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=False,
         ),
     },
     # Wilcoxon feature selection

@@ -49,12 +49,19 @@ classifiers = {
     SVC.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(SVC()))
+            (CLF_LABEL, PipeEstimator(
+                SVC(
+                    class_weight='balanced',
+                    verbose=False,
+                    cache_size=500,
+                    max_iter=-1,
+                )
+            ))
         ],
         'params': hyperparams.svc_param_space(
             estimator_name_func,
             # NB: Must select kernel a priori because the hyperparamter space
-            # generator function is not evaluated at each suggested
+            # generator function is not evaluated for each suggested
             # configuration. Thus, settings depending on the specified kernel
             # will not be updated according to the sampled kernel function.
             kernel='rbf',
@@ -66,16 +73,16 @@ classifiers = {
             coef0=None,
             random_state=None,
             n_features=NUM_ORIG_FEATURES,
-            class_weight='balanced',
-            max_iter=-1,
-            verbose=False,
-            cache_size=500
         ),
     },
     # Random Forest Classifier
     RandomForestClassifier.__name__: {
         'estimator': [
-            (CLF_LABEL, PipeEstimator(RandomForestClassifier()))
+            (CLF_LABEL, PipeEstimator(
+                RandomForestClassifier(
+                    n_jobs=-1, verbose=False, oob_score=False,
+                )
+            ))
         ],
         'params': hyperparams.trees_param_space(
             estimator_name_func,
@@ -86,9 +93,9 @@ classifiers = {
             min_samples_leaf=None,
             bootstrap=None,
             random_state=None,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=False,
+            #oob_score=False,
+            #n_jobs=-1,
+            #verbose=False,
         )
     },
     # Gaussian Naive Bayes.
