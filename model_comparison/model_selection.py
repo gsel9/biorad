@@ -168,11 +168,11 @@ class BootstrapBiasCorrectedCV:
         oob=10,
         alpha=0.05,
     ):
-        self.random_state = random_state
         self.score_func = score_func
-        self.error_score = error_score
-        self.oob = oob
-        self.alpha = alpha
+        self.oob = int(oob)
+        self.alpha = float(alpha)
+        self.random_state = int(random_state)
+        self.error_score = float(error_score)
 
         self._sampler = None
 
@@ -243,11 +243,10 @@ class BootstrapBiasCorrectedCV:
     def bootstrap_ci(self, scores):
         """Calculate the bootstrap confidence interval from sample data."""
 
-        asc_scores = sorted(scores)
-
         upper_idx = (1 - self.alpha / 2) * len(scores)
         lower_idx = self.alpha / 2 * len(scores)
 
+        asc_scores = sorted(scores)
         return asc_scores[int(lower_idx)], asc_scores[int(upper_idx)]
 
 
@@ -282,7 +281,7 @@ class ParameterSearchCV:
         self.space = space
         self.shuffle = shuffle
         self.score_func = score_func
-        self.error_score = error_score
+        self.error_score = float(error_score)
         self.cv = int(cv)
         self.max_evals = int(max_evals)
         self.random_state = int(random_state)
@@ -515,7 +514,7 @@ if __name__ == '__main__':
     import os
     import backend
     import model_selection
-    import comparison_frame
+    import comparison
 
     from selector_configs import selectors
     from estimator_configs import classifiers
@@ -541,12 +540,13 @@ if __name__ == '__main__':
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
-    pipe, params = pipes_and_params['PermutationSelection_PLSRegression']
+    name = 'PermutationSelection_LogisticRegression'
+    pipe, params = pipes_and_params[name]
 
     results = bbc_cv_selection(
         X, y,
         tpe.suggest,
-        'PermutationSelection_PLSRegression',
+        name,
         pipe,
         params,
         SCORING,
