@@ -121,6 +121,8 @@ def bbc_cv_selection(
         # Error handling
         optimizer.fit(X, y)
 
+        """
+
         # Evaluate model performance with BBC-CV method.
         bbc_cv = BootstrapBiasCorrectedCV(
             random_state=random_state,
@@ -146,7 +148,7 @@ def bbc_cv_selection(
         if path_tmp_results is not None:
             utils.ioutil.write_prelim_results(path_case_file, output)
 
-    return output
+    return output"""
 
 
 # TODO: Get GPU speed with TensorFlow.
