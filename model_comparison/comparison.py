@@ -82,8 +82,8 @@ def model_comparison(
     for label, (pipe, params) in pipes_and_params.items():
         # Create a temporary folder to store the state of the pipeline
         # transformers for quick access.
-        _cachedir = mkdtemp()
-        pipe.memory = Memory(cachedir=_cachedir, verbose=10)
+        #_cachedir = mkdtemp()
+        #pipe.memory = Memory(cachedir=_cachedir, verbose=10)
         #
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
@@ -109,7 +109,7 @@ def model_comparison(
             )
         )
         # Delete the temporary pipeline cache.
-        rmtree(_cachedir)
+        #rmtree(_cachedir)
     if write_prelim:
         # Tear down temporary dirs after saving final results to disk.
         _save_and_cleanup(path_final_results, path_tmp_results, results)

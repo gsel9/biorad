@@ -169,10 +169,10 @@ class BootstrapBiasCorrectedCV:
         alpha=0.05,
     ):
         self.score_func = score_func
-        self.oob = int(oob)
-        self.alpha = float(alpha)
-        self.random_state = int(random_state)
-        self.error_score = float(error_score)
+        self.oob = oob
+        self.alpha = alpha
+        self.random_state = random_state
+        self.error_score = error_score
 
         self._sampler = None
 
@@ -281,10 +281,10 @@ class ParameterSearchCV:
         self.space = space
         self.shuffle = shuffle
         self.score_func = score_func
-        self.error_score = float(error_score)
-        self.cv = int(cv)
-        self.max_evals = int(max_evals)
-        self.random_state = int(random_state)
+        self.error_score = error_score
+        self.cv = cv
+        self.max_evals = max_evals
+        self.random_state = random_state
 
         # NOTE: Attributes updated with instance.
         self.X = None
@@ -516,8 +516,11 @@ if __name__ == '__main__':
     import model_selection
     import comparison
 
-    from selector_configs import selectors
-    from estimator_configs import classifiers
+    import numpy as np
+    import pandas as pd
+
+    from configs.selector_configs import selectors
+    from configs.estimator_configs import classifiers
 
     from hyperopt import tpe
 
@@ -529,18 +532,40 @@ if __name__ == '__main__':
     from sklearn.datasets import load_breast_cancer
     from sklearn.preprocessing import StandardScaler
 
-    X, y = load_breast_cancer(return_X_y=True)
+    # TODO: To utils?
+    def load_target(path_to_target, index_col=0):
+
+        var = pd.read_csv(path_to_target, index_col=index_col)
+        return np.squeeze(var.values).astype(np.float32)
+
+
+    # TODO: To utils?
+    def load_predictors(path_to_data, index_col=0, regex=None):
+
+        data = pd.read_csv(path_to_data, index_col=index_col)
+        if regex is None:
+            return np.array(data.values, dtype=np.float32)
+        else:
+            target_features = data.filter(regex=regex)
+            return np.array(data.loc[:, target_features].values, dtype=np.float32)
+
+    # FEATURE SET:
+    X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
+
+    # TARGET:
+    y = load_target('./../../data_source/to_analysis/target_lrr.csv')
 
     # SETUP:
     CV = 3
     OOB = 10
     MAX_EVALS = 7
     SCORING = roc_auc_score
-    #
+
+    # Generate pipelines from config elements.
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
-    name = 'PermutationSelection_LogisticRegression'
+    name = 'MRMRSelection_SVC'
     pipe, params = pipes_and_params[name]
 
     results = bbc_cv_selection(
@@ -561,4 +586,3 @@ if __name__ == '__main__':
         error_score=np.nan,
         path_tmp_results=None,
     )
-    print(results['oob_median_score'])
