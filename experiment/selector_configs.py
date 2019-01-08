@@ -14,20 +14,18 @@ Feature selection algorithm setup including hyperparameter configurations.
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
+from backend import hyperparams
 
 from hyperopt.pyll import scope
-
-from backend import hyperparams
 
 from backend.feature_selection import PermutationSelection
 from backend.feature_selection import WilcoxonSelection
 from backend.feature_selection import ReliefFSelection
 from backend.feature_selection import MRMRSelection
 
-from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import roc_auc_score
 
 # Globals
 CLF_LABEL = 'selector'
@@ -43,18 +41,11 @@ def selector_name_func(param_name):
     return '{}__{}'.format(CLF_LABEL, param_name)
 
 
-@scope.define
-def sklearn_roc_auc_score(*args, **kwargs):
-    """Wrapper for sklearn ROC AUC classifier performance metric function."""
-
-    return roc_auc_score(*args, **kwargs)
-
-
 selectors = {
         # Random forest classifier permutation importance selection.
     PermutationSelection.__name__: {
-        # NOTE: Algorithm wraps a Random Forest Classifier with associated
-        # hyperparams as part of the feature selection optimization problem.
+        # Specify permutation procedure specific parameters that are not part
+        # of the optimization problem.
         'selector': [
             (CLF_LABEL, PermutationSelection(
                     model=RandomForestClassifier(),
@@ -64,10 +55,9 @@ selectors = {
                 )
             )
         ],
-        # Mergeing of permutation importance procedure parameters with
-        # wrapped RF classifier hyperparameters (rendering the RF
-        # hyperparamters part of the TPE classification problem) occurs in
-        # the hyperparams rf_permutation_param_space backend function.
+        # Specify classifier hyperparamters as the only parameters part of the
+        # optimization problem. These parameters are passed to the classifier
+        # throught the set_params method.
         'params': hyperparams.trees_param_space(
             selector_name_func,
             n_estimators=None,
