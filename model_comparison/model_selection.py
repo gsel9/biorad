@@ -94,7 +94,8 @@ def bbc_cv_selection(
         output = utils.ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        # Balance target class distributions with SMOTE procedure.
+        # NB: Balance target class distributions with SMOTE procedure renders
+        # more samples available compared to the original data set.
         if balancing:
             X, y = utils.sampling.balance_data(X, y, random_state)
 
@@ -104,8 +105,6 @@ def bbc_cv_selection(
         if verbose > 0:
             print('Initiating experiment: {}'.format(random_state))
             start_time = datetime.now()
-
-        # TODO: Set random states in pipeline estimators.
 
         # Perform cross-validated hyperparameter optimization.
         optimizer = ParameterSearchCV(
@@ -122,14 +121,6 @@ def bbc_cv_selection(
         # Error handling
         optimizer.fit(X, y)
 
-        # Add available and potentially interesting results to output.
-        output.update(optimizer.test_loss)
-        output.update(optimizer.train_loss)
-        output.update(optimizer.test_loss_var)
-        output.update(optimizer.train_loss_var)
-        output.update(optimizer.best_params)
-        output.update(optimizer.params)
-
         # Evaluate model performance with BBC-CV method.
         bbc_cv = BootstrapBiasCorrectedCV(
             random_state=random_state,
@@ -137,8 +128,14 @@ def bbc_cv_selection(
             alpha=alpha,
             oob=oob,
         )
-        # Returns results directly.
+        # Add results to output.
         output.update(bbc_cv.evaluate(*optimizer.oos_pairs))
+        output.update(optimizer.test_loss)
+        output.update(optimizer.train_loss)
+        output.update(optimizer.test_loss_var)
+        output.update(optimizer.train_loss_var)
+        output.update(optimizer.best_params)
+        output.update(optimizer.params)
 
         if verbose > 0:
             duration = datetime.now() - start_time
@@ -194,7 +191,6 @@ class BootstrapBiasCorrectedCV:
             (dict):
 
         """
-        # Generate bootstrapped matrices.
         if self._sampler is None:
             self._sampler = utils.sampling.OOBSampler(
                 self.oob, self.random_state
@@ -256,7 +252,6 @@ class BootstrapBiasCorrectedCV:
 
 
 # ERROR: Error is raised if attmepting to clone wrapped estimator.
-# TODO: Collect ground truths and predictions for BBC-CV procedure.
 class ParameterSearchCV:
     """Perform K-fold cross-validated hyperparameter search with the Bayesian
     optimization Tree Parzen Estimator.
@@ -296,10 +291,13 @@ class ParameterSearchCV:
         # NOTE:
         self.X = None
         self.y = None
-        self.trials = None
         # Ground truths and predictions for BBC-CV procedure.
-        self._preds = None
-        self._truths = None
+        self.Y_pred = None
+        self.Y_test = None
+
+        # The hyperopt trails object stores information from each iteration.
+        self.trials = None
+        self._rgen = None
         self._sample_lim = None
         self._best_params = None
 
@@ -371,12 +369,12 @@ class ParameterSearchCV:
         predictions."""
 
         preds = np.transpose(
-            [items['y_preds'] for items in self.trials.results]
+            [items['y_pred'] for items in self.trials.results]
         )
         trues = np.transpose(
-            [items['y_trues'] for items in self.trials.results]
+            [items['y_true'] for items in self.trials.results]
         )
-        return trues, preds
+        return preds, trues
 
     def fit(self, X, y):
         """Optimal hyperparameter search.
@@ -388,44 +386,56 @@ class ParameterSearchCV:
         """
         self.X, self.y = self._check_X_y(X, y)
 
+        if self._rgen is None:
+            self._rgen = np.random.RandomState(self.random_state)
+
+        if self.Y_pred is None and self.Y_test is None:
+            self._setup_pred_containers()
+
         # The Trials object stores information of each iteration.
+        # For saving prelim results: https://github.com/hyperopt/hyperopt/issues/267
+        # pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
+        # trials = pickle.load(open('TEMP_RESULTS_FILE', 'rb'))
         if self.trials is None:
             self.trials = Trials()
 
-        if self._preds and self._truths is None:
-            self._preds, self._truths = self.setup_pred_containers()
-
-        # For saving prelim results: https://github.com/hyperopt/hyperopt/issues/267
-        #pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
-        #trials = pickle.load(open('TEMP_RESULTS_FILE', 'rb'))
-
-        # Error handling.
+        # Passing random state to optimization algorithm renders randomly
+        # selected seeds from hyperopt sampling reproduciable.
+        # Include some error handling?
         self._best_params = fmin(
             self.objective,
             self.space,
             algo=self.algo,
-            max_evals=self.max_evals,
+            rstate=self._rgen,
             trials=self.trials,
-            rstate=np.random.RandomState(self.random_state)
+            max_evals=self.max_evals,
         )
         return self
 
-    def setup_pred_containers(self):
+    def _setup_pred_containers(self):
 
         nrows, _ = np.shape(self.X)
+        # With scikit-learn CV:
+        # * The first n_samples % n_splits folds have size
+        #   n_samples // n_splits + 1, other folds have size
+        #   n_samples // n_splits, where n_samples is the number of samples.
+        # If stratified CV:
+        # * Train and test sizes may be different in each fold,
+        #   with a difference of at most n_classes
+        # Adjust the sample limit with be the number of target classes to
+        # ensure all predictions have equal size when storing outputs for
+        # BBC-CV procedure.
+        self._sample_lim = nrows // self.cv - len(set(self.y))
 
-        # From scikit-learn CV:
-        # The first n_samples % n_splits folds have size
-        # n_samples // n_splits + 1, other folds have size
-        # n_samples // n_splits, where n_samples is the number of samples.
-        self._sample_lim = nrows // self.cv
+        # Setup containers from predictions and corresponding ground truths to
+        # be used with BBC-CV procedure. The containers must hold the set of
+        # predictinos for each suggested hyperparamter configuration as the
+        # optimal. That is, predictions must be stored each time the objective
+        # function is called by the optimization algorithm.
+        self.Y_pred = np.zeros((self._sample_lim, self.max_evals), dtype=int)
+        self.Y_test = np.zeros((self._sample_lim, self.max_evals), dtype=int)
 
-        # Setup containers from predictions and corresponding ground truths.
-        _preds = np.array((self._sample_lim, self.max_evals), dtype=int)
-        _truths = np.array((self._sample_lim, self.max_evals), dtype=int)
-
-        return _preds, _truths
-
+        return self
 
     def objective(self, hparams):
         """Objective function to minimize.
@@ -442,6 +452,7 @@ class ParameterSearchCV:
         _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
 
         test_loss, train_loss = [], []
+        Y_test, Y_pred = [], []
         for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
 
             X_train, X_test = self.X[train_idx], self.X[test_idx]
@@ -454,17 +465,16 @@ class ParameterSearchCV:
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
 
-            pred_y_test = _model.predict(X_test)
-            pred_y_train = _model.predict(X_train)
+            pred_y_test = self.safe_predict(_model.predict(X_test))
+            pred_y_train = self.safe_predict(_model.predict(X_train))
 
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
             # Collect ground truths and predictions for BBC-CV procedure.
-            #self._preds[:, num] = pred_y_test[:self._sample_lim, :].astype(int)
-            #self._truths[:, num] = y_test[:self._sample_lim, :].astype(int)
+            Y_pred.append(pred_y_test[:self._sample_lim].astype(int))
+            Y_test.append(y_test[:self._sample_lim].astype(int))
 
-        """
         return OrderedDict(
             [
                 ('status', STATUS_OK),
@@ -473,13 +483,17 @@ class ParameterSearchCV:
                 ('train_loss', np.median(train_loss)),
                 ('loss_variance', np.var(test_loss)),
                 ('train_loss_variance', np.var(train_loss)),
-                ('y_trues', _trues,),
-                ('y_preds', _preds,),
-                ('hparams', hparams)
+                ('hparams', hparams),
+                # Each entry in the matrix holds predictions ofa single fold.
+                # Eventually, the prediction vectors are stacked on top of
+                # each other resulting in a vecotr of predictions for this
+                # hyperparamter configuration. Repeating the procedure for each
+                # prediction matrix generated from a hyperparamter
+                # configuration produces the BBC-CV matrix.
+                ('y_true', np.hstack(Y_test,)),
+                ('y_pred', np.hstack(Y_pred,)),
             ]
         )
-        """
-
 
     @staticmethod
     def _check_X_y(X, y):
@@ -487,10 +501,17 @@ class ParameterSearchCV:
 
         return check_X_y(X, y)
 
+    @staticmethod
+    def safe_predict(y_pred):
+
+        if np.ndim(y_pred) > 1:
+            y_pred = np.squeeze(y_pred)
+
+        return y_pred
+
 
 if __name__ == '__main__':
 
-    # TODO: Move to backend?
     import sys
     sys.path.append('./../experiment')
 
@@ -515,9 +536,9 @@ if __name__ == '__main__':
     X, y = load_breast_cancer(return_X_y=True)
 
     # SETUP:
-    CV = 10
-    OOB = 500
-    MAX_EVALS = 100
+    CV = 3
+    OOB = 10
+    MAX_EVALS = 7
     SCORING = roc_auc_score
     #
     pipes_and_params = backend.formatting.pipelines_from_configs(
