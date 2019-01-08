@@ -12,8 +12,10 @@ https://github.com/hyperopt/hyperopt/wiki/Parallelizing-Evaluations-During-Searc
 
 Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
 
-Checkout for plots ++: https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
-Checkout: https://github.com/tmadl/highdimensional-decision-boundary-plot
+Checkout for plots ++:
+* https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
+* https://github.com/tmadl/highdimensional-decision-boundary-plot
+
 """
 
 __author__ = 'Severin Langberg'
@@ -42,7 +44,6 @@ from hyperopt import STATUS_OK
 
 from hyperopt.pyll.base import scope
 
-from sklearn.base import clone
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
 
@@ -52,7 +53,6 @@ def point_632plus_selection():
     pass
 
 
-# TODO: Set random states in pipeline estimators.
 def bbc_cv_selection(
     X, y,
     algo,
@@ -121,8 +121,6 @@ def bbc_cv_selection(
         # Error handling
         optimizer.fit(X, y)
 
-        """
-
         # Evaluate model performance with BBC-CV method.
         bbc_cv = BootstrapBiasCorrectedCV(
             random_state=random_state,
@@ -148,7 +146,7 @@ def bbc_cv_selection(
         if path_tmp_results is not None:
             utils.ioutil.write_prelim_results(path_case_file, output)
 
-    return output"""
+    return output
 
 
 # TODO: Get GPU speed with TensorFlow.
@@ -253,7 +251,6 @@ class BootstrapBiasCorrectedCV:
         return asc_scores[int(lower_idx)], asc_scores[int(upper_idx)]
 
 
-# ERROR: Error is raised if attmepting to clone wrapped estimator.
 class ParameterSearchCV:
     """Perform K-fold cross-validated hyperparameter search with the Bayesian
     optimization Tree Parzen Estimator.
@@ -290,7 +287,7 @@ class ParameterSearchCV:
         self.max_evals = int(max_evals)
         self.random_state = int(random_state)
 
-        # NOTE:
+        # NOTE: Attributes updated with instance.
         self.X = None
         self.y = None
         # Ground truths and predictions for BBC-CV procedure.
@@ -403,7 +400,6 @@ class ParameterSearchCV:
 
         # Passing random state to optimization algorithm renders randomly
         # selected seeds from hyperopt sampling reproduciable.
-        # Include some error handling?
         self._best_params = fmin(
             self.objective,
             self.space,
@@ -460,13 +456,16 @@ class ParameterSearchCV:
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
 
-            # Clone model to ensure independency between folds.
-            _model = deepcopy(self.model) #clone(self.model)
+            # Clone model to ensure independency between folds. With deepcopy,
+            # changes made to the object copy does not affect the original
+            # object version.
+            _model = deepcopy(self.model)
 
-            # Configure and train model with suggested hyperparamter setting.
+            # Configure model with provided hyperparamter setting and train.
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
 
+            # Ensure predictions are properly formatted vectors.
             pred_y_test = self.safe_predict(_model.predict(X_test))
             pred_y_train = self.safe_predict(_model.predict(X_train))
 
@@ -474,8 +473,8 @@ class ParameterSearchCV:
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
             # Collect ground truths and predictions for BBC-CV procedure.
-            Y_pred.append(pred_y_test[:self._sample_lim].astype(int))
-            Y_test.append(y_test[:self._sample_lim].astype(int))
+            Y_pred.append(pred_y_test[:self._sample_lim])
+            Y_test.append(y_test[:self._sample_lim])
 
         return OrderedDict(
             [
@@ -486,12 +485,8 @@ class ParameterSearchCV:
                 ('loss_variance', np.var(test_loss)),
                 ('train_loss_variance', np.var(train_loss)),
                 ('hparams', hparams),
-                # Each entry in the matrix holds predictions ofa single fold.
-                # Eventually, the prediction vectors are stacked on top of
-                # each other resulting in a vecotr of predictions for this
-                # hyperparamter configuration. Repeating the procedure for each
-                # prediction matrix generated from a hyperparamter
-                # configuration produces the BBC-CV matrix.
+                # Stack predictions of each fold into a vector representing the
+                # predictions for this particular configuration.
                 ('y_true', np.hstack(Y_test,)),
                 ('y_pred', np.hstack(Y_pred,)),
             ]
@@ -548,8 +543,7 @@ if __name__ == '__main__':
     )
     pipe, params = pipes_and_params['PermutationSelection_PLSRegression']
 
-    # TODO: Collect ground truths and predictions for BBC-CV procedure.
-    bbc_cv_selection(
+    results = bbc_cv_selection(
         X, y,
         tpe.suggest,
         'PermutationSelection_PLSRegression',
@@ -567,3 +561,4 @@ if __name__ == '__main__':
         error_score=np.nan,
         path_tmp_results=None,
     )
+    print(results['oob_median_score'])
