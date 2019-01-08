@@ -4,12 +4,8 @@
 #
 
 """
-Wrapped feature selection algorithms providing API compatible with model
-comparison framework and scikti-learn Pipeline objects.
-
-NOTE:
-* Could it be that feature selectors stores X_train which is returned in
-  predict????
+Feature selection algorithms providing compatible with model comparison
+framework, scikti-learn `Pipeline` objects and hyperopt `fmin` function.
 
 """
 
@@ -32,7 +28,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
 # TransformerMixin incorporates fit_transform().
-# BaseEstimator provides grid-searchable hyperparameters.
+# BaseEstimator provides set_params()/get_params().
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -53,7 +49,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
         if not self.error_handling in self.VALID_ERROR_MECHANISMS:
             raise ValueError('Invalid error handling mechanism {}'
                              ''.format(self.error_handling))
-
+        # NOTE: Attribute set with instance.
         self.support = None
 
     @staticmethod
@@ -125,7 +121,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
 
-        # Method is shared by all subclasses.
+        # Method is shared by all subclasses as a required pipeline signature.
         return self.check_subset(X[:, self.support])
 
 
@@ -159,7 +155,6 @@ class PermutationSelection(BaseSelector):
         self.num_rounds = num_rounds
         self.score_func = score_func
         self.random_state = random_state
-
         # NOTE: Attributes set with instance.
         self.rgen = None
         self.support = None
@@ -206,12 +201,17 @@ class PermutationSelection(BaseSelector):
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=self.test_size, random_state=self.random_state
         )
-        # Update model hyperparamters and configuration.
-        self.model.fit(X_train, y_train)
+        # Fallback error handling mechanism.
+        try:
+            # Update model hyperparamters and configuration.
+            self.model.fit(X_train, y_train)
+            avg_imp = self._feature_permutation_importance(X_test, y_test)
+            # Select features contributing to model performance as support.
+            _support = np.where(avg_imp > 0)
+        except:
+            _support = []
 
-        avg_imp = self._feature_permutation_importance(X_test, y_test)
-        # Return features contributing to model performance as support.
-        self.support = self.check_support(np.where(avg_imp > 0), X)
+        self.support = self.check_support(_support, X)
 
         return self
 
@@ -255,7 +255,7 @@ class WilcoxonSelection(BaseSelector):
 
         self.thresh = thresh
         self.bf_correction = bf_correction
-
+        # NOTE: Attributes set with instance.
         self.support = None
 
     def __name__(self):
@@ -357,10 +357,9 @@ class ReliefFSelection(BaseSelector):
 
         self.num_neighbors = num_neighbors
         self.num_features = num_features
-
+        # NOTE: Attributes set with instance.
         self.support = None
-
-        self._scaler = MinMaxScaler()
+        self.scaler = None
 
     def __name__(self):
 
@@ -377,7 +376,9 @@ class ReliefFSelection(BaseSelector):
 
         X, y = check_X_y(X, y)
         # Scaling to [0, 1] range as recommended for this algorithm.
-        X = self._scaler.fit_transform(X)
+        if self.scaler is None:
+            self.scaler = MinMaxScaler()
+            X = self.scaler.fit_transform(X)
 
         return X, y
 
@@ -385,18 +386,27 @@ class ReliefFSelection(BaseSelector):
 
         # NOTE: Includes scaling to [0, 1] range.
         X, y = self._check_X_y(X, y)
+        # Hyperparameter adjustments.
+        self._check_params(X)
+        # Fallback error handling mechanism.
+        try:
+            selector = ReliefF(n_neighbors=self.num_neighbors)
+            selector.fit(X, y)
+            # Select the predefined number of features from ReliefF ranking.
+            _support = selector.top_features[:self.num_features]
+        except:
+            _support = []
 
-        # Addressing restriction in sklearn KDTree.
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    def _check_params(self, X):
+
+        # Satisfying check in sklearn KDTree (binary tree).
         nrows, _ = np.shape(X)
         if self.num_neighbors > nrows:
             self.num_neighbors = nrows - 1
-
-        selector = ReliefF(n_neighbors=self.num_neighbors)
-        selector.fit(X, y)
-
-        _support = selector.top_features[:self.num_features]
-
-        self.support = self.check_support(_support, X)
 
         return self
 
@@ -409,7 +419,8 @@ class MRMRSelection(BaseSelector):
     algortihm.
 
     Args:
-        k (int):
+        k (int): Note that k must be larger than 0, but smaller than the
+            smallest class.
         num_features (): If `auto`, the number of is determined based on the
             amount of mutual information the previously selected features share
             with the target classes.
@@ -421,9 +432,9 @@ class MRMRSelection(BaseSelector):
 
         super().__init__(error_handling)
 
-        self.k = int(k)
-        self.num_features = int(num_features)
-
+        self.k = k
+        self.num_features = num_features
+        # NOTE: Attribute set with isinstance.
         self.support = None
 
     def __name__(self):
@@ -445,20 +456,37 @@ class MRMRSelection(BaseSelector):
     def fit(self, X, y=None, *args, **kwargs):
 
         X, y = self._check_X_y(X, y)
+        # Hyperparameter adjustments.
+        self._check_params(y)
+        # Fallback error handling mechanism.
+        try:
+            selector = mifs.MutualInformationFeatureSelector(
+                method='MRMR',
+                k=int(self.k),
+                n_features=int(self.num_features),
+                categorical=True,
+            )
+            selector.fit(X, y)
+            # Extract features from the mask array of selected features.
+            _support = np.where(selector.support_ == True)
+        except:
+            _support = []
 
-        # If 'auto': n_features is determined based on the amount of mutual
-        # information the previously selected features share with y.
-        selector = mifs.MutualInformationFeatureSelector(
-            method='MRMR',
-            k=self.k,
-            n_features=self.num_features,
-            categorical=True,
-        )
-        selector.fit(X, y)
+        self.support = self.check_support(_support, X)
 
-        self.support = self.check_support(
-            np.where(selector.support_ == True), X
-        )
+        return self
+
+    def _check_params(self, y):
+
+        # From mifs package source code:
+        # * k must be larger than 0, but smaller than the smallest class.
+        min_class_count = np.min(np.bincount(y))
+        if self.k > min_class_count:
+            self.k = min_class_count
+        # * k must be greater than zero.
+        if self.k < 1:
+            self.k = 1
+
         return self
 
 
