@@ -95,8 +95,8 @@ class BaseSelector(BaseEstimator, TransformerMixin):
         """
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
-        # Check if support is empty. If so, fall back to error handling
-        # mechanism.
+
+        # Check if support is empty. Fall back to error mechanism if so.
         if np.size(support) < 1:
             if self.error_handling == 'return_all':
                 support = np.arange(X.shape[1], dtype=int)
@@ -104,16 +104,16 @@ class BaseSelector(BaseEstimator, TransformerMixin):
                 support = np.nan
             else:
                 raise RuntimeError('Cannot format support: {}'.format(support))
-        # Make sure correct dimensionality of support (otherwise, the support
-        # length cannot be measured correctly).
+
+        # Ensure correct support dimensionality.
         if np.ndim(support) > 1:
             support = np.squeeze(support)
-        elif np.ndim(support) < 1:
+        if np.ndim(support) < 1:
             support = support[np.newaxis]
-        else:
-            pass
-        # Sanity check.
-        assert np.ndim(support) == 1
+
+        # Sanity check (breaks if error handling is `return NaN`).
+        if self.error_handling == 'return_all':
+            assert np.ndim(support) == 1
 
         return support
 
@@ -154,6 +154,7 @@ class PermutationSelection(BaseSelector):
         self.score_func = score_func
         self.random_state = random_state
 
+        # NOTE: Attributes set with instance.
         self.rgen = None
         self.support = None
 
@@ -174,13 +175,17 @@ class PermutationSelection(BaseSelector):
         return check_X_y(X, y)
 
     def set_params(self, **params):
+        """Update model hyperparameters."""
 
-        self.random_state = params['random_state']
+        if 'random_state' in params.keys():
+            self.random_state = params['random_state']
+
         self.model.set_params(**params)
 
         return self
 
     def get_params(self, deep=True):
+        """Return model hyperparameters."""
 
         return self.model.get_params(deep=deep)
 
