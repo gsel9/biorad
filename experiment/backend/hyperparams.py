@@ -42,7 +42,7 @@ def hp_num_features(name, max_num_features=1):
 
 def hp_random_state(name):
 
-    return hp.randint(name, 1000)
+    return scope.int(hp.randint(name, 1000))
 
 
 ######################################################
@@ -487,32 +487,6 @@ def plsr_hparam_space(
     }
     return param_space
 
-
-###################################################################
-##==== RandomForestClassifier Permutaiton Importance  ====##
-###################################################################
-
-
-
-def permutation_param_space(procedure_params, model_params):
-    """Permutation importance feature selection hyperparameter search space.
-
-    Args:
-        procedure_params ():
-        model_params ():
-
-    Returns:
-        (dict):
-
-    """
-    # Set permutation importance procedure specific parameters.
-
-    # Merge parameters for permutation importance function and the wrapped
-    # model hyperparameters.
-    param_space = procedure_params.copy()
-    param_space.update(model_params)
-
-    return param_space
 
 
 ###################################################################
