@@ -9,7 +9,6 @@ Hyperparameter generators.
 
 Notes:
 * Based on configurations specified in hyperopt-sklearn package.
-* How can determine optimal cache size for SVM?
 
 """
 
@@ -192,7 +191,7 @@ def trees_param_space(
 
 def _svm_gamma(name, n_features=1):
     # Generator of default gamma values for SVMs. Equivalent to
-    # exp(uniform(low, high)).
+    # exp(uniform(low, high)). The default hyperopt setting.
     #
     # This setting is based on the following rationales:
     # 1.  The gamma hyperparameter can be considered an amplifier of the
@@ -210,17 +209,18 @@ def _svm_gamma(name, n_features=1):
 
 
 def _svm_degree(name):
-    # Equivalent to round(uniform(low, high) / q) * q
+    # Equivalent to round(uniform(low, high) / q) * q. The default hyperopt
+    # setting.
     return hp.quniform(name, 1.5, 6.5, 1)
 
 
 def _svm_tol(name):
-    # Equivalent to exp(uniform(low, high)).
+    # Equivalent to exp(uniform(low, high)). The default hyperopt setting.
     return hp.loguniform(name, np.log(1e-5), np.log(1e-2))
 
 
 def _svm_C(name):
-    # Equivalent to exp(uniform(low, high)).
+    # Equivalent to exp(uniform(low, high)). The default hyperopt setting.
     return hp.loguniform(name, np.log(1e-5), np.log(1e5))
 
 
@@ -240,7 +240,7 @@ def svc_param_space(
     class_weight='balanced',
     max_iter=-1,
     verbose=False,
-    cache_size=512
+    cache_size=500
 ):
     """
     Generate SVM hyperparamters search space.
@@ -270,8 +270,8 @@ def svc_param_space(
         class_weight: Defaults to `balanced`.
         max_iter: Defaults to unlimited number of iterations for convergance.
         verbose: Defaults to false.
-        cache_size: Defults to 512 as default SVM cache size specified in
-            hyperopt package.
+        cache_size: Defults to 500 by recommendation from scikit-learn and
+            default settings in the `hyperopt` package.
 
     """
     # NB: Choose kernel initially as this param constrains the others.
@@ -357,10 +357,12 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
 
     """
     param_space = {
-        name_func('var_smoothing'): _gnb_var_smoothing(
-            name_func('var_smoothing')
-        )
-        if var_smoothing is None else var_smoothing,
+        # ERROR: Invalid parameter var_smoothing for estimator
+        # GaussianNB(priors=None).
+        #name_func('var_smoothing'): _gnb_var_smoothing(
+        #    name_func('var_smoothing')
+        #)
+        #if var_smoothing is None else var_smoothing,
         name_func('priors'): priors
     }
     return param_space
@@ -392,17 +394,16 @@ def logreg_hparam_space(
     penalty=None,
     C=None,
     tol=None,
-    dual=False,
     random_state=None,
-    solver='liblinear',
     fit_intercept=True,
     intercept_scaling=1,
-    class_weight='balanced',
-    multi_class='ovr',
-    warm_start=False,
-    max_iter=-1,
-    verbose=0,
-    n_jobs=-1
+    #class_weight='balanced',
+    #multi_class='ovr',
+    #warm_start=False,
+    #max_iter=-1,
+    #dual=False,
+    #verbose=0,
+    #n_jobs=-1
 ):
     """
     Generate Logistic Regression hyperparamters search space.
@@ -431,17 +432,17 @@ def logreg_hparam_space(
         if penalty is None else penalty,
         name_func('C'): _logreg_C(name_func('C')) if C is None else C,
         name_func('tol'): _logreg_tol(name_func('tol')) if tol is None else tol,
-        name_func('dual'): dual,
-        name_func('solver'): solver,
-        name_func('max_iter'): max_iter,
-        name_func('multi_class'): multi_class,
         # Can be randomly selected.
         name_func('fit_intercept'): fit_intercept,
         # Can be randomly selected if fit_intercept.
         name_func('intercept_scaling'): intercept_scaling,
-        name_func('verbose'): verbose,
-        name_func('warm_start'): warm_start,
-        name_func('n_jobs'): n_jobs,
+        #name_func('class_weight'): class_weight,
+        #name_func('dual'): dual,
+        #name_func('max_iter'): max_iter,
+        #name_func('multi_class'): multi_class,
+        #name_func('verbose'): verbose,
+        #name_func('warm_start'): warm_start,
+        #name_func('n_jobs'): n_jobs,
         name_func('random_state'): hp_random_state(
             name_func('random_state') if random_state is None else random_state
         )
