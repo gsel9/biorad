@@ -59,18 +59,13 @@ def _trees_criterion(name):
 
 
 def _trees_max_features(name):
-    return hp.pchoice(
-        name,
-        [
-            # Most common choice.
-            (0.2, 'sqrt'),
-            # Less common choice.
-            (0.1, 'log2'),
-            # All features, less common choice.
-            (0.1, None),
-            (0.6, hp.uniform(name + '.frac', 0., 1.))
-        ]
-    )
+    # Most common: `sqrt`. Less common is `log2` or None (all features).
+    return hp.pchoice(name, [
+        (0.2, 'sqrt'),
+        (0.1, 'log2'),
+        (0.1, None),
+        (0.6, hp.uniform(name + '.frac', 0.0, 1.0))
+    ])
 
 
 def _trees_max_depth(name):
@@ -89,15 +84,15 @@ def _trees_max_depth(name):
 
 def _trees_min_samples_split(name):
 
-    return 2
+    return int(2)
 
 
 def _trees_min_samples_leaf(name):
-    return hp.choice(name, [
-        # Most common choice.
-        1,
-        scope.int(hp.qloguniform(name + '.gt1', np.log(1.5), np.log(50.5), 1))
-    ])
+    # Most common choice is 1.
+    return hp.choice(
+        name,
+        [1, hp.qloguniform(name + '.gt1', np.log(1.5), np.log(50.5), 1)]
+    )
 
 
 def _trees_bootstrap(name):
@@ -116,9 +111,9 @@ def trees_param_space(
     min_samples_leaf=None,
     bootstrap=None,
     random_state=None,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=False
+    #oob_score=False,
+    #n_jobs=-1,
+    #verbose=False
 ):
     """
     Generate trees ensemble hyperparameters search space.
@@ -146,39 +141,43 @@ def trees_param_space(
         # n_estimators
         name_func('n_estimators'): _trees_n_estimators(
             name_func('n_estimators')
-        )
-        if n_estimators is None else n_estimators,
+        ) if n_estimators is None else n_estimators,
+
         # criterion
         name_func('criterion'): _trees_criterion(name_func('criterion'))
         if criterion is None else criterion,
+
         # max_features
         name_func('max_features'): _trees_max_features(
             name_func('max_features')
-        )
-        if max_features is None else max_features,
+        ) if max_features is None else max_features,
+
         # max_depth
         name_func('max_depth'): _trees_max_depth(name_func('max_depth'))
         if max_depth is None else max_depth,
+
         # min_samples_split
         name_func('min_samples_split'): _trees_min_samples_split(
             name_func('min_samples_split')
-        )
-        if min_samples_split is None else min_samples_split,
+        ) if min_samples_split is None else min_samples_split,
+
         # min_samples_leaf
         name_func('min_samples_leaf'): _trees_min_samples_leaf(
             name_func('min_samples_leaf')
-        )
-        if min_samples_leaf is None else min_samples_leaf,
+        ) if min_samples_leaf is None else min_samples_leaf,
+
         # bootstrap
         name_func('bootstrap'): hp_bool(name_func('bootstrap'))
         if bootstrap is None else bootstrap,
+
         # random_state
         name_func('random_state'): hp_random_state(name_func('random_state'))
         if random_state is None else random_state,
+
         # Predefined parameters.
-        name_func('oob_score'): oob_score,
-        name_func('n_jobs'): n_jobs,
-        name_func('verbose'): verbose,
+        #name_func('oob_score'): oob_score,
+        #name_func('n_jobs'): n_jobs,
+        #name_func('verbose'): verbose,
     }
     return param_space
 
@@ -203,15 +202,16 @@ def _svm_gamma(name, n_features=1):
     #    n_features (int):
     #    -- making these non-conditional variables
     #       probably helps the GP algorithm generalize
-    return hp.loguniform(
+    return scope.float(hp.loguniform(
         name, np.log(1e-3 / n_features),  np.log(1e3 / n_features)
-    )
+    ))
 
 
 def _svm_degree(name):
     # Equivalent to round(uniform(low, high) / q) * q. The default hyperopt
     # setting.
-    return hp.quniform(name, 1.5, 6.5, 1)
+    # Casting quniform to int (hyperopt issue #253).
+    return scope.int(quniform(name, 1.5, 6.5, 1))
 
 
 def _svm_tol(name):
@@ -237,10 +237,10 @@ def svc_param_space(
     coef0=None,
     random_state=None,
     n_features=1,
-    class_weight='balanced',
-    max_iter=-1,
-    verbose=False,
-    cache_size=500
+    #class_weight='balanced',
+    #max_iter=-1,
+    #verbose=False,
+    #cache_size=500
 ):
     """
     Generate SVM hyperparamters search space.
@@ -322,10 +322,10 @@ def svc_param_space(
         name_func('shrinking'): hp_bool(name_func('shrinking'))
         if shrinking is None else shrinking,
         name_func('tol'): _svm_tol(name_func('tol')) if tol is None else tol,
-        name_func('class_weight'): class_weight,
-        name_func('cache_size'): cache_size,
-        name_func('verbose'): verbose,
-        name_func('max_iter'): max_iter,
+        #name_func('class_weight'): class_weight,
+        #name_func('cache_size'): cache_size,
+        #name_func('verbose'): verbose,
+        #name_func('max_iter'): max_iter,
         name_func('random_state'): hp_random_state(name_func('random_state'))
         if random_state is None else random_state,
     }
