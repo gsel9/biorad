@@ -36,11 +36,12 @@ def hp_num_features(name, max_num_features=1):
         max_num_features (int) The original size of the feature space.
 
     """
+    # Cast to <int> according to hyperopt issue #253.
     return scope.int(hp.randint(name, max_num_features))
 
 
 def hp_random_state(name):
-
+    # Cast to <int> according to hyperopt issue #253.
     return scope.int(hp.randint(name, 1000))
 
 
@@ -51,6 +52,7 @@ def hp_random_state(name):
 
 def _trees_n_estimators(name):
     # Equivalent to exp(uniform(low, high)).
+    # Cast to <int> according to hyperopt issue #253.
     return scope.int(hp.qloguniform(name, np.log(9.5), np.log(3000.5), 1))
 
 
@@ -59,7 +61,8 @@ def _trees_criterion(name):
 
 
 def _trees_max_features(name):
-    # Most common: `sqrt`. Less common is `log2` or None (all features).
+    # Most common is `sqrt`, while less common is `log2` or None
+    # (all features).
     return hp.pchoice(name, [
         (0.2, 'sqrt'),
         (0.1, 'log2'),
@@ -69,17 +72,14 @@ def _trees_max_features(name):
 
 
 def _trees_max_depth(name):
-    return hp.pchoice(
-        name,
-        [
-            # Most common choice.
-            (0.7, None),
-            # Try some shallow trees.
-            (0.1, 2),
-            (0.1, 3),
-            (0.1, 4),
-        ]
-    )
+    # Most common is None, while shallow trees are less common with e.g. 2-4
+    # levels.
+    return hp.pchoice(name, [
+        (0.7, None),
+        (0.1, 2),
+        (0.1, 3),
+        (0.1, 4),
+    ])
 
 
 def _trees_min_samples_split(name):
@@ -89,10 +89,12 @@ def _trees_min_samples_split(name):
 
 def _trees_min_samples_leaf(name):
     # Most common choice is 1.
-    return hp.choice(
+    # Casting to <int> denoting minimum number of samples required to be at a
+    # leaf node rather than being interperated as a fraction if <float>.
+    return scope.int(hp.choice(
         name,
         [1, hp.qloguniform(name + '.gt1', np.log(1.5), np.log(50.5), 1)]
-    )
+    ))
 
 
 def _trees_bootstrap(name):
@@ -210,7 +212,7 @@ def _svm_gamma(name, n_features=1):
 def _svm_degree(name):
     # Equivalent to round(uniform(low, high) / q) * q. The default hyperopt
     # setting.
-    # Casting quniform to int (hyperopt issue #253).
+    # Cast to <int> according to hyperopt issue #253.
     return scope.int(quniform(name, 1.5, 6.5, 1))
 
 
@@ -274,7 +276,7 @@ def svc_param_space(
             default settings in the `hyperopt` package.
 
     """
-    # NB: Choose kernel initially as this param constrains the others.
+    # NB: Choose kernel initially due to dependence of other parameters.
     if kernel in ['linear', 'rbf', 'sigmoid']:
         _degree = 1
     else:
@@ -456,7 +458,7 @@ def logreg_hparam_space(
 
 
 def _plsr_n_components(name, n_features=1):
-
+    # Cast to <int> according to hyperopt issue #253.
     return scope.int(hp.quniform(name, 1, n_features, 3))
 
 
@@ -536,8 +538,8 @@ def relieff_hparam_space(
 
 
 def _mrmr_k(name):
-
-    return scope.int(hp.quniform(name, 3, 10, 1))
+    # Cast to <int> according to hyperopt issue #253.
+    return scope.int(hp.quniform(name, 2, 12, 1))
 
 
 def mrmr_hparam_space(
@@ -550,17 +552,19 @@ def mrmr_hparam_space(
 
     Args:
         name_func ():
-        k (int): Kraskov et al. recommend a small integer between 3 and 10.
+        k (int): Recommend a small integer between 3 and 10 [1].
         num_features (int): The number of features select.
         max_num_features (int): Size of the original feature space.
+
+    References:
+        [1]: Kraskov et al. ()
 
     """
     param_space = {
         name_func('k'): _mrmr_k(name_func('k')) if k is None else k,
         name_func('num_features'): hp_num_features(
             name_func('num_features'), max_num_features
-        )
-        if num_features is None else num_features
+        ) if num_features is None else num_features
     }
     return param_space
 
