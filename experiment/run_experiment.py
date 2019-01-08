@@ -20,10 +20,13 @@ import pandas as pd
 
 
 # TODO: To utils?
-def load_target(path_to_target, index_col=0):
+def load_target(path_to_target, index_col=0, classify=True):
 
     var = pd.read_csv(path_to_target, index_col=index_col)
-    return np.squeeze(var.values).astype(np.float32)
+    if classify:
+        return np.squeeze(var.values).astype(np.int32)
+    else:
+        return np.squeeze(var.values).astype(np.float32)
 
 
 # TODO: To utils?
@@ -43,6 +46,7 @@ if __name__ == '__main__':
 
     import os
     import backend
+    import configs
     import comparison
     import model_selection
 
@@ -55,20 +59,15 @@ if __name__ == '__main__':
     #from sklearn.metrics import matthews_corrcoef
     #from sklearn.metrics import precision_recall_fscore_support
 
-    # TEMP:
-    from sklearn.datasets import load_breast_cancer
-
-    X, y = load_breast_cancer(return_X_y=True)
-
     # FEATURE SET:
-    #X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
+    X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
 
     # TARGET:
-    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
+    y = load_target('./../../data_source/to_analysis/target_lrr.csv')
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
 
     # RESULTS LOCATION:
-    #path_to_results = './../data/experiments/test_results.csv'
+    path_to_results = './../data/experiments/lrr_init.csv'
 
     # SETUP:
     CV = 3
@@ -78,16 +77,16 @@ if __name__ == '__main__':
 
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
-    #random_states = np.random.randint(1000, size=40)
-    random_states = np.arange(2)
-    #
+    random_states = np.arange(2) #np.random.randint(1000, size=40)
+
+    # Generate pipelines from config elements.
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
     # QUESTION: How to easily config and execute experiments?
     # * Maintain config setup for each experiment as a reminder on the setup.
     # *
-    """
+
     comparison.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
@@ -105,6 +104,5 @@ if __name__ == '__main__':
         write_prelim=True,
         error_score=np.nan,
         n_jobs=-1,
-        path_final_results='./../data/test_results.csv'
+        path_final_results=path_to_results
     )
-    """
