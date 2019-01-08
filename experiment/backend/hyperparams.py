@@ -496,10 +496,9 @@ def plsr_hparam_space(
 
 def _relieff_num_neighbors(name):
     # Equivalent to round(exp(normal(mu, sigma)) / q) * q.
-    # Constrained to be positive
-    # Suitable for a discrete variable.
-    # A normal distribution emphasizes the mu = 10 recommendation.
-    return hp.qlognormal(name, 10, 2, 1)
+    # Constrained to be positive and suitable for a discrete variable. Using a
+    # normal distribution emphasizes the mu = 10 recommendation.
+    return hp.qlognormal(name, 10, 1, 1)
 
 
 def relieff_hparam_space(
@@ -567,11 +566,4 @@ def mrmr_hparam_space(
 
 
 if __name__ == '__main__':
-    # TODO: Plot hparam distributions for visual inspection.
-
-    #hp_space = trees_param_space()
-    #print(hp_space)
-    def name_func():
-        # Accepts a label from the pipeline estimator/transformer and merges
-        # with the variable name in the hparam space function.
-        pass
+    pass
