@@ -6,8 +6,7 @@
 """
 Classification algorithm setup including hyperparameter configurations.
 
-Notes:
-* Make sure to update the number of original features in the data set.
+NB: Make sure to update the number of original features in the data set.
 
 """
 
@@ -32,8 +31,7 @@ from sklearn.cross_decomposition import PLSRegression
 
 # Globals
 CLF_LABEL = 'clf'
-# NB WIP: The initial number of features to select from.
-NUM_ORIG_FEATURES = 30
+NUM_ORIG_FEATURES = 42
 
 
 @scope.define
@@ -45,7 +43,11 @@ def estimator_name_func(param_name):
 
 
 classifiers = {
-    # Support Vector Machines
+    # Support Vector Machines:
+    # * Must select kernel a priori because the hyperparamter space
+    #   generator function is not evaluated for each suggested
+    #   configuration. Thus, settings depending on the specified kernel
+    #   will not be updated according to the sampled kernel function.
     SVC.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -55,15 +57,12 @@ classifiers = {
                     verbose=False,
                     cache_size=500,
                     max_iter=-1,
+                    decision_function_shape='ovr',
                 )
             ))
         ],
         'params': hyperparams.svc_param_space(
             estimator_name_func,
-            # NB: Must select kernel a priori because the hyperparamter space
-            # generator function is not evaluated for each suggested
-            # configuration. Thus, settings depending on the specified kernel
-            # will not be updated according to the sampled kernel function.
             kernel='rbf',
             gamma=None,
             degree=None,
@@ -75,7 +74,7 @@ classifiers = {
             n_features=NUM_ORIG_FEATURES,
         ),
     },
-    # Random Forest Classifier
+    # Random Forest Classifier:
     RandomForestClassifier.__name__: {
         'estimator': [
             (CLF_LABEL, PipeEstimator(
@@ -93,12 +92,9 @@ classifiers = {
             min_samples_leaf=None,
             bootstrap=None,
             random_state=None,
-            #oob_score=False,
-            #n_jobs=-1,
-            #verbose=False,
         )
     },
-    # Gaussian Naive Bayes.
+    # Gaussian Naive Bayes:
     GaussianNB.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -108,7 +104,20 @@ classifiers = {
             estimator_name_func, priors=None, var_smoothing=None
         )
     },
-    # Logistic Regression
+    # Logistic Regression:
+    # * The n_jobs > 1 does not have any effect when solver
+    #   is set to 'liblinear'.
+    # * Should explicitly specify penalty since this param depends
+    #   on the selected solver. Using L1 enables dim reduction in high
+    #   dim classification problems.
+    # * The `liblinear` solver allows for binary classification with L1 and L2
+    #   regularization, is robust to unscaled data sets, penalize the intercept
+    #   term, but is not faster for larger data sets.
+    # * Dual formulation is only implemented for l2 penalty with liblinear
+    #   solver. Thus, enabling to select from l1 or l2 requires Dual=False.
+    # * Set multi class to `ovr` for binary problems.
+    # * The max_iter is not usefull with `liblinear` solver.
+    # REF: sklearn docs.
     LogisticRegression.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -117,8 +126,6 @@ classifiers = {
                     solver='liblinear',
                     max_iter=1000,
                     verbose=0,
-                    # NOTE: The n_jobs > 1 does not have any effect when solver
-                    # is set to 'liblinear'.
                     n_jobs=1,
                     dual=False,
                     multi_class='ovr',
@@ -129,30 +136,27 @@ classifiers = {
         ],
         'params': hyperparams.logreg_hparam_space(
             estimator_name_func,
-            # NOTE: Should explicitly specify penalty since this param depends
-            # on the selected solver. Using L1 enables dim reduction in high
-            # dim classification problems.
             penalty='l1',
             C=None,
             tol=None,
             random_state=None,
             fit_intercept=True,
-            intercept_scaling=1,
+            intercept_scaling=None,
         )
     },
-    # Partial Least Squares Regression
+    # Partial Least Squares Regression:
+    # * Recommended to use copy = True.
+    # REF: sklearn docs
     PLSRegression.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(PLSRegression()))
+            (CLF_LABEL, PipeEstimator(PLSRegression(scale=True, copy=True)))
         ],
         'params': hyperparams.plsr_hparam_space(
             estimator_name_func,
             n_components=None,
             tol=None,
-            n_features=NUM_ORIG_FEATURES,
             max_iter=-1,
-            scale=True,
             copy=True
         )
     }
