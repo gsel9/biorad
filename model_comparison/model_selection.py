@@ -203,9 +203,9 @@ class BootstrapBiasCorrectedCV:
                 )
             )
         return {
-            'oob_avg_score': np.mean(bbc_scores),
-            'oob_std_score': np.std(bbc_scores),
-            'oob_median_score': np.median(bbc_scores),
+            'oob_avg_score': np.nanmean(bbc_scores),
+            'oob_std_score': np.nanstd(bbc_scores),
+            'oob_median_score': np.nanmedian(bbc_scores),
             'oob_score_ci': self.bootstrap_ci(bbc_scores),
         }
 
@@ -452,7 +452,7 @@ class ParameterSearchCV:
 
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
-            # Balance target class distributions with SMOTE procedure.
+            # Balance target class distributions with SMOTE oversampling.
             if self.balancing:
                 X_train, y_train = utils.sampling.balance_data(
                     X_train, y_train, self.random_state
