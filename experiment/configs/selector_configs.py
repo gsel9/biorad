@@ -6,13 +6,13 @@
 """
 Feature selection algorithm setup including hyperparameter configurations.
 
-Notes:
-* Make sure to update the number of original features in the data set.
+NB: Make sure to update the number of original features in the data set.
 
 """
 
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
+
 
 from backend import hyperparams
 
@@ -29,8 +29,7 @@ from sklearn.metrics import roc_auc_score
 
 # Globals
 CLF_LABEL = 'selector'
-# NB WIP: The initial number of features to select from.
-NUM_ORIG_FEATURES = 10
+NUM_ORIG_FEATURES = 42
 
 
 @scope.define
@@ -42,10 +41,17 @@ def selector_name_func(param_name):
 
 
 selectors = {
-        # Random forest classifier permutation importance selection.
+    # Random forest classifier permutation importance selection:
+    # * Specify permutation procedure specific parameters that are not part
+    #   of the optimization problem.
+    # * Specify classifier hyperparamters as the only parameters part of the
+    #   optimization problem. These parameters are passed to the classifier
+    #   throught the set_params method.
+    # * Not performing repeated feature permutations of each feature because
+    #   the similar effect may be achieved by repeating the procedure for
+    #   different random states and averaging the result accross the repeated
+    #   experiments.
     PermutationSelection.__name__: {
-        # Specify permutation procedure specific parameters that are not part
-        # of the optimization problem.
         'selector': [
             (CLF_LABEL, PermutationSelection(
                     model=RandomForestClassifier(
@@ -57,9 +63,6 @@ selectors = {
                 )
             )
         ],
-        # Specify classifier hyperparamters as the only parameters part of the
-        # optimization problem. These parameters are passed to the classifier
-        # throught the set_params method.
         'params': hyperparams.trees_param_space(
             selector_name_func,
             n_estimators=None,
@@ -71,7 +74,7 @@ selectors = {
             random_state=None,
         ),
     },
-    # Wilcoxon feature selection
+    # Wilcoxon feature selection:
     WilcoxonSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -81,7 +84,7 @@ selectors = {
         ],
         'params': {},
     },
-    # ReliefF feature selection
+    # ReliefF feature selection:
     ReliefFSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -94,7 +97,7 @@ selectors = {
             max_num_features=NUM_ORIG_FEATURES
         ),
     },
-    # Maximum relevance minimum redundancy selection
+    # Maximum relevance minimum redundancy selection:
     MRMRSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
