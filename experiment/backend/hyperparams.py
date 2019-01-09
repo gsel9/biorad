@@ -25,7 +25,8 @@ def hp_bool(name):
         (name):
 
     """
-    return hp.choice(name, [False, True])
+    # Returns one of the alternatives.
+    return hp.choice(name, (False, True))
 
 
 def hp_num_features(name, max_num_features=1):
@@ -55,14 +56,15 @@ def _trees_n_estimators(name):
     # Cast to <int> according to hyperopt issue #253.
     return scope.int(hp.qloguniform(name, np.log(9.5), np.log(3000.5), 1))
 
-
 def _trees_criterion(name):
+    # Returns one of the alternatives.
     return hp.choice(name, ['gini', 'entropy'])
 
 
 def _trees_max_features(name):
-    # Most common is `sqrt`, while less common is `log2` or None
-    # (all features).
+    # Returns one of the `pchoice` alternatives. Probabilities render some
+    # options selected more often than others. Most common is `sqrt`, while
+    # `log2` or None (all features) are less common.
     return hp.pchoice(name, [
         (0.2, 'sqrt'),
         (0.1, 'log2'),
@@ -72,8 +74,9 @@ def _trees_max_features(name):
 
 
 def _trees_max_depth(name):
-    # Most common is None, while shallow trees are less common with e.g. 2-4
-    # levels.
+    # Returns one of the `pchoice` alternatives. Most common is None
+    # corresponding to an unpruned tree, while shallow trees are less common
+    # with e.g. 2-4 levels.
     return hp.pchoice(name, [
         (0.7, None),
         (0.1, 2),
@@ -88,21 +91,15 @@ def _trees_min_samples_split(name):
 
 
 def _trees_min_samples_leaf(name):
-    # Most common choice is 1.
+    # Returns one of the alternatives. Most common choice is 1.
     # Casting to <int> denoting minimum number of samples required to be at a
     # leaf node rather than being interperated as a fraction if <float>.
-    return scope.int(hp.choice(
-        name,
-        [1, hp.qloguniform(name + '.gt1', np.log(1.5), np.log(50.5), 1)]
-    ))
+    return hp.choice(name, [
+        1,
+        scope.int(hp.qloguniform(name + '.gt1', np.log(1.5), np.log(50.5), 1))
+    ])
 
 
-def _trees_bootstrap(name):
-    return hp.choice(name, [True, False])
-
-
-# NOTE: The min_impurity_split parameter is deprecated and will be removed in
-# version 0.21. Use the min_impurity_decrease parameter instead.
 def trees_param_space(
     name_func,
     n_estimators=None,
@@ -113,9 +110,6 @@ def trees_param_space(
     min_samples_leaf=None,
     bootstrap=None,
     random_state=None,
-    #oob_score=False,
-    #n_jobs=-1,
-    #verbose=False
 ):
     """
     Generate trees ensemble hyperparameters search space.
@@ -204,9 +198,9 @@ def _svm_gamma(name, n_features=1):
     #    n_features (int):
     #    -- making these non-conditional variables
     #       probably helps the GP algorithm generalize
-    return scope.float(hp.loguniform(
-        name, np.log(1e-3 / n_features),  np.log(1e3 / n_features)
-    ))
+    return hp.loguniform(
+        name, np.log(1.0 / n_features * 1e-3), np.log(1.0 / n_features * 1e3)
+    )
 
 
 def _svm_degree(name):
@@ -239,10 +233,6 @@ def svc_param_space(
     coef0=None,
     random_state=None,
     n_features=1,
-    #class_weight='balanced',
-    #max_iter=-1,
-    #verbose=False,
-    #cache_size=500
 ):
     """
     Generate SVM hyperparamters search space.
@@ -315,7 +305,7 @@ def svc_param_space(
             pass
     else:
         _coef0 = coef0
-    # Generate actual hparam space.
+    # Generate hparam space.
     param_space = {
         name_func('kernel'): kernel,
         name_func('gamma'): _gamma,
@@ -324,10 +314,6 @@ def svc_param_space(
         name_func('shrinking'): hp_bool(name_func('shrinking'))
         if shrinking is None else shrinking,
         name_func('tol'): _svm_tol(name_func('tol')) if tol is None else tol,
-        #name_func('class_weight'): class_weight,
-        #name_func('cache_size'): cache_size,
-        #name_func('verbose'): verbose,
-        #name_func('max_iter'): max_iter,
         name_func('random_state'): hp_random_state(name_func('random_state'))
         if random_state is None else random_state,
     }
@@ -340,12 +326,14 @@ def svc_param_space(
 ###################################################################
 
 
+# ERROR: Invalid parameter var_smoothing for estimator GaussianNB(priors=None).
 def _gnb_var_smoothing(name):
 
     # Equivalent to exp(uniform(low, high)).
     return hp.loguniform(name, np.log(1e-12), np.log(1e-7))
 
 
+# ERROR: Invalid parameter var_smoothing for estimator GaussianNB(priors=None).
 def gnb_param_space(name_func, priors=None, var_smoothing=None):
     """
     Generate Gaussian NB hyperparamters search space.
@@ -359,8 +347,6 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
 
     """
     param_space = {
-        # ERROR: Invalid parameter var_smoothing for estimator
-        # GaussianNB(priors=None).
         #name_func('var_smoothing'): _gnb_var_smoothing(
         #    name_func('var_smoothing')
         #)
@@ -376,19 +362,25 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
 
 
 def _logreg_penalty(name):
-
+    # Returns one of the alternatives.
     return hp.choice(name, ['l1', 'l2'])
 
 
 def _logreg_C(name):
-    # Equivalent to exp(uniform(low, high)) (same settings as for SVM).
+    # Equivalent to exp(uniform(low, high)). Same settings as for SVM.
     return hp.loguniform(name, np.log(1e-5), np.log(1e5))
 
 
 def _logreg_tol(name):
-    # Equivalent to exp(uniform(low, high)) (shifted one tenth magnitude
-    # smaller than for SVM).
-    return hp.loguniform(name, np.log(1e-6), np.log(1e-1))
+    # Equivalent to exp(uniform(low, high)). Shifted one tenth order of
+    # magnitude down compared to SVM motivated by comparing logreg and SVM
+    # default settings.
+    return hp.loguniform(name, np.log(1e-6), np.log(1e-3))
+
+
+def _logreg_inter_scaling(name):
+    # From Hyperopt SVM settings.
+    return hp.loguniform(name, np.log(1e-1), np.log(1e1))
 
 
 def logreg_hparam_space(
@@ -398,14 +390,7 @@ def logreg_hparam_space(
     tol=None,
     random_state=None,
     fit_intercept=True,
-    intercept_scaling=1,
-    #class_weight='balanced',
-    #multi_class='ovr',
-    #warm_start=False,
-    #max_iter=-1,
-    #dual=False,
-    #verbose=0,
-    #n_jobs=-1
+    intercept_scaling=None,
 ):
     """
     Generate Logistic Regression hyperparamters search space.
@@ -426,25 +411,15 @@ def logreg_hparam_space(
             Use OvR for binary classification problem.
 
     """
-    # NOTE:
-    #if fit_intercept:
-    #    intercept_scaling =
     param_space = {
         name_func('penalty'): _logreg_penalty(name_func('penalty'))
         if penalty is None else penalty,
         name_func('C'): _logreg_C(name_func('C')) if C is None else C,
         name_func('tol'): _logreg_tol(name_func('tol')) if tol is None else tol,
-        # Can be randomly selected.
+        # Defaults to True in Hyperopt.
         name_func('fit_intercept'): fit_intercept,
-        # Can be randomly selected if fit_intercept.
-        name_func('intercept_scaling'): intercept_scaling,
-        #name_func('class_weight'): class_weight,
-        #name_func('dual'): dual,
-        #name_func('max_iter'): max_iter,
-        #name_func('multi_class'): multi_class,
-        #name_func('verbose'): verbose,
-        #name_func('warm_start'): warm_start,
-        #name_func('n_jobs'): n_jobs,
+        name_func('intercept_scaling'): _logreg_inter_scaling
+        if intercept_scaling is None else intercept_scaling,
         name_func('random_state'): hp_random_state(
             name_func('random_state') if random_state is None else random_state
         )
@@ -457,14 +432,18 @@ def logreg_hparam_space(
 ###################################################################
 
 
-def _plsr_n_components(name, n_features=1):
-    # Cast to <int> according to hyperopt issue #253.
-    return scope.int(hp.quniform(name, 1, n_features, 3))
+def _plsr_n_components(name):
+    # Assuming the PLSR impementation of scikit-learn is based on a similar
+    # procedure to the PCA (see PLSR algorithm), the same `n_components` space
+    # as for Hyperopt implementation of PCA can be transfered to PLSR.
+    return 4 * scope.int(
+        hp.qloguniform(name, low=np.log(0.51), high=np.log(30.5), q=1.0)
+    )
 
 
 def _plsr_tol(name):
-    # Equivalent to exp(uniform(low, high)) (shifted compared to SVM and
-    # logreg.
+    # Equivalent to exp(uniform(low, high)). Shifted according to default value
+    # according to distributions of SVM and logreg tol params.
     return hp.loguniform(name, np.log(1e-8), np.log(1e-5))
 
 
@@ -472,19 +451,15 @@ def plsr_hparam_space(
     name_func,
     n_components=None,
     tol=None,
-    n_features=1,
     max_iter=-1,
-    scale=True,
-    copy=True
 ):
     """
-    Generate Logistic Regression hyperparamters search space.
+    Generate PLS regression hyperparamters search space.
     """
     param_space = {
         name_func('n_components'): _plsr_n_components(
-            name_func('n_components'), n_features=n_features
-        )
-        if n_components is None else n_components,
+            name_func('n_components')
+        ) if n_components is None else n_components,
         name_func('tol'): _plsr_tol(name_func('tol')) if tol is None else tol
 
     }
