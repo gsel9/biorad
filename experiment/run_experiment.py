@@ -8,8 +8,17 @@ Experimental setup.
 
 Notes
 * Specify the number of original features in the data set in config.
+* Maintain config setup for each experiment as a reminder on the experimental
+  details.
+
+Question:
+ * How to easily config and execute experiments?
 
 """
+
+__author__ = 'Severin Langberg'
+__email__ = 'langberg91@gmail.com'
+
 
 import sys
 import time
@@ -60,33 +69,31 @@ if __name__ == '__main__':
     #from sklearn.metrics import precision_recall_fscore_support
 
     # FEATURE SET:
-    X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
+    #X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
+    X = load_predictors('./../../data_source/to_analysis/clinical_params.csv')
 
     # TARGET:
-    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
-    y = load_target('./../../data_source/to_analysis/target_dfs.csv')
+    y = load_target('./../../data_source/to_analysis/target_lrr.csv')
+    #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../data/experiments/dfs_init.csv'
+    path_to_results = './../data/experiments/clinical_only_dfs.csv'
 
     # SETUP:
-    CV = 3
-    OOB = 5
-    MAX_EVALS = 4
+    CV = 10
+    OOB = 500
+    MAX_EVALS = 100
+    NUM_EXP_REPS = 40
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
     np.random.seed(0)
-    random_states = np.arange(2) #np.random.randint(1000, size=40)
+    random_states = np.random.randint(1000, size=NUM_EXP_REPS)
 
     # Generate pipelines from config elements.
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
-    # QUESTION: How to easily config and execute experiments?
-    # * Maintain config setup for each experiment as a reminder on the setup.
-    # *
-
     comparison.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
