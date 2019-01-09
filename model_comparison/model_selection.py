@@ -24,8 +24,6 @@ __email__ = 'langberg91@gmail.com'
 import os
 import time
 import utils
-import pickle
-import logging
 
 import numpy as np
 
@@ -41,8 +39,6 @@ from hyperopt import fmin
 from hyperopt import Trials
 from hyperopt import space_eval
 from hyperopt import STATUS_OK
-
-from hyperopt.pyll.base import scope
 
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
@@ -146,14 +142,13 @@ def bbc_cv_selection(
             utils.ioutil.write_prelim_results(path_case_file, output)
 
         if verbose > 0:
-            datetime.now() - start_time
+            duration = datetime.now() - start_time
             print('Experiment completed in {}'.format(duration))
             output['exp_duration'] = duration
 
     return output
 
 
-# TODO: Get GPU speed with TensorFlow.
 class BootstrapBiasCorrectedCV:
     """
 
@@ -180,7 +175,7 @@ class BootstrapBiasCorrectedCV:
 
         self._sampler = None
 
-    # TODO: Get GPU speed with TensorFlow.
+    # TODO: Vectorization.
     def evaluate(self, Y_pred, Y_true):
         """Bootstrap bias corrected cross-validation proposed by .
 
@@ -200,15 +195,6 @@ class BootstrapBiasCorrectedCV:
                 self.oob, self.random_state
             )
         bbc_scores = []
-
-        """Vectorization:
-        - Sample all OOB indices.
-        - Determine all the best config indices.
-        - Compute all bbc scores.
-
-        """
-
-        # Divide each sampling round (e.g. X500) across TensorFlow GPU backend.
         for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
             best_config = self.criterion(
                 Y_true[sample_idx, :], Y_pred[sample_idx, :]
