@@ -94,11 +94,6 @@ def bbc_cv_selection(
         output = utils.ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        # NB: Balance target class distributions with SMOTE procedure renders
-        # more samples available compared to the original data set.
-        if balancing:
-            X, y = utils.sampling.balance_data(X, y, random_state)
-
         # Experimental results container.
         output = {'exp_id': random_state}
 
@@ -117,6 +112,7 @@ def bbc_cv_selection(
             shuffle=shuffle,
             random_state=random_state,
             error_score=error_score,
+            balancing=balancing
         )
         # Error handling
         optimizer.fit(X, y)
@@ -275,6 +271,7 @@ class ParameterSearchCV:
         shuffle=True,
         random_state=None,
         error_score=np.nan,
+        balancing=True
     ):
         self.algo = algo
         self.model = model
@@ -285,6 +282,7 @@ class ParameterSearchCV:
         self.cv = cv
         self.max_evals = max_evals
         self.random_state = random_state
+        self.balancing = balancing
 
         # NOTE: Attributes updated with instance.
         self.X = None
@@ -454,23 +452,24 @@ class ParameterSearchCV:
 
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
-
+            # Balance target class distributions with SMOTE procedure.
+            if self.balancing:
+                X_train, y_train = utils.sampling.balance_data(
+                    X_train, y_train, self.random_state
+                )
             # Clone model to ensure independency between folds. With deepcopy,
             # changes made to the object copy does not affect the original
             # object version.
             _model = deepcopy(self.model)
-
             # Configure model with provided hyperparamter setting and train.
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
-
             # Ensure predictions are properly formatted vectors.
             pred_y_test = self.safe_predict(_model.predict(X_test))
             pred_y_train = self.safe_predict(_model.predict(X_train))
 
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
-
             # Collect ground truths and predictions for BBC-CV procedure.
             Y_pred.append(pred_y_test[:self._sample_lim])
             Y_test.append(y_test[:self._sample_lim])
@@ -478,12 +477,12 @@ class ParameterSearchCV:
         return OrderedDict(
             [
                 ('status', STATUS_OK),
-                ('eval_time', datetime.now() - start_time),
+                ('param_search_eval_time', datetime.now() - start_time),
                 ('loss', np.median(test_loss)),
-                ('train_loss', np.median(train_loss)),
-                ('loss_variance', np.var(test_loss)),
-                ('train_loss_variance', np.var(train_loss)),
-                ('hparams', hparams),
+                ('param_search_train_loss', np.median(train_loss)),
+                ('param_search_loss_variance', np.var(test_loss)),
+                ('param_search_train_loss_variance', np.var(train_loss)),
+                ('param_search_hparams', hparams),
                 # Stack predictions of each fold into a vector representing the
                 # predictions for this particular configuration.
                 ('y_true', np.hstack(Y_test,)),
