@@ -150,14 +150,14 @@ classifiers = {
     PLSRegression.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(PLSRegression(scale=True, copy=True)))
+            (CLF_LABEL, PipeEstimator(
+                PLSRegression(scale=True, copy=True, max_iter=-1))
+            )
         ],
         'params': hyperparams.plsr_hparam_space(
             estimator_name_func,
             n_components=None,
             tol=None,
-            max_iter=-1,
-            copy=True
         )
     }
 }

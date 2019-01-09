@@ -449,7 +449,6 @@ def plsr_hparam_space(
     name_func,
     n_components=None,
     tol=None,
-    max_iter=-1,
 ):
     """
     Generate PLS regression hyperparamters search space.
