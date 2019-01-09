@@ -64,7 +64,7 @@ def bbc_cv_selection(
     oob,
     max_evals,
     shuffle,
-    verbose=0,
+    verbose=1,
     random_state=None,
     alpha=0.05,
     balancing=True,
@@ -98,7 +98,7 @@ def bbc_cv_selection(
         output = {'exp_id': random_state}
 
         if verbose > 0:
-            print('Initiating experiment: {}'.format(random_state))
+            print('Initiating parameter search: {}'.format(random_state))
             start_time = datetime.now()
 
         # Perform cross-validated hyperparameter optimization.
@@ -117,6 +117,11 @@ def bbc_cv_selection(
         # Error handling
         optimizer.fit(X, y)
 
+        if verbose > 0:
+            _duration = datetime.now() - start_time
+            print('Finished parameter search in: {}'.format(_duration))
+            print('Initiating BBC-CV')
+
         # Evaluate model performance with BBC-CV method.
         bbc_cv = BootstrapBiasCorrectedCV(
             random_state=random_state,
@@ -134,13 +139,16 @@ def bbc_cv_selection(
         output.update(optimizer.params)
 
         if verbose > 0:
-            duration = datetime.now() - start_time
-            output['exp_duration'] = duration
-            print('Experiment {} completed in {}'
-                  ''.format(random_state, duration))
+            print('Finished BBC-CV in {}'.format(datetime.now() - _duration))
 
         if path_tmp_results is not None:
+            print('Writing results...')
             utils.ioutil.write_prelim_results(path_case_file, output)
+
+        if verbose > 0:
+            datetime.now() - start_time
+            print('Experiment completed in {}'.format(duration))
+            output['exp_duration'] = duration
 
     return output
 
@@ -192,6 +200,14 @@ class BootstrapBiasCorrectedCV:
                 self.oob, self.random_state
             )
         bbc_scores = []
+
+        """Vectorization:
+        - Sample all OOB indices.
+        - Determine all the best config indices.
+        - Compute all bbc scores.
+
+        """
+
         # Divide each sampling round (e.g. X500) across TensorFlow GPU backend.
         for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
             best_config = self.criterion(
@@ -301,7 +317,7 @@ class ParameterSearchCV:
     def best_params(self):
         """Returns the optimal hyperparameters."""
 
-        return {'model_params': self._best_params}
+        return {'param_search_best_params': self._best_params}
 
     @property
     def params(self):
@@ -309,7 +325,7 @@ class ParameterSearchCV:
         params = {
             num: res['hparams'] for num, res in enumerate(self.trials.results)
         }
-        return {'params': params}
+        return {'param_search_params': params}
 
     @property
     def best_model(self):
@@ -326,7 +342,7 @@ class ParameterSearchCV:
             num: res['train_loss']
             for num, res in enumerate(self.trials.results)
         }
-        return {'trainig_loss': losses}
+        return {'param_search_trainig_loss': losses}
 
     @property
     def test_loss(self):
@@ -335,7 +351,7 @@ class ParameterSearchCV:
         losses = {
             num: res['loss'] for num, res in enumerate(self.trials.results)
         }
-        return {'test_loss': losses}
+        return {'param_search_test_loss': losses}
 
     @property
     def train_loss_var(self):
@@ -346,7 +362,7 @@ class ParameterSearchCV:
             num: res['train_loss_variance']
             for num, res in enumerate(self.trials.results)
         }
-        return {'trainig_loss_var': losses}
+        return {'param_search_training_loss_var': losses}
 
     @property
     def test_loss_var(self):
@@ -357,7 +373,7 @@ class ParameterSearchCV:
             num: res['loss_variance']
             for num, res in enumerate(self.trials.results)
         }
-        return {'test_loss_var': losses}
+        return {'param_search_test_loss_var': losses}
 
     @property
     def oos_pairs(self):
@@ -477,12 +493,12 @@ class ParameterSearchCV:
         return OrderedDict(
             [
                 ('status', STATUS_OK),
-                ('param_search_eval_time', datetime.now() - start_time),
+                ('eval_time', datetime.now() - start_time),
                 ('loss', np.median(test_loss)),
-                ('param_search_train_loss', np.median(train_loss)),
-                ('param_search_loss_variance', np.var(test_loss)),
-                ('param_search_train_loss_variance', np.var(train_loss)),
-                ('param_search_hparams', hparams),
+                ('train_loss', np.median(train_loss)),
+                ('loss_variance', np.var(test_loss)),
+                ('train_loss_variance', np.var(train_loss)),
+                ('hparams', hparams),
                 # Stack predictions of each fold into a vector representing the
                 # predictions for this particular configuration.
                 ('y_true', np.hstack(Y_test,)),
