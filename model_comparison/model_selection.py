@@ -311,7 +311,7 @@ class ParameterSearchCV:
         params = {
             num: res['hparams'] for num, res in enumerate(self.trials.results)
         }
-        return {'param_search_params': params}
+        return {'param_search_eval_params': params}
 
     @property
     def best_model(self):
@@ -328,7 +328,7 @@ class ParameterSearchCV:
             num: res['train_loss']
             for num, res in enumerate(self.trials.results)
         }
-        return {'param_search_trainig_loss': losses}
+        return {'param_search_training_loss': losses}
 
     @property
     def test_loss(self):
