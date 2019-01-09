@@ -69,21 +69,21 @@ if __name__ == '__main__':
     #from sklearn.metrics import precision_recall_fscore_support
 
     # FEATURE SET:
-    #X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
-    X = load_predictors('./../../data_source/to_analysis/clinical_params.csv')
+    X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
 
     # TARGET:
     y = load_target('./../../data_source/to_analysis/target_lrr.csv')
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../data/experiments/clinical_only_dfs.csv'
+    path_to_results = './../data/experiments/complete_decorr_dfs.csv'
+    #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # SETUP:
-    CV = 10
-    OOB = 500
-    MAX_EVALS = 100
-    NUM_EXP_REPS = 40
+    CV = 2#10
+    OOB = 2#300
+    MAX_EVALS = 2#100
+    NUM_EXP_REPS = 2#30
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
@@ -104,12 +104,12 @@ if __name__ == '__main__':
         OOB,
         MAX_EVALS,
         shuffle=True,
-        verbose=0,
+        verbose=1,
         random_states=random_states,
         alpha=0.05,
         balancing=True,
         write_prelim=True,
         error_score=np.nan,
-        n_jobs=-1,
+        n_jobs=None,
         path_final_results=path_to_results
     )
