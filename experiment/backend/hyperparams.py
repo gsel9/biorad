@@ -5,10 +5,8 @@
 
 
 """
-Hyperparameter generators.
-
-Notes:
-* Based on configurations specified in hyperopt-sklearn package.
+Hyperparameter generators based on Hyperopt configurations and recommendations
+by scikit-learn.
 
 """
 
@@ -179,9 +177,9 @@ def trees_param_space(
 
 
 
-##########################################################################
+###############################################################
 ##==== Support Vector Machines hyperparameter generators ====##
-#########################################################################
+###############################################################
 
 
 def _svm_gamma(name, n_features=1):
@@ -321,9 +319,9 @@ def svc_param_space(
 
 
 
-###################################################################
+###############################################################
 ##==== Naive Bayes classifiers hyperparameter generators ====##
-###################################################################
+###############################################################
 
 
 # ERROR: Invalid parameter var_smoothing for estimator GaussianNB(priors=None).
@@ -356,9 +354,9 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
     return param_space
 
 
-###################################################################
+###########################################################
 ##==== Logistic Regression hyperparameter generators ====##
-###################################################################
+###########################################################
 
 
 def _logreg_penalty(name):
@@ -427,9 +425,9 @@ def logreg_hparam_space(
     return param_space
 
 
-###################################################################
-##==== PLSRegression hyperparameter generators ====##
-###################################################################
+######################################################
+##==== PLS regression hyperparameter generators ====##
+######################################################
 
 
 def _plsr_n_components(name):
@@ -466,17 +464,19 @@ def plsr_hparam_space(
     return param_space
 
 
-
-###################################################################
+###############################################
 ##==== ReliefF hyperparameter generators ====##
-###################################################################
+###############################################
 
 
 def _relieff_num_neighbors(name):
-    # Equivalent to round(exp(normal(mu, sigma)) / q) * q.
-    # Constrained to be positive and suitable for a discrete variable. Using a
-    # normal distribution emphasizes the mu = 10 recommendation.
-    return hp.qlognormal(name, 10, 1, 1)
+    # Equivalent to round(exp(uniform(low, high)) / q) * q emphasizing a
+    # smaller number of neighbors.
+    # Robnik-Sikonja and Kononenko (2003) showed that ReliefF’sestimates of
+    # informative attribute are deteriorating with increasing number of nearest
+    # neighbors in parity domain. Robnik-Sikonja and Kononenko also supports
+    # Dalaka et al., 2000 with ten neighbors.
+    return scope.int(hp.qloguniform(name, np.log(5), np.log(200), 1))
 
 
 def relieff_hparam_space(
@@ -507,14 +507,16 @@ def relieff_hparam_space(
     return param_space
 
 
-###################################################################
+############################################
 ##==== MRMR hyperparameter generators ====##
-###################################################################
+############################################
 
 
 def _mrmr_k(name):
+    # Equivalent to round(exp(uniform(low, high)) / q) * q emphasizing a
+    # smaller value of k.
     # Cast to <int> according to hyperopt issue #253.
-    return scope.int(hp.quniform(name, 2, 12, 1))
+    return scope.int(hp.qloguniform(name, np.log(2), np.log(12), 1))
 
 
 def mrmr_hparam_space(
@@ -532,7 +534,8 @@ def mrmr_hparam_space(
         max_num_features (int): Size of the original feature space.
 
     References:
-        [1]: Kraskov et al. ()
+        [1]: A. Kraskov, H. St ̈ogbauer, and P. Grassberger.
+             Estimating mutual information. Phys. Rev. E, 69(6):066138, 2004.
 
     """
     param_space = {
