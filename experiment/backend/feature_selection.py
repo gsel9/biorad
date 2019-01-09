@@ -326,12 +326,12 @@ class ReliefFSelection(BaseSelector):
 
     Args:
         num_neighbors (int)): Controls the locality of the estimates. The
-            proposed default value is ten [3], [4].
+            recommended default value is ten [3], [4].
         num_features (int)
 
     Note:
     - The algorithm is notably sensitive to feature interactions [1], [2].
-    - It is recommended that each feature is scaled to the interval [0 1].
+    - It is recommended that each feature is scaled to the interval [0, 1].
 
     References:
         [1]: Kira, Kenji and Rendell, Larry (1992). The Feature Selection
@@ -419,8 +419,8 @@ class MRMRSelection(BaseSelector):
     algortihm.
 
     Args:
-        k (int): Note that k must be larger than 0, but smaller than the
-            smallest class.
+        k (int): Note that k > 0, but must be smaller than the smallest number
+            of observations for each individual class.
         num_features (): If `auto`, the number of is determined based on the
             amount of mutual information the previously selected features share
             with the target classes.
