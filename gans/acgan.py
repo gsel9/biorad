@@ -12,8 +12,12 @@ _logger = tf.logging._logger
 _logger.setLevel(0)
 
 
-def leaky_relu(x):
-    return tf.where(tf.greater(x, 0), x, 0.01 * x)
+def prelu(x, alpha=0.01):
+    """Note that PReLU represents Leaky ReLU with alpha = 0.01.
+
+    """
+
+    return tf.where(tf.greater(x, 0), x, alpha * x)
 
 
 def data_to_tensor(data_list, batch_size,  name=None):
