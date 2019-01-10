@@ -104,6 +104,7 @@ def bbc_cv_selection(
             space=param_space,
             score_func=score_func,
             cv=cv,
+            verbose=verbose,
             max_evals=max_evals,
             shuffle=shuffle,
             random_state=random_state,
@@ -269,6 +270,7 @@ class ParameterSearchCV:
         space,
         score_func,
         cv=5,
+        vebose=0,
         max_evals=10,
         shuffle=True,
         random_state=None,
@@ -278,6 +280,7 @@ class ParameterSearchCV:
         self.algo = algo
         self.model = model
         self.space = space
+        self.verbose = verbose
         self.shuffle = shuffle
         self.score_func = score_func
         self.error_score = error_score
@@ -292,12 +295,16 @@ class ParameterSearchCV:
         # Ground truths and predictions for BBC-CV procedure.
         self.Y_pred = None
         self.Y_test = None
-
         # The hyperopt trails object stores information from each iteration.
         self.trials = None
         self._rgen = None
         self._sample_lim = None
         self._best_params = None
+        # Counting of the number of evaluated hyperparameter configurations.
+        if self.verbose > 1:
+            self._num_evals = 0
+        else:
+            self._num_evals = None
 
     @property
     def best_params(self):
@@ -444,14 +451,17 @@ class ParameterSearchCV:
             (dict): Outputs stored in the hyperopt trials object.
 
         """
-        start_time = datetime.now()
 
+        if self.verbose > 1:
+            self._num_evals = self._num_evals + 1
+            print('Evaluating objective at round {}'.format(self._num_evals))
+
+        # Setup.
+        test_loss, train_loss, Y_test, Y_pred = [], [], [], []
         _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
-
-        test_loss, train_loss = [], []
-        Y_test, Y_pred = [], []
+        # Evaluate configuration.
+        start_time = datetime.now()
         for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
-
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
             # Balance target class distributions with SMOTE oversampling.
@@ -469,10 +479,10 @@ class ParameterSearchCV:
             # Ensure predictions are properly formatted vectors.
             pred_y_test = self.safe_predict(_model.predict(X_test))
             pred_y_train = self.safe_predict(_model.predict(X_train))
-
+            # Collect losses, predictions and corresponding ground truths for
+            # BBC-CV procedure.
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
-            # Collect ground truths and predictions for BBC-CV procedure.
             Y_pred.append(pred_y_test[:self._sample_lim])
             Y_test.append(y_test[:self._sample_lim])
 
