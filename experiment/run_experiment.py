@@ -79,12 +79,11 @@ if __name__ == '__main__':
     X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
 
     # TARGET:
-    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
     y = load_target('./../../data_source/to_analysis/target_dfs.csv')
+    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../data/experiments/bigo_timing_dfs.csv'
-    #path_to_results = './../data/experiments/complete_decorr_dfs.csv'
+    path_to_results = './../data/experiments/complete_decorr_dfs.csv'
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
