@@ -50,8 +50,14 @@ def load_predictors(path_to_data, index_col=0, regex=None):
 
 
 if __name__ == '__main__':
-    # EXPERIMENT: Timing the execution of the assumed most demanding experiment
-    # to estimate an upper bound on experimental time complexity.
+    # EXPERIMENT:
+    # Timing the execution of the assumed most demanding experiment
+    # to estimate an upper bound on experimental time complexity. Performing
+    # a single experiment meaning that the total expected complexity is
+    # the number of experiments times the derived complexity.
+    #
+    # The bottleneck is located in the Hyperopt package which may require a
+    # reduction in the number of configuration evaluations.
     #
     import sys
     sys.path.append('./../model_comparison')
@@ -82,10 +88,10 @@ if __name__ == '__main__':
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
-    CV = 2#10
-    OOB = 3#00
-    MAX_EVALS = 3#100
-    NUM_EXP_REPS = 1 #30
+    CV = 10
+    OOB = 300
+    MAX_EVALS = 25
+    NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
@@ -96,9 +102,6 @@ if __name__ == '__main__':
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
-    # TMP: The assumed most demanding experiment
-    name = 'PermutationSelection_SVC'
-    _pipes_and_params = {name: pipes_and_params[name]}
     comparison.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
@@ -109,7 +112,7 @@ if __name__ == '__main__':
         OOB,
         MAX_EVALS,
         shuffle=True,
-        verbose=1,
+        verbose=0,
         random_states=random_states,
         alpha=0.05,
         balancing=True,
