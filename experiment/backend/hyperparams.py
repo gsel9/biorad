@@ -387,7 +387,7 @@ def logreg_hparam_space(
     C=None,
     tol=None,
     random_state=None,
-    fit_intercept=True,
+    fit_intercept=None,
     intercept_scaling=None,
 ):
     """
@@ -416,13 +416,14 @@ def logreg_hparam_space(
         name_func('tol'): _logreg_tol(name_func('tol')) if tol is None else tol,
         # Defaults to True in Hyperopt.
         name_func('fit_intercept'): fit_intercept,
-        name_func('intercept_scaling'): _logreg_inter_scaling
-        if intercept_scaling is None else intercept_scaling,
+        name_func('intercept_scaling'): _logreg_inter_scaling(
+            name_func('intercept_scaling')
+        ) if intercept_scaling is None else intercept_scaling,
         name_func('random_state'): hp_random_state(
             name_func('random_state') if random_state is None else random_state
         )
     }
-    return param_space
+return param_space
 
 
 ######################################################
