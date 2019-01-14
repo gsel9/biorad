@@ -387,7 +387,7 @@ def logreg_hparam_space(
     C=None,
     tol=None,
     random_state=None,
-    fit_intercept=None,
+    fit_intercept=True,
     intercept_scaling=None,
 ):
     """
@@ -423,7 +423,7 @@ def logreg_hparam_space(
             name_func('random_state') if random_state is None else random_state
         )
     }
-return param_space
+    return param_space
 
 
 ######################################################
