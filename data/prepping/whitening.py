@@ -26,6 +26,7 @@ from scipy import linalg
 from sklearn.base import TransformerMixin, BaseEstimator
 
 
+# ERROR: Wrongly computing the W matrix.
 class Whitening(TransformerMixin, BaseEstimator):
     """Perform a whiten transformation of a data matrix.
 
@@ -39,12 +40,10 @@ class Whitening(TransformerMixin, BaseEstimator):
 
     """
 
-    def __init__(self, center=True, eps=1e-10, method='zca_cor', copy=True):
+    def __init__(self, eps=1e-5, method='zca_cor'):
 
-        self.center = center
         self.eps = eps
         self.method = method
-        self.copy = copy
 
         self.W = None
 
@@ -57,16 +56,14 @@ class Whitening(TransformerMixin, BaseEstimator):
             (array-like): The transformation matrix.
 
         """
-
-        if self.copy:
-            X = np.copy(X)
-
-        if self.center:
-            X = X - np.mean(X, axis=0)
-
+        X = self._check_X(X)
+        
+        # NB: Perform mean centering.
+        X_cent = X - np.mean(X, axis=0)
+        
         # Covariance matrix.
-        Sigma = Sigma = np.dot(X.T, X) / X.shape[0]
-        # np.cov(X, rowvar=rowvar)
+        Sigma = Sigma = np.dot(np.transpose(X_cent), X_cent) / X.shape[0]
+        
         if self.method == 'cholesky':
             self.W = self._cholesky(Sigma)
         elif self.method == 'zca':
@@ -128,11 +125,22 @@ class Whitening(TransformerMixin, BaseEstimator):
         return W
 
     def transform(self, X, **kwargs):
-
-        if self.center:
-            X = X - np.mean(X, axis=0)
+        
+        X = self._check_X(X)
 
         return np.dot(X, np.transpose(self.W))
+       
+    @staticmethod
+    def _check_X(X):
+        # Perform type checking and formatting of data matrix.
+        X = np.copy(X)
+        
+        X = X.reshape((-1, np.prod(X.shape[1:])))
+        
+        # NB: Perform mean centering.
+        X_cent = X - np.mean(X, axis=0)
+        
+        return X
 
 
 if __name__ == '__main__':
