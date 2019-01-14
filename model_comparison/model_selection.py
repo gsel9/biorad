@@ -111,12 +111,11 @@ def bbc_cv_selection(
             error_score=error_score,
             balancing=balancing
         )
-        # Error handling
         optimizer.fit(X, y)
 
-        if verbose > 0:
-            _duration = datetime.now() - start_time
-            print('Finished parameter search in: {}'.format(_duration))
+        if verbose > 1:
+            _durat = datetime.now() - start_time
+            print('Finished parameter search in: {}'.format(_durat))
             print('Initiating BBC-CV')
 
         # Evaluate model performance with BBC-CV method.
@@ -135,17 +134,17 @@ def bbc_cv_selection(
         output.update(optimizer.best_params)
         output.update(optimizer.params)
 
-        if verbose > 0:
-            print('Finished BBC-CV in {}'.format(datetime.now() - _duration))
+        if verbose > 1:
+            print('Finished BBC-CV in {}'.format(datetime.now() - _durat))
 
         if path_tmp_results is not None:
             print('Writing results...')
             utils.ioutil.write_prelim_results(path_case_file, output)
 
         if verbose > 0:
-            duration = datetime.now() - start_time
-            print('Experiment completed in {}'.format(duration))
-            output['exp_duration'] = duration
+            durat = datetime.now() - start_time
+            print('Experiment {} completed in {}'.format(random_state, durat))
+            output['exp_duration'] = durat
 
     return output
 
@@ -270,7 +269,7 @@ class ParameterSearchCV:
         space,
         score_func,
         cv=5,
-        vebose=0,
+        verbose=0,
         max_evals=10,
         shuffle=True,
         random_state=None,
