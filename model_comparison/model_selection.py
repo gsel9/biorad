@@ -91,7 +91,7 @@ def bbc_cv_selection(
         print('Reloading results from: {}'.format(path_case_file))
     else:
         # Experimental results container.
-        output = {'exp_id': random_state}
+        output = {'exp_id': random_state, 'model_id': model_id}
 
         if verbose > 0:
             print('Initiating parameter search: {}'.format(random_state))
