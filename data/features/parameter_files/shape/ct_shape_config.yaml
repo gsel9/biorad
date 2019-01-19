@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+#
+# PyRadiomics version: 2.0.1
+#
+
+
+setting:
+  # Relaxing an eventual correlation between features and scanners due to
+  # inter-scanner variability.
+  normalize: True
+  # Remove outliers defined as values differing more than n * sigma from the
+  # image mean. The Image Biomarker Standardization Initiative refere to a
+  # method suggested by Vallieres et al. after Collewet et al., and suggests
+  # that voxels differing more than 3 * sigma are outliers.
+  removeOutliers: 3
+  # Distance to neighbour: Specifies the distances between the center voxel and
+  # the neighbor, for which angles should be generated. Only affects the GLCM
+  # and NGTDM feature classes. The GLSZM and GLRLM feature classes use a fixed
+  # distance of 1 (infinity norm) to define neighbours.
+  distances: [1]
+  # No gray level discretization. Defining the maximum number of unique values
+  # across all samples.
+  voxelArrayShift: 1138
+  # Value of ROI in mask (is binary).
+  label: 1
+  # Disable output of additional information from the extraction.
+  additionalInfo: False
+
+
+featureClass:
+  # The shape descriptors are independent of gray value and are extracted from
+  # the label mask.
+  shape:
