@@ -19,6 +19,15 @@ from natsort import natsorted
 from collections import OrderedDict
 
 
+def nrrd_to_ndarray(path_to_file, return_header=False):
+
+    data, header = nrrd.read(path_to_file)
+    if return_header:
+        return np.array(data, dtype=float), header
+    else:
+        return np.array(data, dtype=float)
+
+
 def relative_paths(path_to_dir, target_format=None):
     """Produce a list of relative paths to all files in directory."""
 
