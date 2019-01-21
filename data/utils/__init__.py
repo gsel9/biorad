@@ -8,4 +8,5 @@ from .ioutil import (
     teardown_tempdir
 )
 
+from . import transforms
 from .preprocessing import bin_width
