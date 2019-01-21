@@ -31,7 +31,7 @@ from sklearn.cross_decomposition import PLSRegression
 
 # Globals
 CLF_LABEL = 'clf'
-NUM_ORIG_FEATURES = 42
+NUM_ORIG_FEATURES = 1156
 
 
 @scope.define

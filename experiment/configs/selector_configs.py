@@ -29,7 +29,7 @@ from sklearn.metrics import roc_auc_score
 
 # Globals
 CLF_LABEL = 'selector'
-NUM_ORIG_FEATURES = 42
+NUM_ORIG_FEATURES = 1156
 
 
 @scope.define
