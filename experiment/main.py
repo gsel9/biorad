@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 #
-# run_experiment.py
+# main.py
 #
 
 """
-Experimental setup.
+Execute radiomic model comparison experiments.
 
-Notes
-* Specify the number of original features in the data set in config.
-* Maintain config setup for each experiment as a reminder on the experimental
-  details.
-
-Question:
- * How to easily config and execute experiments?
+NOTE:
+* Required to specify the number of original features included in the data set
+  in the config file.
 
 """
 
@@ -51,13 +47,8 @@ def load_predictors(path_to_data, index_col=0, regex=None):
 
 if __name__ == '__main__':
     # EXPERIMENT:
-    # Timing the execution of the assumed most demanding experiment
-    # to estimate an upper bound on experimental time complexity. Performing
-    # a single experiment meaning that the total expected complexity is
-    # the number of experiments times the derived complexity.
-    #
-    # The bottleneck is located in the Hyperopt package which may require a
-    # reduction in the number of configuration evaluations.
+    # Baseline experiment including all features. Results compared to sessions
+    # including dim reduction a priori.
     #
     import sys
     sys.path.append('./../model_comparison')
@@ -89,7 +80,7 @@ if __name__ == '__main__':
     # EXPERIMENTAL SETUP:
     CV = 10
     OOB = 300
-    MAX_EVALS = 25
+    MAX_EVALS = 60
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -111,7 +102,7 @@ if __name__ == '__main__':
         OOB,
         MAX_EVALS,
         shuffle=True,
-        verbose=2,
+        verbose=1,
         random_states=random_states,
         alpha=0.05,
         balancing=True,
