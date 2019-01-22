@@ -48,6 +48,8 @@ class DGUFS(BaseEstimator, TransformerMixin):
 
     def fit(self, X, X_sim, y=None, **kwargs):
 
+        # Calc X_sim from Eq. 3 starting from np.zeros
+
         nrows, ncols = np.shape(X)
 
         # As in MATLAB implementation.
