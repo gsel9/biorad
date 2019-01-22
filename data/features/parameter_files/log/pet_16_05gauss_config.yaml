@@ -1,0 +1,23 @@
+# -*- coding: utf-8 -*-
+#
+# PyRadiomics version: 2.0.1
+#
+
+
+setting:
+  distances: [1]
+  binCount: 16
+
+
+imageType:
+  LoG:
+    sigma: [0.5]
+
+
+featureClass:
+  firstorder:
+  glcm:
+  glrlm:
+  glszm:
+  gldm:
+  ngtdm:
