@@ -195,13 +195,14 @@ class BootstrapBiasCorrectedCV:
                 self.oob, self.random_state
             )
         bbc_scores = []
-        for sample_idx, oos_idx in self._sampler.split(Y_true, Y_pred):
-            best_config = self.criterion(
-                Y_true[sample_idx, :], Y_pred[sample_idx, :]
+        for train_idx, test_idx in self._sampler.split(Y_true, Y_pred):
+            # Sample rows with replacement from the prediction matrix.
+            opt_config = self.criterion(
+                Y_true[train_idx, :], Y_pred[train_idx, :]
             )
             bbc_scores.append(
                 self._score(
-                    Y_true[oos_idx, best_config], Y_pred[oos_idx, best_config]
+                    Y_true[test_idx, opt_config], Y_pred[test_idx, opt_config]
                 )
             )
         return {
@@ -221,7 +222,8 @@ class BootstrapBiasCorrectedCV:
         return output
 
     def criterion(self, Y_true, Y_pred):
-        """
+        """Given a set of selected samples of predictions and ground truths,
+        determine the optimal configuration index from the sample subset.
 
         Returns:
             (int): Index of the optimal configuration according to the
@@ -229,13 +231,12 @@ class BootstrapBiasCorrectedCV:
 
         """
         _, num_configs = np.shape(Y_true)
-
         losses = np.ones(num_configs, dtype=float) * np.nan
         for num in range(num_configs):
-            # Returns <float> or error score (1 - NaN = NaN).
+            # Calculate the loss for each configuration. Returns <float> or
+            # error score (1 - NaN = NaN).
             losses[num] = 1.0 - self._score(Y_true[:, num], Y_pred[:, num])
-
-        # Select the configuration with the minimum loss ignoring NaNs.
+        # Select the configuration corresponding to the minimum loss.
         return np.nanargmin(losses)
 
     def bootstrap_ci(self, scores):
