@@ -171,6 +171,7 @@ class PermutationSelection(BaseSelector):
         # NOTE: Attributes set with instanceself.
         self.rgen = None
         self.support = None
+        self.all_params = None
 
     def __name__(self):
 
@@ -193,8 +194,14 @@ class PermutationSelection(BaseSelector):
 
         if 'random_state' in params.keys():
             self.random_state = params['random_state']
+        if 'num_features' in params.keys():
+            self.num_features = params['num_features']
 
-        self.model.set_params(**params)
+        self.all_params = params
+
+        # Retain only the parameters relevant for the wrapped algorithm.
+        model_params = {key: params[key] for key in self.get_params()}
+        self.model.set_params(**model_params)
 
         return self
 
