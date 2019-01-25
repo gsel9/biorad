@@ -42,8 +42,9 @@ def selector_name_func(param_name):
 
 selectors = {
     # Random forest classifier permutation importance selection:
-    # * Specify permutation procedure specific parameters that are not part
-    #   of the optimization problem.
+    # * Num features ensures equal number of features selected in ecah fold.
+    # * Permutation procedure specific parameters are not part of the
+    #   optimization objective.
     # * Specify classifier hyperparamters as the only parameters part of the
     #   optimization problem. These parameters are passed to the classifier
     #   throught the set_params method.
@@ -63,28 +64,34 @@ selectors = {
                 )
             )
         ],
-        'params': hyperparams.trees_param_space(
+        'params': permutation_hparam_space(
             selector_name_func,
-            n_estimators=None,
-            max_features=None,
-            max_depth=None,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            bootstrap=None,
-            random_state=None,
-        ),
+            num_features=None,
+            hyperparams.trees_param_space(
+                selector_name_func,
+                n_estimators=None,
+                max_features=None,
+                max_depth=None,
+                min_samples_split=None,
+                min_samples_leaf=None,
+                bootstrap=None,
+                random_state=None,
+            ),
+        )
     },
     # Wilcoxon feature selection:
+    # * Num features ensures equal number of features selected in ecah fold.
     WilcoxonSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, WilcoxonSelection(
-                thresh=0.05, bf_correction=True,
-            ))
+            (CLF_LABEL, WilcoxonSelection(thresh=0.05))
         ],
-        'params': {},
+        'params': hyperparams.wilcoxon_hparam_space(
+            selector_name_func, num_features=None
+        )
     },
     # ReliefF feature selection:
+    # * Num features ensures equal number of features selected in ecah fold.
     ReliefFSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -98,6 +105,7 @@ selectors = {
         ),
     },
     # Maximum relevance minimum redundancy selection:
+    # * Num features ensures equal number of features selected in ecah fold.
     MRMRSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
