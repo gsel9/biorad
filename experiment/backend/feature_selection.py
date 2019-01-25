@@ -14,6 +14,7 @@ __email__ = 'langberg91@gmail.com'
 
 
 import mifs
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -27,13 +28,11 @@ from sklearn.model_selection import train_test_split
 
 from sklearn.ensemble import RandomForestClassifier
 
-# TransformerMixin incorporates fit_transform().
-# BaseEstimator provides set_params()/get_params().
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class BaseSelector(BaseEstimator, TransformerMixin):
-    """Base representation of a feature selection algorithm.
+    """Representation of a feature selection algorithm.
 
     Args:
         error_handling (str, array-like): Determines feature selection error
@@ -41,15 +40,19 @@ class BaseSelector(BaseEstimator, TransformerMixin):
 
     """
 
-    VALID_ERROR_MECHANISMS = ['return_all', 'return_NaN']
+    VALID_ERROR_MECHANISMS = ['all', 'random_subset', 'nan']
 
-    def __init__(self, error_handling='return_all'):
+    def __init__(
+        self, num_features, random_state, rror_handling='random_subset'
+    ):
 
+        self.num_features = num_features
         self.error_handling = error_handling
+
         if not self.error_handling in self.VALID_ERROR_MECHANISMS:
             raise ValueError('Invalid error handling mechanism {}'
                              ''.format(self.error_handling))
-        # NOTE: Attribute set with instance.
+
         self.support = None
 
     @staticmethod
@@ -67,16 +70,19 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             X = np.array(X, dtype=float)
 
         if np.ndim(X) > 2:
+            warnings.warn('Squeezeing X with shape: {}'.format(np.shape(X)))
             X = np.squeeze(X)
 
         # Recommendation from sklearn: Reshape data with array.reshape(-1, 1)
-        # if data has a single feature or array.reshape(1, -1) if it contains
+        # if data has a single feature, or array.reshape(1, -1) if it contains
         # a single sample.
         if np.ndim(X) < 2:
             nrows, ncols = np.shape(X)
             if nrows == 1:
+                warnings.warn('Reshaping X with shape: {}'.format(np.shape(X)))
                 X = X.reshape(1, -1)
             if ncols == 1:
+                warnings.warn('Reshaping X with shape: {}'.format(np.shape(X)))
                 X = X.reshape(-1, 1)
 
         if not np.ndim(X) == 2:
@@ -100,9 +106,15 @@ class BaseSelector(BaseEstimator, TransformerMixin):
 
         # Check if support is empty. Fall back to error mechanism if so.
         if np.size(support) < 1:
-            if self.error_handling == 'return_all':
+            warnings.warn('Error mechanism: {}'.format(self.error_handling))
+            if self.error_handling == 'all':
                 support = np.arange(X.shape[1], dtype=int)
-            elif self.error_handling == 'return_NaN':
+            elif self.error_handling == 'random_subset':
+                # TEMP: A hack where rgen is `stolen` from a child class.
+                support = self.rgen.choice(
+                    np.arange(X.shape[1], dtype=int), size=self.num_features
+                )
+            elif self.error_handling == 'nan':
                 support = np.nan
             else:
                 raise RuntimeError('Cannot format support: {}'.format(support))
@@ -144,7 +156,8 @@ class PermutationSelection(BaseSelector):
         test_size=None,
         num_rounds=None,
         score_func=None,
-        error_handling='return_all',
+        num_features=None,
+        error_handling='random_subset',
         random_state=None
     ):
 
@@ -155,7 +168,7 @@ class PermutationSelection(BaseSelector):
         self.num_rounds = num_rounds
         self.score_func = score_func
         self.random_state = random_state
-        # NOTE: Attributes set with instance.
+
         self.rgen = None
         self.support = None
 
@@ -248,7 +261,11 @@ class WilcoxonSelection(BaseSelector):
     """
 
     def __init__(
-        self, thresh=0.05, bf_correction=True, error_handling='return_all'
+        self,
+        thresh=0.05,
+        num_features=None,
+        bf_correction=True,
+        error_handling='random_subset'
     ):
 
         super().__init__(error_handling)
@@ -277,9 +294,17 @@ class WilcoxonSelection(BaseSelector):
     def fit(self, X, y=None, *args, **kwargs):
 
         X, y = self._check_X_y(X, y)
+        try:
+            # Collect Wilcoxon p-values for each feature.
+            p_values = self.wilcoxon_signed_rank(X, y)
+            # Select features as N smallest p-values. Sorts ascending.
+            _support = np.argsort(p_values)[:self.num_features]
+            # Sanity check.
+            assert len(_support) == self.num_features
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
 
-        # Formatting and error handling.
-        _support = self.wilcoxon_signed_rank(X, y)
         self.support = self.check_support(_support, X)
 
         return self
@@ -300,24 +325,29 @@ class WilcoxonSelection(BaseSelector):
             (numpy.ndarray): Support indicators.
 
         """
+        # TEMP:
+        # Apply Bonferroni correction.
+        #if self.bf_correction:
+        #    for num in range(ncols):
+                # If p-value > thresh: same distribution.
+        #        _, pval = stats.wilcoxon(X[:, num], y)
+        #        if pval <= self.thresh / ncols:
+        #            support.append(num)
+        #else:
+        #    for num in range(ncols):
+                # If p-value > thresh: same distribution.
+        #        _, pval = stats.wilcoxon(X[:, num], y)
+        #        if pval <= self.thresh:
+        #            support.append(num)
+
         _, ncols = np.shape(X)
 
-        support, pvals = [], []
-        # Apply Bonferroni correction.
-        if self.bf_correction:
-            for num in range(ncols):
-                # If p-value > thresh: same distribution.
-                _, pval = stats.wilcoxon(X[:, num], y)
-                if pval <= self.thresh / ncols:
-                    support.append(num)
-        else:
-            for num in range(ncols):
-                # If p-value > thresh: same distribution.
-                _, pval = stats.wilcoxon(X[:, num], y)
-                if pval <= self.thresh:
-                    support.append(num)
+        p_values = []
+        for num in range(ncols):
+            _, p_value = stats.wilcoxon(X[:, num], y)
+            p_values.append(p_value)
 
-        return np.array(support, dtype=int)
+        return np.array(p_values, dtype=float)
 
 
 # pip install ReliefF
@@ -350,7 +380,10 @@ class ReliefFSelection(BaseSelector):
     """
 
     def __init__(
-        self, num_neighbors=10, num_features=1, error_handling='return_all'
+        self,
+        num_neighbors=10,
+        num_features=None,
+        error_handling='random_subset'
     ):
 
         super().__init__(error_handling)
@@ -394,7 +427,10 @@ class ReliefFSelection(BaseSelector):
             selector.fit(X, y)
             # Select the predefined number of features from ReliefF ranking.
             _support = selector.top_features[:self.num_features]
+            # Sanity check.
+            assert len(_support) == self.num_features
         except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
 
         self.support = self.check_support(_support, X)
@@ -428,13 +464,13 @@ class MRMRSelection(BaseSelector):
 
     """
 
-    def __init__(self, k=1, num_features=1, error_handling='return_all'):
+    def __init__(self, k=1, num_features=None, error_handling='random_subset'):
 
         super().__init__(error_handling)
 
         self.k = k
         self.num_features = num_features
-        # NOTE: Attribute set with isinstance.
+
         self.support = None
 
     def __name__(self):
@@ -469,7 +505,10 @@ class MRMRSelection(BaseSelector):
             selector.fit(X, y)
             # Extract features from the mask array of selected features.
             _support = np.where(selector.support_ == True)
+            # Sanity check.
+            assert len(_support) == self.num_features
         except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
 
         self.support = self.check_support(_support, X)
@@ -478,12 +517,11 @@ class MRMRSelection(BaseSelector):
 
     def _check_params(self, y):
 
-        # From mifs package source code:
-        # * k must be larger than 0, but smaller than the smallest class.
+        # From MIFS source code: k > 0, but smaller than the
+        # smallest class.
         min_class_count = np.min(np.bincount(y))
         if self.k > min_class_count:
             self.k = min_class_count
-        # * k must be greater than zero.
         if self.k < 1:
             self.k = 1
 
