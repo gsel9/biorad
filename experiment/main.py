@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # EXPERIMENTAL SETUP:
     CV = 10
     OOB = 300
-    MAX_EVALS = 60
+    MAX_EVALS = 25
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -100,6 +100,10 @@ if __name__ == '__main__':
         SCORING,
         CV,
         OOB,
+        # TODO: Potentially increase max evals if feature screening sign. reduces
+        # size feature space which in turn speeds up computations. Validate the
+        # number of max evals by inspecting the loss collected from eval of the
+        # objective function.
         MAX_EVALS,
         shuffle=True,
         verbose=1,
@@ -107,7 +111,9 @@ if __name__ == '__main__':
         alpha=0.05,
         balancing=True,
         write_prelim=True,
-        error_score=np.nan,
+        # NB: To ensure same number of features are selected in each fold for
+        # making y_pred comparable across each fold.
+        error_score='random_subset',
         n_jobs=None,
         path_final_results=path_to_results
     )
