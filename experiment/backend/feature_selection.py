@@ -42,11 +42,8 @@ class BaseSelector(BaseEstimator, TransformerMixin):
 
     VALID_ERROR_MECHANISMS = ['all', 'random_subset', 'nan']
 
-    def __init__(
-        self, num_features, random_state, rror_handling='random_subset'
-    ):
+    def __init__(self, error_handling='random_subset'):
 
-        self.num_features = num_features
         self.error_handling = error_handling
 
         if not self.error_handling in self.VALID_ERROR_MECHANISMS:
