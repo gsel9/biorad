@@ -125,7 +125,8 @@ def bbc_cv_selection(
             alpha=alpha,
             oob=oob,
         )
-        # Add results to output.
+        # Add results from parameter search to output. Particularily usefull in
+        # assessing if sufficient number of objective function evaluations.
         output.update(bbc_cv.evaluate(*optimizer.oos_pairs))
         output.update(optimizer.test_loss)
         output.update(optimizer.train_loss)
@@ -456,10 +457,9 @@ class ParameterSearchCV:
             self._num_evals = self._num_evals + 1
             print('Evaluating objective at round {}'.format(self._num_evals))
 
-        # Setup.
         test_loss, train_loss, Y_test, Y_pred = [], [], [], []
         _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
-        # Evaluate configuration.
+
         start_time = datetime.now()
         for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
             X_train, X_test = self.X[train_idx], self.X[test_idx]
@@ -469,14 +469,16 @@ class ParameterSearchCV:
                 X_train, y_train = utils.sampling.balance_data(
                     X_train, y_train, self.random_state
                 )
-            # Clone model to ensure independency between folds. With deepcopy,
-            # changes made to the object copy does not affect the original
-            # object version.
+            # NB: It is crucial that the predictions from each fold are
+            # comparable. E.g. is doing feature selection, the same number of
+            # features will have to be selected in each fold. Otherwise some
+            # predictions will be based on different conditions than the rest.
+            # This can be achieved by including the number of features to
+            # select as part of the hyperparameter space.
             _model = deepcopy(self.model)
-            # Configure model with provided hyperparamter setting and train.
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
-            # Ensure predictions are properly formatted vectors.
+
             pred_y_test = self.safe_predict(_model.predict(X_test))
             pred_y_train = self.safe_predict(_model.predict(X_train))
             # Collect losses, predictions and corresponding ground truths for
@@ -485,7 +487,7 @@ class ParameterSearchCV:
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
             Y_pred.append(pred_y_test[:self._sample_lim])
             Y_test.append(y_test[:self._sample_lim])
-
+            
         return OrderedDict(
             [
                 ('status', STATUS_OK),
