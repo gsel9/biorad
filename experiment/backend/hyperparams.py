@@ -28,7 +28,7 @@ def hp_bool(name):
 
 
 def hp_num_features(name, max_num_features=1):
-    """Returns  a  random  integer  in  the  range [0, upper].
+    """Returns a random integer in the range [0, upper].
 
     Args:
         name (str):
@@ -460,6 +460,50 @@ def plsr_hparam_space(
         ) if n_components is None else n_components,
         name_func('tol'): _plsr_tol(name_func('tol')) if tol is None else tol
 
+    }
+    return param_space
+
+
+##############################################################
+##==== Permutation Importance hyperparameter generators ====##
+##############################################################
+
+
+def permutation_hparam_space(name_func, num_features=None, model_hparams=None):
+    """Combine parameters space for the wrapped model with hyperparameters of
+    the permutation importance procedure.
+
+    """
+
+    param_space = {
+        name_func('num_features'): hp_num_features(
+            name_func('num_features'), max_num_features
+        )
+        if num_features is None else num_features
+    }
+    param_space.update(model_hparams)
+
+    return hparam_space
+
+
+############################################
+##==== MRMR hyperparameter generators ====##
+############################################
+
+
+def wilcoxon_hparam_space(name_func, num_features=None):
+    """
+
+    Args:
+        name_func ():
+        num_features (int): The number of features select.
+
+    """
+    param_space = {
+        name_func('num_features'): hp_num_features(
+            name_func('num_features'), max_num_features
+        )
+        if num_features is None else num_features
     }
     return param_space
 
