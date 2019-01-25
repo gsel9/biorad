@@ -50,6 +50,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             raise ValueError('Invalid error handling mechanism {}'
                              ''.format(self.error_handling))
 
+        # NOTE: Attribute set with instance.
         self.support = None
 
     @staticmethod
@@ -163,9 +164,11 @@ class PermutationSelection(BaseSelector):
         self.model = model
         self.test_size = test_size
         self.num_rounds = num_rounds
+        self.num_features = num_features
         self.score_func = score_func
         self.random_state = random_state
 
+        # NOTE: Attributes set with instanceself.
         self.rgen = None
         self.support = None
 
@@ -216,8 +219,10 @@ class PermutationSelection(BaseSelector):
             # Update model hyperparamters and configuration.
             self.model.fit(X_train, y_train)
             avg_imp = self._feature_permutation_importance(X_test, y_test)
-            # Select features contributing to model performance as support.
-            _support = np.where(avg_imp > 0)
+            # Select features contributing to enhanced model performance.
+            _support = np.where(avg_imp > 0)[:self.num_features]
+            # Sanity check.
+            assert len(_support) == self.num_features
         except:
             _support = []
 
@@ -261,15 +266,15 @@ class WilcoxonSelection(BaseSelector):
         self,
         thresh=0.05,
         num_features=None,
-        bf_correction=True,
         error_handling='random_subset'
     ):
 
         super().__init__(error_handling)
 
         self.thresh = thresh
-        self.bf_correction = bf_correction
-        # NOTE: Attributes set with instance.
+        self.num_features = self.num_features
+
+        # NOTE: Attribute set with instance.
         self.support = None
 
     def __name__(self):
@@ -387,6 +392,7 @@ class ReliefFSelection(BaseSelector):
 
         self.num_neighbors = num_neighbors
         self.num_features = num_features
+
         # NOTE: Attributes set with instance.
         self.support = None
         self.scaler = None
@@ -468,6 +474,7 @@ class MRMRSelection(BaseSelector):
         self.k = k
         self.num_features = num_features
 
+        # NOTE: Attributes set with instance.
         self.support = None
 
     def __name__(self):
@@ -527,4 +534,5 @@ class MRMRSelection(BaseSelector):
 
 if __name__ == '__main__':
 
+    # TODO: Write test on selecting exactly num features.
     pass
