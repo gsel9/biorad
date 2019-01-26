@@ -46,6 +46,9 @@ def load_predictors(path_to_data, index_col=0, regex=None):
 
 
 if __name__ == '__main__':
+    # TODO: run for multiple configurations and select the features with ICC greater than thresh.
+
+
     # EXPERIMENT:
     # Baseline experiment including all features. Results compared to sessions
     # including dim reduction a priori.
@@ -63,6 +66,7 @@ if __name__ == '__main__':
     from configs.estimator_configs import classifiers
 
     from hyperopt import tpe
+    from functools import partial
 
     from sklearn.metrics import roc_auc_score
 
@@ -79,8 +83,9 @@ if __name__ == '__main__':
 
     # EXPERIMENTAL SETUP:
     CV = 10
-    OOB = 300
-    MAX_EVALS = 25
+    # As used in paper.
+    OOB = 1000
+    MAX_EVALS = 200
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -92,18 +97,26 @@ if __name__ == '__main__':
     pipes_and_params = backend.formatting.pipelines_from_configs(
         selectors, classifiers
     )
+    # Parameters to tune the TPE algorithm.
+    tpe = partial(
+        hyperopt.tpe.suggest,
+        # Sample 1000 candidate and select candidate that
+        # has highest Expected Improvement (EI).
+        n_EI_candidates=1000,
+        # Use 20% of best observations to estimate next
+        # set of parameters.
+        gamma=0.2,
+        # First 20 trials are going to be random.
+        n_startup_jobs=20,
+    )
     comparison.model_comparison(
         model_selection.bbc_cv_selection,
         X, y,
-        tpe.suggest,
+        tpe,
         pipes_and_params,
         SCORING,
         CV,
         OOB,
-        # TODO: Potentially increase max evals if feature screening sign. reduces
-        # size feature space which in turn speeds up computations. Validate the
-        # number of max evals by inspecting the loss collected from eval of the
-        # objective function.
         MAX_EVALS,
         shuffle=True,
         verbose=1,
