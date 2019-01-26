@@ -29,6 +29,7 @@ import numpy as np
 
 from scipy import stats
 from copy import deepcopy
+from functools import partial
 
 from datetime import datetime
 from collections import OrderedDict
@@ -485,16 +486,17 @@ class ParameterSearchCV:
             # BBC-CV procedure.
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
+
             Y_pred.append(pred_y_test[:self._sample_lim])
             Y_test.append(y_test[:self._sample_lim])
-            
+
         return OrderedDict(
             [
                 ('status', STATUS_OK),
                 ('eval_time', datetime.now() - start_time),
                 ('loss', np.median(test_loss)),
-                ('train_loss', np.median(train_loss)),
                 ('loss_variance', np.var(test_loss)),
+                ('train_loss', np.median(train_loss)),
                 ('train_loss_variance', np.var(train_loss)),
                 ('hparams', hparams),
                 # Stack predictions of each fold into a vector representing the
