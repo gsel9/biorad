@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 
-
 class PostProcessor:
     """Process raw feature sets extracted with PyRadiomics.
 
@@ -33,6 +32,8 @@ class PostProcessor:
         self.error_dir = error_dir
         self.verbose = verbose
 
+        self.data = None
+
     def produce(self, drop_redundant=True, drop_missing=True):
         """Apply a series of transformations to multiple feature sets.
 
@@ -44,8 +45,7 @@ class PostProcessor:
             (list): Processed feature sets.
 
         """
-
-        data = []
+        self.data  = []
         for path_to_file in self.path_to_features:
             raw_data = pd.read_csv(path_to_file)
 
@@ -55,22 +55,24 @@ class PostProcessor:
             # Set index.
             if not np.array_equal(_data.index.values, self.indices):
                 _data.index = self.indices
-
             # Drop redundant features.
             if drop_redundant:
-                _data = self.drop_redundant(self.get_filename(path_to_file), _data)
-
+                _data = self.drop_redundant(
+                    self.get_filename(path_to_file), _data
+                )
             # Drop missing features.
             if drop_missing:
-                _data = self.drop_missing(self.get_filename(path_to_file), _data)
+                _data = self.drop_missing(
+                    self.get_filename(path_to_file), _data
+                )
+            self.data.append(_data)
 
-            data.append(_data)
-
-        return data
+        return self
 
     def drop_redundant(self, filename, features):
-        """Drop redundant features."""
+        """Drop redundant features.
 
+        """
         output = features.copy()
 
         redundant = output.columns[features.var() == 0.0].values
@@ -88,8 +90,9 @@ class PostProcessor:
         return output
 
     def drop_missing(self, filename, features):
-        """Drop features with missing values."""
+        """Drop features with missing values.
 
+        """
         output = features.copy()
 
         missing = output.columns[features.isnull().any()].values
@@ -108,8 +111,9 @@ class PostProcessor:
 
     @staticmethod
     def get_filename(path_to_file, file_format=None):
-        """Extract filename from a path <str>."""
+        """Extract filename from a path <str>.
 
+        """
         fname = os.path.basename(path_to_file)
 
         # modify output file format.
@@ -135,26 +139,27 @@ class PostProcessor:
 
         return features
 
-    # Statistics for comparing feature sets across discretization levels.
-    # Calc statistics for all features across each set with discretized features
-    # plt stats (subplots) for features (x-axis) at each discr level (y-axis).
     @property
     def medians(self):
-        # TODO: Requires self.data sets.
-        pass
+
+        return [dset.median().values for dset in self.data]
 
     @property
     def means(self):
-        pass
+
+        return [dset.mean().values for dset in self.data]
 
     @property
     def mins(self):
-        pass
+
+        [dset.min().values for dset in self.data]
 
     @property
     def maxes(self):
-        pass
+
+        [dset.max().values for dset in self.data]
 
     @property
     def stds(self):
-        pass
+
+        [dset.std().values for dset in self.data]
