@@ -46,7 +46,7 @@ class DGUFS(BaseEstimator, TransformerMixin):
     self._sel_features = None
     self._cluster_labels = None
 
-    def fit(self, X, X_sim, y=None, **kwargs):
+    def fit(self, X, y=None, **kwargs):
 
         # Calc X_sim from Eq. 3 starting from np.zeros
 
@@ -54,7 +54,8 @@ class DGUFS(BaseEstimator, TransformerMixin):
 
         # As in MATLAB implementation.
         X = np.transpose(X)
-        X_sim = np.transpose(X_sim)
+
+        X_sim = screening_utils.imilarity_matrix(X)
 
         # Setup:
         H = np.eye(nrows) - np.ones((nrows, 1)) * np.ones((1, nrows)) / nrows
@@ -62,22 +63,25 @@ class DGUFS(BaseEstimator, TransformerMixin):
 
         Y = np.zeros((ncols, nrows))
         Z = np.zeros((ncols, nrows))
+        Lambda1 = np.zeros((ncols, nrows))
+
         M = np.zeros((nrows, nrows))
         L = np.zeros((nrows, nrows))
-
-        Lambda1 = np.zeros((ncols, nrows))
         Lambda2 = np.zeros((nrows, nrows))
 
         iter = 0
         while iter <= max_iter:
 
-            # Update Z:
-            temp1 = X - Y - ((1 - self.reg_beta) * Y * H * L * H - Lamda1) / self.mu
-            Z = X - self._solve_l20(temp1, (ncols - nrows))
+            # NOTE: Swapped update Z before Y as in original algorithm to
+            # update Y before Z as in paper.
 
-            # Update Y:
+            # Update Y by Algorithm 1 to solve (8).
             temp1 = Z + ((1 - self.reg_beta) * Z * H * L * H + Lamda1) / self.mu;
-            Y = self._solve_l20(temp1, nrows)
+            Y = screening_utils.solve_l20(temp1, nrows)
+
+            # Update Z by Algorithm 1 to solve (9).
+            temp1 = X - Y - ((1 - self.reg_beta) * Y * H * L * H - Lamda1) / self.mu
+            Z = X - screening_utils.solve_l20(temp1, (ncols - nrows))
 
             # Update L:
             temp2 = ((1 - self.reg_beta) * self._speed_up(H * Y.T * Z * H) + self.ref_beta * X_sim - Lamda2) / self.mu + M
