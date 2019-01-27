@@ -33,7 +33,8 @@ setting:
 
 
 imageType:
-  SquareRoot: {}
+  LoG:
+    sigma: [0.5]
 
 
 featureClass:

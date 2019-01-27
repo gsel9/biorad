@@ -18,8 +18,8 @@ setting:
   # and NGTDM feature classes. The GLSZM and GLRLM feature classes use a fixed
   # distance of 1 (infinity norm) to define neighbours.
   distances: [1]
-  # Gray level discretization: 128 bins.
-  binWidth: 26.88
+  # Gray level discretization: 32 bins.
+  binWidth: 107.55
   # Shifting gray level values > 0 due to normalization as required by some
   # texture features. Shift value is ceiling of average of global max across
   # all CT samples, which is the largest value used in zero-centering for
@@ -33,7 +33,8 @@ setting:
 
 
 imageType:
-  SquareRoot: {}
+  LoG:
+    sigma: [0.5]
 
 
 featureClass:
