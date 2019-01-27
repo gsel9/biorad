@@ -15,7 +15,24 @@ class PostProcessor:
 
     """
 
-    self.hassan_mappings = {}
+    # Nv: Number of voxels in ROI.
+    # Ng: Numer of gray levels in image.
+    hassan_mappings = {
+        'firstorder_Entropy': lambda f, Nv: f * np.log(Nv),
+        'glcm_DifferenceEntropy': lambda f, Ng: f / np.log(Ng ** 2),
+        'glcm_JointEntropy': lambda f, Ng: f / np.log(Ng ** 2),
+        'glcm_SumEntropy': lambda f, Ng: f / np.log(Ng ** 2),
+        'glcm_Contrast': lambda f, Ng: f / (Ng ** 2),
+        'glcm_DifferenceVariance': lambda f, Ng: f / (Ng ** 2),
+        'glcm_SumAverage': lambda f, Ng: f / Ng,
+        'glcm_DifferenceAverage': lambda f, Ng: f / Ng,
+        'glrlm_GrayLevelNonUniformity': lambda f, Ng: f * Ng,
+        'glrlm_HighGrayLevelRunEmphasis': lambda f, Ng: f / (Ng ** 2),
+        'glrlm_ShortRunHighGrayLevelEmphasis': lambda f, Ng: f / (Ng ** 2),
+        'ngtdm_Contrast': lambda f, Ng: f / Ng,
+        'ngtdm_Complexity': lambda f, Ng: f / (Ng ** 3),
+        'ngtdm_Strength': lambda f, Ng: f / (Ng ** 2),
+    }
 
     def __init__(
         self,
@@ -120,6 +137,17 @@ class PostProcessor:
         if not file_format:
             return fname
 
+    def to_file(self, path_to_dir, file_format=None, **kwargs):
+
+        for num, features in enumerate(self.data):
+            path_to_file = os.path.join(
+                path_to_dir,
+                self.get_filename(self.path_to_features[num], file_format)
+            )
+            features.to_csv(path_to_file, **kwargs)
+
+        return self
+
     def hassan_transforms(self, features):
         """Apply Hassan transform to CT features.
 
@@ -138,6 +166,11 @@ class PostProcessor:
                 feature_set[feature] = self.hassan_mappings[feature]
 
         return features
+
+    @property
+    def concatenated(self):
+
+        return pd.concat(self.data, axis=1)
 
     @property
     def medians(self):
