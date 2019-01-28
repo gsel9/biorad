@@ -445,6 +445,8 @@ class ParameterSearchCV:
 
         return self
 
+    # NOTE: Should distribute hparams in objective function instead of internally
+    # in each model procedure (e.g. inside FS)?
     def objective(self, hparams):
         """Objective function to minimize.
 
