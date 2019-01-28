@@ -44,6 +44,8 @@ from hyperopt import STATUS_OK
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
 
+from dgufs.dgufs import DGUFS
+
 
 # TODO:
 def point_632plus_selection():
@@ -471,11 +473,17 @@ class ParameterSearchCV:
                     X_train, y_train, self.random_state
                 )
             # NB: It is crucial that the predictions from each fold are
-            # comparable. E.g. is doing feature selection, the same number of
+            # comparable. E.g. if doing feature selection, the same number of
             # features will have to be selected in each fold. Otherwise some
             # predictions will be based on different conditions than the rest.
             # This can be achieved by including the number of features to
             # select as part of the hyperparameter space.
+            if self.screening:
+                dgufs = DGUFS(**hparams)
+                dgufs.fit(X_train)
+                X_train = X_train[:, dgufs.support]
+                X_test = X_test[:, dgufs.support]
+
             _model = deepcopy(self.model)
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
