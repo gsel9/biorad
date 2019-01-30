@@ -67,7 +67,7 @@ selectors = {
         'params': permutation_hparam_space(
             selector_name_func,
             num_features=None,
-            hyperparams.trees_param_space(
+            model_hparams=hyperparams.trees_param_space(
                 selector_name_func,
                 n_estimators=None,
                 max_features=None,
