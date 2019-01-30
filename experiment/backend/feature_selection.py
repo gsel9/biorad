@@ -454,7 +454,7 @@ class MRMRSelection(BaseSelector):
 
     """
 
-    def __init__(self, k=1, num_features=None, error_handling='random_subset'):
+    def __init__(self, k=1, num_features=None, error_handling='nan'):
 
         super().__init__(error_handling)
 

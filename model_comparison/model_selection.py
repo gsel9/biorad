@@ -28,6 +28,7 @@ import utils
 import numpy as np
 
 from copy import deepcopy
+from datetime import datetime
 from collections import OrderedDict
 
 from hyperopt import hp
@@ -55,7 +56,7 @@ def nested_kfold_selection(
     random_state=None,
     balancing=True,
     path_tmp_results=None,
-    error_score=np.nan,
+    error_score='nan',
 ):
     """
     Work function for parallelizable model selection experiments.
@@ -96,7 +97,6 @@ def nested_kfold_selection(
             param_space,
             score_func,
             cv,
-            oob,
             max_evals,
             shuffle,
             verbose=1,
@@ -125,7 +125,6 @@ def nested_kfold(
     param_space,
     score_func,
     cv,
-    oob,
     max_evals,
     shuffle,
     verbose=1,
@@ -136,13 +135,13 @@ def nested_kfold(
 ):
 
     test_loss, train_loss, Y_test, Y_pred = [], [], [], []
-    _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+    _cv = StratifiedKFold(cv, shuffle, random_state)
 
     start_time = datetime.now()
-    for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
+    for train_idx, test_idx in _cv.split(X, y):
 
-        X_train, X_test = self.X[train_idx], self.X[test_idx]
-        y_train, y_test = self.y[train_idx], self.y[test_idx]
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
 
         # Perform cross-validated hyperparameter optimization.
         optimizer = ParameterSearchCV(
@@ -293,9 +292,6 @@ class ParameterSearchCV:
         if self._rgen is None:
             self._rgen = np.random.RandomState(self.random_state)
 
-        if self.Y_pred is None and self.Y_test is None:
-            self._setup_pred_containers()
-        # The Trials object stores information of each iteration.
         if self.trials is None:
             self.trials = Trials()
         # Passing random state to optimization algorithm renders randomly
@@ -344,7 +340,7 @@ class ParameterSearchCV:
         return OrderedDict(
             [
                 ('status', STATUS_OK),
-                ('eval_time': time.time()),
+                ('eval_time', time.time()),
                 ('loss', np.nanmedian(test_loss)),
                 ('loss_variance', np.nanvar(test_loss)),
                 ('train_loss', np.nanmedian(train_loss)),

@@ -110,7 +110,7 @@ if __name__ == '__main__':
         n_startup_jobs=20,
     )
     comparison.model_comparison(
-        model_selection.bbc_cv_selection,
+        model_selection.nested_kfold_selection,
         X, y,
         tpe,
         pipes_and_params,
