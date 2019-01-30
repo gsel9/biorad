@@ -445,6 +445,12 @@ class ParameterSearchCV:
 
         return self
 
+    # NB: It is crucial that the predictions from each fold are
+    # comparable. E.g. if doing feature selection, the same number of
+    # features will have to be selected in each fold. Otherwise some
+    # predictions will be based on different conditions than the rest.
+    # This can be achieved by including the number of features to
+    # select as part of the hyperparameter space.
     def objective(self, hparams):
         """Objective function to minimize.
 
@@ -455,13 +461,6 @@ class ParameterSearchCV:
             (dict): Outputs stored in the hyperopt trials object.
 
         """
-        # NB: It is crucial that the predictions from each fold are
-        # comparable. E.g. if doing feature selection, the same number of
-        # features will have to be selected in each fold. Otherwise some
-        # predictions will be based on different conditions than the rest.
-        # This can be achieved by including the number of features to
-        # select as part of the hyperparameter space.
-
         if self.verbose > 1:
             self._num_evals = self._num_evals + 1
             print('Evaluating objective at round {}'.format(self._num_evals))

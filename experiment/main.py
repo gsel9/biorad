@@ -71,21 +71,21 @@ if __name__ == '__main__':
     from sklearn.metrics import roc_auc_score
 
     # FEATURE SET:
-    X = load_predictors('./../../data_source/to_analysis/complete_decorr.csv')
+    X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
     y = load_target('./../../data_source/to_analysis/target_lrr.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../data/experiments/complete_decorr_dfs.csv'
+    path_to_results = './../data/experiments/no_filter_concat_dfs.csv'
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
     CV = 10
     # As used in paper.
-    OOB = 1000
-    MAX_EVALS = 60
+    OOB = 500
+    MAX_EVALS = 100
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -100,11 +100,10 @@ if __name__ == '__main__':
     # Parameters to tune the TPE algorithm.
     tpe = partial(
         hyperopt.tpe.suggest,
-        # Sample 1000 candidate and select candidate that
-        # has highest Expected Improvement (EI).
-        n_EI_candidates=1000,
-        # Use 20% of best observations to estimate next
-        # set of parameters.
+        # Sample n candidates and select the candidate with highest
+        # Expected Improvement (EI).
+        n_EI_candidates=100,
+        # Use 20 % of best observations to estimate next set of parameters.
         gamma=0.2,
         # First 20 trials are going to be random.
         n_startup_jobs=20,
