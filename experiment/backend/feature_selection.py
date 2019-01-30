@@ -40,7 +40,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
 
     """
 
-    VALID_ERROR_MECHANISMS = ['all', 'random_subset', 'nan']
+    VALID_ERROR_MECHANISMS = ['all', 'nan']
 
     def __init__(self, error_handling='random_subset'):
 
@@ -107,11 +107,6 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             warnings.warn('Error mechanism: {}'.format(self.error_handling))
             if self.error_handling == 'all':
                 support = np.arange(X.shape[1], dtype=int)
-            elif self.error_handling == 'random_subset':
-                # TEMP: A hack where rgen is `stolen` from a child class.
-                support = self.rgen.choice(
-                    np.arange(X.shape[1], dtype=int), size=self.num_features
-                )
             elif self.error_handling == 'nan':
                 support = np.nan
             else:
@@ -154,7 +149,6 @@ class PermutationSelection(BaseSelector):
         test_size=None,
         num_rounds=None,
         score_func=None,
-        num_features=None,
         error_handling='random_subset',
         random_state=None
     ):
@@ -164,7 +158,6 @@ class PermutationSelection(BaseSelector):
         self.model = model
         self.test_size = test_size
         self.num_rounds = num_rounds
-        self.num_features = num_features
         self.score_func = score_func
         self.random_state = random_state
 
@@ -221,19 +214,13 @@ class PermutationSelection(BaseSelector):
         if self.rgen is None:
             self.rgen = np.random.RandomState(self.random_state)
 
-        # Perform train-test splitting.
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=self.test_size, random_state=self.random_state
         )
-        # Fallback error handling mechanism.
         try:
-            # Update model hyperparamters and configuration.
             self.model.fit(X_train, y_train)
             avg_imp = self._feature_permutation_importance(X_test, y_test)
-            # Select features contributing to enhanced model performance.
-            _support = np.where(avg_imp > 0)[:self.num_features]
-            # Sanity check.
-            assert len(_support) == self.num_features
+            _support = np.where(avg_imp > 0)
         except:
             _support = []
 
@@ -307,13 +294,9 @@ class WilcoxonSelection(BaseSelector):
     def fit(self, X, y=None, *args, **kwargs):
 
         X, y = self._check_X_y(X, y)
+
         try:
-            # Collect Wilcoxon p-values for each feature.
-            p_values = self.wilcoxon_signed_rank(X, y)
-            # Select features as N smallest p-values. Sorts ascending.
-            _support = np.argsort(p_values)[:self.num_features]
-            # Sanity check.
-            assert len(_support) == self.num_features
+            _support = self.wilcoxon_signed_rank(X, y)
         except:
             warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
@@ -329,6 +312,8 @@ class WilcoxonSelection(BaseSelector):
         H0: The distribution of the differences x - y is symmetric about zero.
         H1: The distribution of the differences x - y is not symmetric about zero.
 
+        If p-value > thresh => same distribution.
+
         Args:
             X (array-like): Predictor observations.
             y (array-like): Ground truths.
@@ -338,29 +323,21 @@ class WilcoxonSelection(BaseSelector):
             (numpy.ndarray): Support indicators.
 
         """
-        # TEMP:
-        # Apply Bonferroni correction.
-        #if self.bf_correction:
-        #    for num in range(ncols):
-                # If p-value > thresh: same distribution.
-        #        _, pval = stats.wilcoxon(X[:, num], y)
-        #        if pval <= self.thresh / ncols:
-        #            support.append(num)
-        #else:
-        #    for num in range(ncols):
-                # If p-value > thresh: same distribution.
-        #        _, pval = stats.wilcoxon(X[:, num], y)
-        #        if pval <= self.thresh:
-        #            support.append(num)
-
         _, ncols = np.shape(X)
 
-        p_values = []
-        for num in range(ncols):
-            _, p_value = stats.wilcoxon(X[:, num], y)
-            p_values.append(p_value)
+        support = []
+        if self.bf_correction:
+            for num in range(ncols):
+                _, pval = stats.wilcoxon(X[:, num], y)
+                if pval <= self.thresh / ncols:
+                    support.append(num)
+        else:
+            for num in range(ncols):
+                _, pval = stats.wilcoxon(X[:, num], y)
+                if pval <= self.thresh:
+                    support.append(num)
 
-        return np.array(p_values, dtype=float)
+        return np.array(support, dtype=int)
 
 
 # pip install ReliefF

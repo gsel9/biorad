@@ -175,10 +175,10 @@ def nested_kfold(
 
     return OrderedDict(
         [
-            ('loss', np.median(test_loss)),
-            ('loss_variance', np.var(test_loss)),
-            ('train_loss', np.median(train_loss)),
-            ('train_loss_variance', np.var(train_loss)),
+            ('loss', np.nanmedian(test_loss)),
+            ('loss_variance', np.nanvar(test_loss)),
+            ('train_loss', np.nanmedian(train_loss)),
+            ('train_loss_variance', np.nanvar(train_loss)),
         ]
     )
 
@@ -449,10 +449,10 @@ class ParameterSearchCV:
             [
                 ('status', STATUS_OK),
                 ('eval_time': time.time()),
-                ('loss', np.median(test_loss)),
-                ('loss_variance', np.var(test_loss)),
-                ('train_loss', np.median(train_loss)),
-                ('train_loss_variance', np.var(train_loss)),
+                ('loss', np.nanmedian(test_loss)),
+                ('loss_variance', np.nanvar(test_loss)),
+                ('train_loss', np.nanmedian(train_loss)),
+                ('train_loss_variance', np.nanvar(train_loss)),
             ]
         )
 

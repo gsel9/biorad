@@ -72,19 +72,22 @@ if __name__ == '__main__':
 
     # FEATURE SET:
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
+    X = X[:, :12]
+
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
     y = load_target('./../../data_source/to_analysis/target_lrr.csv')
 
     # RESULTS LOCATION:
-    path_to_results = './../data/experiments/no_filter_concat_dfs.csv'
+    path_to_results = '.test.csv'
+    #path_to_results = './../data/experiments/no_filter_concat_dfs.csv'
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
     CV = 10
     # As used in paper.
-    OOB = 500
+    OOB = 100
     MAX_EVALS = 100
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
@@ -126,7 +129,7 @@ if __name__ == '__main__':
         write_prelim=True,
         # NB: To ensure same number of features are selected in each fold for
         # making y_pred comparable across each fold.
-        error_score='random_subset',
+        error_score='nan',
         n_jobs=None,
         path_final_results=path_to_results
     )
