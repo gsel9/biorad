@@ -469,7 +469,9 @@ def plsr_hparam_space(
 ##############################################################
 
 
-def permutation_hparam_space(name_func, num_features=None, model_hparams=None):
+def permutation_hparam_space(
+    name_func, num_features=None, model_hparams=None, max_num_features=None
+):
     """Combine parameters space for the wrapped model with hyperparameters of
     the permutation importance procedure.
 

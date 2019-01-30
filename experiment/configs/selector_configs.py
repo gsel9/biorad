@@ -64,9 +64,10 @@ selectors = {
                 )
             )
         ],
-        'params': permutation_hparam_space(
+        'params': hyperparams.permutation_hparam_space(
             selector_name_func,
             num_features=None,
+            max_num_features=NUM_ORIG_FEATURES,
             model_hparams=hyperparams.trees_param_space(
                 selector_name_func,
                 n_estimators=None,
@@ -87,7 +88,9 @@ selectors = {
             (CLF_LABEL, WilcoxonSelection(thresh=0.05))
         ],
         'params': hyperparams.wilcoxon_hparam_space(
-            selector_name_func, num_features=None
+            selector_name_func,
+            num_features=None,
+            max_num_features=NUM_ORIG_FEATURES
         )
     },
     # ReliefF feature selection:
