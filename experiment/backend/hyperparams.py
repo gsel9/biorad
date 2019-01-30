@@ -477,13 +477,13 @@ def permutation_hparam_space(
 
     """
 
-    param_space = {
+    hparam_space = {
         name_func('num_features'): hp_num_features(
             name_func('num_features'), max_num_features
         )
         if num_features is None else num_features
     }
-    param_space.update(model_hparams)
+    hparam_space.update(model_hparams)
 
     return hparam_space
 
@@ -493,7 +493,7 @@ def permutation_hparam_space(
 ############################################
 
 
-def wilcoxon_hparam_space(name_func, num_features=None):
+def wilcoxon_hparam_space(name_func, num_features=None, max_num_features=None):
     """
 
     Args:

@@ -279,7 +279,7 @@ class WilcoxonSelection(BaseSelector):
         super().__init__(error_handling)
 
         self.thresh = thresh
-        self.num_features = self.num_features
+        self.num_features = num_features
 
         # NOTE: Attribute set with instance.
         self.support = None
