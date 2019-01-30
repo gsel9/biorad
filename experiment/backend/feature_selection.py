@@ -223,7 +223,7 @@ class PermutationSelection(BaseSelector):
         try:
             self.model.fit(X_train, y_train)
             avg_imp = self._feature_permutation_importance(X_test, y_test)
-            _support = np.where(avg_imp < 0)
+            _support = np.where(avg_imp > 0)
         except:
             warnings.warn('Failed selecting features with {}'
                           ''.format(self.__name__))
@@ -244,12 +244,12 @@ class PermutationSelection(BaseSelector):
         for round_idx in range(self.num_rounds):
             for col_idx in range(num_features):
                 # Store original feature permutation.
-                x_orig = X[:, col_idx].copy()
+                X_orig = X[:, col_idx].copy()
                 # Break association between x and y by random permutation.
                 self.rgen.shuffle(X[:, col_idx])
                 new_score = self.score_func(y, self.model.predict(X))
                 # Reinsert original feature prior to permutation.
-                X[:, col_idx] = x_orig
+                X[:, col_idx] = X_orig
                 # Feature is likely important if new score < baseline.
                 importance[col_idx] += baseline - new_score
         return importance / self.num_rounds
