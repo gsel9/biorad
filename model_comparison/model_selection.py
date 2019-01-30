@@ -24,6 +24,7 @@ __email__ = 'langberg91@gmail.com'
 import os
 import time
 import utils
+import warnings
 
 import numpy as np
 
@@ -325,6 +326,7 @@ class ParameterSearchCV:
 
         """
         if self.early_stopping < 1:
+            warnings.warn('Exiting by early stopping.')
             return
 
         if self.verbose > 1:
@@ -352,6 +354,7 @@ class ParameterSearchCV:
         curr_loss = np.nanmedian(test_loss)
         if self._prev_score < curr_loss:
             self.early_stopping = self.early_stopping - 1
+            warnings.warn('Reduced buffer for eacly stopping')
         else:
             self._prev_score = curr_loss
 
