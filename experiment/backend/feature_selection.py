@@ -108,7 +108,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             if self.error_handling == 'all':
                 support = np.arange(X.shape[1], dtype=int)
             elif self.error_handling == 'nan':
-                support = [np.nan]
+                return np.nan
             else:
                 raise RuntimeError('Cannot format support: {}'.format(support))
 
@@ -127,7 +127,10 @@ class BaseSelector(BaseEstimator, TransformerMixin):
     def transform(self, X):
 
         # Method is shared by all subclasses as a required pipeline signature.
-        return self.check_subset(X[:, self.support])
+        if self.support is np.nan:
+            return X
+        else:
+            return self.check_subset(X[:, self.support])
 
 
 class PermutationSelection(BaseSelector):

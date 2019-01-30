@@ -120,7 +120,7 @@ if __name__ == '__main__':
         random_states=random_states,
         balancing=False,
         write_prelim=True,
-        error_score='nan',
+        error_score='all',
         n_jobs=None,
         path_final_results=path_to_results
     )
