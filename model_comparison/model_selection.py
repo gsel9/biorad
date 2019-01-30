@@ -56,7 +56,7 @@ def nested_kfold_selection(
     random_state=None,
     balancing=True,
     path_tmp_results=None,
-    error_score='nan',
+    error_score='all',
 ):
     """
     Work function for parallelizable model selection experiments.
@@ -201,7 +201,8 @@ class ParameterSearchCV:
         shuffle=True,
         random_state=None,
         error_score=np.nan,
-        balancing=True
+        balancing=True,
+        early_stopping=2
     ):
         self.algo = algo
         self.model = model
@@ -214,6 +215,7 @@ class ParameterSearchCV:
         self.max_evals = max_evals
         self.random_state = random_state
         self.balancing = balancing
+        self.early_stopping = early_stopping
 
         # NOTE: Attributes updated with instance.
         self.X = None
@@ -221,6 +223,7 @@ class ParameterSearchCV:
         self.trials = None
 
         self._rgen = None
+        self._prev_score = None
         self._best_params = None
 
     @property
@@ -316,6 +319,9 @@ class ParameterSearchCV:
             (dict): Outputs stored in the hyperopt trials object.
 
         """
+        if self.early_stopping < 1:
+            return
+
         if self.verbose > 1:
             self._num_evals = self._num_evals + 1
             print('Evaluating objective at round {}'.format(self._num_evals))
@@ -336,6 +342,9 @@ class ParameterSearchCV:
 
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
+
+        if self._prev_score < np.nanmedian(test_loss):
+            self.early_stopping = self.early_stopping - 1
 
         return OrderedDict(
             [

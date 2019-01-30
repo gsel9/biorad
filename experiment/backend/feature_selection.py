@@ -152,7 +152,7 @@ class PermutationSelection(BaseSelector):
         test_size=None,
         num_rounds=None,
         score_func=None,
-        error_handling='nan',
+        error_handling='all',
         random_state=None
     ):
 
@@ -224,7 +224,10 @@ class PermutationSelection(BaseSelector):
             self.model.fit(X_train, y_train)
             avg_imp = self._feature_permutation_importance(X_test, y_test)
             _support = np.where(avg_imp > 0)
+            print(_support)
         except:
+            warnings.warn('Failed selecting features with {}'
+                          ''.format(self.__name__))
             _support = []
 
         self.support = self.check_support(_support, X)
@@ -267,7 +270,7 @@ class WilcoxonSelection(BaseSelector):
         self,
         thresh=0.05,
         bf_correction=True,
-        error_handling='nan'
+        error_handling='all'
     ):
 
         super().__init__(error_handling)
@@ -375,7 +378,7 @@ class ReliefFSelection(BaseSelector):
         self,
         num_neighbors=10,
         num_features=None,
-        error_handling='nan'
+        error_handling='all'
     ):
 
         super().__init__(error_handling)
@@ -457,7 +460,7 @@ class MRMRSelection(BaseSelector):
 
     """
 
-    def __init__(self, k=1, num_features=None, error_handling='nan'):
+    def __init__(self, k=1, num_features=None, error_handling='all'):
 
         super().__init__(error_handling)
 
