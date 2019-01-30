@@ -149,7 +149,7 @@ class PermutationSelection(BaseSelector):
         test_size=None,
         num_rounds=None,
         score_func=None,
-        error_handling='random_subset',
+        error_handling='nan',
         random_state=None
     ):
 
@@ -264,7 +264,7 @@ class WilcoxonSelection(BaseSelector):
         self,
         thresh=0.05,
         num_features=None,
-        error_handling='random_subset'
+        error_handling='nan'
     ):
 
         super().__init__(error_handling)
@@ -373,7 +373,7 @@ class ReliefFSelection(BaseSelector):
         self,
         num_neighbors=10,
         num_features=None,
-        error_handling='random_subset'
+        error_handling='nan'
     ):
 
         super().__init__(error_handling)
