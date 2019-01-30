@@ -64,6 +64,22 @@ class OOBSampler:
 
 
 def balance_data(X, y, random_state):
+    """Balance distribution of target classes accoring to the
+
+    Args:
+        X (array-like):
+        y (array-like):
+        random_state (int):
+
+    Returns:
+        (tuple): Balanced predictor and target data sets.
+
+    """
+
+    raise NotImplementedError('balancing not implemented!')
+
+
+def _balance_data(X, y, random_state):
     """Balance distribution of target classes with the Synthetic Minority
     Oversmapling Technique proposed by ...
 

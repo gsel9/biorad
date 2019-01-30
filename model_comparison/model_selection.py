@@ -478,14 +478,14 @@ class ParameterSearchCV:
                 X_train, y_train = utils.sampling.balance_data(
                     X_train, y_train, self.random_state
                 )
-            # Filter out noise and redundant features while enforcing a two-
-            # cluster structure on the data for a binary classificaiton
-            # problem.
+            # WIP: Filter out noise and redundant features while enforcing a binary
+            # cluster structure on the data.
             if self.screening:
-                dgufs = DGUFS(**hparams)
-                dgufs.fit(X_train)
-                X_train = X_train[:, dgufs.support]
-                X_test = X_test[:, dgufs.support]
+                #dgufs = DGUFS(**hparams)
+                #dgufs.fit(X_train)
+                #X_train = X_train[:, dgufs.support]
+                #X_test = X_test[:, dgufs.support]
+                raise NotImplementedError('Screening not available!')
 
             _model = deepcopy(self.model)
             _model.set_params(**hparams)
