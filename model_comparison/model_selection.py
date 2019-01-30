@@ -445,8 +445,6 @@ class ParameterSearchCV:
 
         return self
 
-    # NOTE: Should distribute hparams in objective function instead of internally
-    # in each model procedure (e.g. inside FS)?
     def objective(self, hparams):
         """Objective function to minimize.
 
@@ -457,6 +455,12 @@ class ParameterSearchCV:
             (dict): Outputs stored in the hyperopt trials object.
 
         """
+        # NB: It is crucial that the predictions from each fold are
+        # comparable. E.g. if doing feature selection, the same number of
+        # features will have to be selected in each fold. Otherwise some
+        # predictions will be based on different conditions than the rest.
+        # This can be achieved by including the number of features to
+        # select as part of the hyperparameter space.
 
         if self.verbose > 1:
             self._num_evals = self._num_evals + 1
@@ -474,12 +478,9 @@ class ParameterSearchCV:
                 X_train, y_train = utils.sampling.balance_data(
                     X_train, y_train, self.random_state
                 )
-            # NB: It is crucial that the predictions from each fold are
-            # comparable. E.g. if doing feature selection, the same number of
-            # features will have to be selected in each fold. Otherwise some
-            # predictions will be based on different conditions than the rest.
-            # This can be achieved by including the number of features to
-            # select as part of the hyperparameter space.
+            # Filter out noise and redundant features while enforcing a two-
+            # cluster structure on the data for a binary classificaiton
+            # problem.
             if self.screening:
                 dgufs = DGUFS(**hparams)
                 dgufs.fit(X_train)
@@ -518,8 +519,7 @@ class ParameterSearchCV:
 
     @staticmethod
     def _check_X_y(X, y):
-        # A wrapper around sklearn formatter.
-
+        # Wrapping the sklearn formatter function.
         return check_X_y(X, y)
 
     @staticmethod
