@@ -27,11 +27,7 @@ import utils
 
 import numpy as np
 
-from scipy import stats
 from copy import deepcopy
-from functools import partial
-
-from datetime import datetime
 from collections import OrderedDict
 
 from hyperopt import hp
@@ -44,15 +40,8 @@ from hyperopt import STATUS_OK
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
 
-from dgufs.dgufs import DGUFS
 
-
-# TODO:
-def point_632plus_selection():
-    pass
-
-
-def bbc_cv_selection(
+def nested_kfold_selection(
     X, y,
     algo,
     model_id,
@@ -80,6 +69,7 @@ def bbc_cv_selection(
         max_evals (int): The number of iterations in hyperparameter search.
 
     """
+    # Determine if storing preliminary results.
     if path_tmp_results is not None:
         path_case_file = os.path.join(
             path_tmp_results, 'experiment_{}_{}'.format(
@@ -88,6 +78,7 @@ def bbc_cv_selection(
         )
     else:
         path_case_file = ''
+
     # Determine if results already exists.
     if os.path.isfile(path_case_file):
         output = utils.ioutil.read_prelim_result(path_case_file)
@@ -95,10 +86,67 @@ def bbc_cv_selection(
     else:
         # Experimental results container.
         output = {'exp_id': random_state, 'model_id': model_id}
+        if verbose > 0:
+            print('Running experiment: {}'.format(random_state))
+            start_time = datetime.now()
+
+        results = nested_kfold(
+            X, y,
+            algo,
+            model_id,
+            model,
+            param_space,
+            score_func,
+            cv,
+            oob,
+            max_evals,
+            shuffle,
+            verbose=1,
+            random_state=None,
+            alpha=0.05,
+            balancing=True,
+            path_tmp_results=None,
+            error_score=np.nan,
+        )
+        if path_tmp_results is not None:
+            print('Writing results...')
+            utils.ioutil.write_prelim_results(path_case_file, output)
 
         if verbose > 0:
-            print('Initiating parameter search: {}'.format(random_state))
-            start_time = datetime.now()
+            durat = datetime.now() - start_time
+            print('Experiment {} completed in {}'.format(random_state, durat))
+            output['exp_duration'] = durat
+
+        return output
+
+
+def nested_kfold(
+    X, y,
+    algo,
+    model_id,
+    model,
+    param_space,
+    score_func,
+    cv,
+    oob,
+    max_evals,
+    shuffle,
+    verbose=1,
+    random_state=None,
+    alpha=0.05,
+    balancing=True,
+    path_tmp_results=None,
+    error_score=np.nan,
+):
+
+    test_loss, train_loss, Y_test, Y_pred = [], [], [], []
+    _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+
+    start_time = datetime.now()
+    for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
+
+        X_train, X_test = self.X[train_idx], self.X[test_idx]
+        y_train, y_test = self.y[train_idx], self.y[test_idx]
 
         # Perform cross-validated hyperparameter optimization.
         optimizer = ParameterSearchCV(
@@ -114,43 +162,25 @@ def bbc_cv_selection(
             error_score=error_score,
             balancing=balancing
         )
-        optimizer.fit(X, y)
+        optimizer.fit(X_train, y_train)
 
-        if verbose > 1:
-            _durat = datetime.now() - start_time
-            print('Finished parameter search in: {}'.format(_durat))
-            print('Initiating BBC-CV')
+        _model = optimizer.best_model
+        _model.train(X_test)
 
-        # Evaluate model performance with BBC-CV method.
-        bbc_cv = BootstrapBiasCorrectedCV(
-            random_state=random_state,
-            score_func=score_func,
-            alpha=alpha,
-            oob=oob,
-        )
-        # Add results from parameter search to output. Particularily usefull in
-        # assessing if sufficient number of objective function evaluations.
-        output.update(bbc_cv.evaluate(*optimizer.oos_pairs))
-        output.update(optimizer.test_loss)
-        output.update(optimizer.train_loss)
-        output.update(optimizer.test_loss_var)
-        output.update(optimizer.train_loss_var)
-        output.update(optimizer.best_params)
-        output.update(optimizer.params)
+        pred_y_test = np.squeeze(_model.predict(X_test))
+        pred_y_train = np.squeeze(_model.predict(X_train))
 
-        if verbose > 1:
-            print('Finished BBC-CV in {}'.format(datetime.now() - _durat))
+        test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
+        train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
-        if path_tmp_results is not None:
-            print('Writing results...')
-            utils.ioutil.write_prelim_results(path_case_file, output)
-
-        if verbose > 0:
-            durat = datetime.now() - start_time
-            print('Experiment {} completed in {}'.format(random_state, durat))
-            output['exp_duration'] = durat
-
-    return output
+    return OrderedDict(
+        [
+            ('loss', np.median(test_loss)),
+            ('loss_variance', np.var(test_loss)),
+            ('train_loss', np.median(train_loss)),
+            ('train_loss_variance', np.var(train_loss)),
+        ]
+    )
 
 
 class BootstrapBiasCorrectedCV:
@@ -264,18 +294,15 @@ class ParameterSearchCV:
 
     """
 
-    # NOTE: For pickling results stored in hyperopt Trials() object.
-    TEMP_RESULTS_FILE = './tmp_trials.p'
-
     def __init__(
         self,
         algo,
         model,
         space,
         score_func,
-        cv=5,
+        cv=10,
         verbose=0,
-        max_evals=10,
+        max_evals=100,
         shuffle=True,
         random_state=None,
         error_score=np.nan,
@@ -296,25 +323,10 @@ class ParameterSearchCV:
         # NOTE: Attributes updated with instance.
         self.X = None
         self.y = None
-        # Ground truths and predictions for BBC-CV procedure.
-        self.Y_pred = None
-        self.Y_test = None
-        # The hyperopt trails object stores information from each iteration.
         self.trials = None
+
         self._rgen = None
-        self._sample_lim = None
         self._best_params = None
-        # Counting of the number of evaluated hyperparameter configurations.
-        if self.verbose > 1:
-            self._num_evals = 0
-        else:
-            self._num_evals = None
-
-    @property
-    def best_params(self):
-        """Returns the optimal hyperparameters."""
-
-        return {'param_search_best_params': self._best_params}
 
     @property
     def params(self):
@@ -372,19 +384,6 @@ class ParameterSearchCV:
         }
         return {'param_search_test_loss_var': losses}
 
-    @property
-    def oos_pairs(self):
-        """Returns a tuple with ground truths and corresponding out-of-sample
-        predictions."""
-
-        preds = np.transpose(
-            [items['y_pred'] for items in self.trials.results]
-        )
-        trues = np.transpose(
-            [items['y_true'] for items in self.trials.results]
-        )
-        return preds, trues
-
     def fit(self, X, y):
         """Optimal hyperparameter search.
 
@@ -400,14 +399,9 @@ class ParameterSearchCV:
 
         if self.Y_pred is None and self.Y_test is None:
             self._setup_pred_containers()
-
         # The Trials object stores information of each iteration.
-        # For saving prelim results: https://github.com/hyperopt/hyperopt/issues/267
-        # pickle.dump(optimizer, open(TEMP_RESULTS_FILE, 'wb'))
-        # trials = pickle.load(open('TEMP_RESULTS_FILE', 'rb'))
         if self.trials is None:
             self.trials = Trials()
-
         # Passing random state to optimization algorithm renders randomly
         # selected seeds from hyperopt sampling reproduciable.
         self._best_params = fmin(
@@ -420,37 +414,6 @@ class ParameterSearchCV:
         )
         return self
 
-    def _setup_pred_containers(self):
-
-        nrows, _ = np.shape(self.X)
-        # With scikit-learn CV:
-        # * The first n_samples % n_splits folds have size
-        #   n_samples // n_splits + 1, other folds have size
-        #   n_samples // n_splits, where n_samples is the number of samples.
-        # If stratified CV:
-        # * Train and test sizes may be different in each fold,
-        #   with a difference of at most n_classes
-        # Adjust the sample limit with be the number of target classes to
-        # ensure all predictions have equal size when storing outputs for
-        # BBC-CV procedure.
-        self._sample_lim = nrows // self.cv - len(set(self.y))
-
-        # Setup containers from predictions and corresponding ground truths to
-        # be used with BBC-CV procedure. The containers must hold the set of
-        # predictinos for each suggested hyperparamter configuration as the
-        # optimal. That is, predictions must be stored each time the objective
-        # function is called by the optimization algorithm.
-        self.Y_pred = np.zeros((self._sample_lim, self.max_evals), dtype=int)
-        self.Y_test = np.zeros((self._sample_lim, self.max_evals), dtype=int)
-
-        return self
-
-    # NB: It is crucial that the predictions from each fold are
-    # comparable. E.g. if doing feature selection, the same number of
-    # features will have to be selected in each fold. Otherwise some
-    # predictions will be based on different conditions than the rest.
-    # This can be achieved by including the number of features to
-    # select as part of the hyperparameter space.
     def objective(self, hparams):
         """Objective function to minimize.
 
@@ -466,53 +429,30 @@ class ParameterSearchCV:
             print('Evaluating objective at round {}'.format(self._num_evals))
 
         test_loss, train_loss, Y_test, Y_pred = [], [], [], []
-        _cv = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+        folds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+        for train_idx, test_idx in folds.split(self.X, self.y):
 
-        start_time = datetime.now()
-        for num, (train_idx, test_idx) in enumerate(_cv.split(self.X, self.y)):
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
-            # Balance target class distributions with SMOTE oversampling.
-            if self.balancing:
-                X_train, y_train = utils.sampling.balance_data(
-                    X_train, y_train, self.random_state
-                )
-            # WIP: Filter out noise and redundant features while enforcing a binary
-            # cluster structure on the data.
-            if self.screening:
-                #dgufs = DGUFS(**hparams)
-                #dgufs.fit(X_train)
-                #X_train = X_train[:, dgufs.support]
-                #X_test = X_test[:, dgufs.support]
-                raise NotImplementedError('Screening not available!')
 
             _model = deepcopy(self.model)
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
 
-            pred_y_test = self.safe_predict(_model.predict(X_test))
-            pred_y_train = self.safe_predict(_model.predict(X_train))
-            # Collect losses, predictions and corresponding ground truths for
-            # BBC-CV procedure.
+            pred_y_test = np.squeeze(_model.predict(X_test))
+            pred_y_train = np.squeeze(_model.predict(X_train))
+
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
-
-            Y_pred.append(pred_y_test[:self._sample_lim])
-            Y_test.append(y_test[:self._sample_lim])
 
         return OrderedDict(
             [
                 ('status', STATUS_OK),
-                ('eval_time', datetime.now() - start_time),
+                ('eval_time': time.time()),
                 ('loss', np.median(test_loss)),
                 ('loss_variance', np.var(test_loss)),
                 ('train_loss', np.median(train_loss)),
                 ('train_loss_variance', np.var(train_loss)),
-                ('hparams', hparams),
-                # Stack predictions of each fold into a vector representing the
-                # predictions for this particular configuration.
-                ('y_true', np.hstack(Y_test,)),
-                ('y_pred', np.hstack(Y_pred,)),
             ]
         )
 
