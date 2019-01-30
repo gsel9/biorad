@@ -230,7 +230,8 @@ class ParameterSearchCV:
     def params(self):
 
         params = {
-            num: res['hparams'] for num, res in enumerate(self.trials.results)
+            num: res['hparams']
+            for num, res in enumerate(self.trials.best_trial)
         }
         return {'param_search_eval_params': params}
 
@@ -295,8 +296,12 @@ class ParameterSearchCV:
         if self._rgen is None:
             self._rgen = np.random.RandomState(self.random_state)
 
+        if self._prev_score is None:
+            self._prev_score = 1.0
+
         if self.trials is None:
             self.trials = Trials()
+
         # Passing random state to optimization algorithm renders randomly
         # selected seeds from hyperopt sampling reproduciable.
         self._best_params = fmin(
@@ -343,8 +348,12 @@ class ParameterSearchCV:
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
-        if self._prev_score < np.nanmedian(test_loss):
+        # Record the minimum loss to monitor if diverging from optimum.
+        curr_loss = np.nanmedian(test_loss)
+        if self._prev_score < curr_loss:
             self.early_stopping = self.early_stopping - 1
+        else:
+            self._prev_score = curr_loss
 
         return OrderedDict(
             [

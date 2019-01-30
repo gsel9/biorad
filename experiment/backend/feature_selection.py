@@ -150,8 +150,8 @@ class PermutationSelection(BaseSelector):
         self,
         model=None,
         test_size=None,
-        num_rounds=None,
         score_func=None,
+        num_rounds=None,
         error_handling='all',
         random_state=None
     ):
@@ -223,8 +223,7 @@ class PermutationSelection(BaseSelector):
         try:
             self.model.fit(X_train, y_train)
             avg_imp = self._feature_permutation_importance(X_test, y_test)
-            _support = np.where(avg_imp > 0)
-            print(_support)
+            _support = np.where(avg_imp < 0)
         except:
             warnings.warn('Failed selecting features with {}'
                           ''.format(self.__name__))
@@ -253,7 +252,6 @@ class PermutationSelection(BaseSelector):
                 X[:, col_idx] = x_orig
                 # Feature is likely important if new score < baseline.
                 importance[col_idx] += baseline - new_score
-
         return importance / self.num_rounds
 
 
