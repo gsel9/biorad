@@ -611,6 +611,8 @@ def _dgufs_beta():
     pass
 
 
+"""WIP:
+
 def dgufs_hparam_space(
     name_func,
     num_features=None,
@@ -625,12 +627,12 @@ def dgufs_hparam_space(
         ) if num_features is None else num_features,
         name_func('num_clusters'): dgufs_num_clusters(
             name_func('num_features')
-        ) if num_clusters is None elsenum_clusters,
+        ) if num_clusters is None else num_clusters,
         name_func('alpha'): ,
         name_func('betaa'):
     }
 
-
+"""
 
 if __name__ == '__main__':
     pass
