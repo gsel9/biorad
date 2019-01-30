@@ -68,10 +68,17 @@ if __name__ == '__main__':
     import hyperopt
     from functools import partial
 
+    from dgufs.dgufs import DGUFS
+
     from sklearn.metrics import roc_auc_score
 
     # FEATURE SET:
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
+    print(X.shape)
+    rater = DGUFS(num_clusters=2, num_features=50)
+    rater.fit(X)
+    X = X[:, rater.support]
+    print(X.shape)
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
@@ -85,7 +92,7 @@ if __name__ == '__main__':
     # EXPERIMENTAL SETUP:
     CV = 4
     MAX_EVALS = 100
-    NUM_EXP_REPS = 5
+    NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
@@ -104,8 +111,8 @@ if __name__ == '__main__':
         n_EI_candidates=100,
         # Use 20 % of best observations to estimate next set of parameters.
         gamma=0.2,
-        # First 20 trials are going to be random.
-        n_startup_jobs=20,
+        # First p trials are going to be random.
+        n_startup_jobs=40,
     )
     comparison.model_comparison(
         model_selection.nested_kfold_selection,

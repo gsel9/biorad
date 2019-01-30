@@ -59,8 +59,8 @@ selectors = {
                         n_jobs=-1, verbose=False, oob_score=False,
                     ),
                     score_func=roc_auc_score,
-                    test_size=0.2,
-                    num_rounds=1,
+                    test_size=0.15,
+                    num_rounds=2,
                 )
             )
         ],

@@ -223,7 +223,9 @@ class PermutationSelection(BaseSelector):
         try:
             self.model.fit(X_train, y_train)
             avg_imp = self._feature_permutation_importance(X_test, y_test)
-            _support = np.where(avg_imp > 0)
+            # Need to retain features with zero importance to maintain level of
+            # baseline score.
+            _support = np.where(avg_imp >= 0)
         except:
             warnings.warn('Failed selecting features with {}'
                           ''.format(self.__name__))

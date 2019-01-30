@@ -137,14 +137,16 @@ def nested_kfold(
 
     test_loss, train_loss, Y_test, Y_pred = [], [], [], []
     _cv = StratifiedKFold(cv, shuffle, random_state)
+    for num, (train_idx, test_idx) in enumerate(_cv.split(X, y)):
 
-    start_time = datetime.now()
-    for train_idx, test_idx in _cv.split(X, y):
+        if verbose > 0:
+            # Adjusting to Python counting logic.
+            print('Outer loop iteration number {}'.format(num + 1))
 
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # Perform cross-validated hyperparameter optimization.
+        start_time = datetime.now()
         optimizer = ParameterSearchCV(
             algo=algo,
             model=model,
@@ -159,6 +161,10 @@ def nested_kfold(
             balancing=balancing
         )
         optimizer.fit(X_train, y_train)
+
+        if verbose > 0:
+            print('Parameter search finished in {}'
+                  ''.format(datetime.now() - start_time))
 
         _model = optimizer.best_model
         _model.train(X_test)
@@ -224,6 +230,7 @@ class ParameterSearchCV:
         self.trials = None
 
         self._rgen = None
+        self._results = None
         self._prev_score = None
         self._best_params = None
 
@@ -327,7 +334,7 @@ class ParameterSearchCV:
         """
         if self.early_stopping < 1:
             warnings.warn('Exiting by early stopping.')
-            return
+            return self._results
 
         if self.verbose > 1:
             self._num_evals = self._num_evals + 1
@@ -350,15 +357,7 @@ class ParameterSearchCV:
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
-        # Record the minimum loss to monitor if diverging from optimum.
-        curr_loss = np.nanmedian(test_loss)
-        if self._prev_score < curr_loss:
-            self.early_stopping = self.early_stopping - 1
-            warnings.warn('Reduced buffer for eacly stopping')
-        else:
-            self._prev_score = curr_loss
-
-        return OrderedDict(
+        self._results = OrderedDict(
             [
                 ('status', STATUS_OK),
                 ('eval_time', time.time()),
@@ -368,6 +367,15 @@ class ParameterSearchCV:
                 ('train_loss_variance', np.nanvar(train_loss)),
             ]
         )
+        # Record the minimum loss to monitor if diverging from optimum.
+        if self._prev_score < self._results['loss']:
+            self.early_stopping = self.early_stopping - 1
+            warnings.warn('Reduced buffer for eacly stopping to {}'
+                          ''.format(self.early_stopping))
+        else:
+            self._prev_score = self._results
+
+        return self._results
 
     @staticmethod
     def _check_X_y(X, y):
