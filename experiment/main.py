@@ -65,7 +65,7 @@ if __name__ == '__main__':
     from configs.selector_configs import selectors
     from configs.estimator_configs import classifiers
 
-    from hyperopt import tpe
+    import hyperopt
     from functools import partial
 
     from sklearn.metrics import roc_auc_score
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         random_states=random_states,
         alpha=0.05,
         balancing=False,
-        screening=False,
+        #screening=False,
         write_prelim=True,
         # NB: To ensure same number of features are selected in each fold for
         # making y_pred comparable across each fold.

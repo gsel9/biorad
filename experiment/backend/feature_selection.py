@@ -200,7 +200,11 @@ class PermutationSelection(BaseSelector):
         self.all_params = params
 
         # Retain only the parameters relevant for the wrapped algorithm.
-        model_params = {key: params[key] for key in self.get_params()}
+        model_params = {}
+        for key in params.keys():
+            if key in self.get_params().keys():
+                model_params[key] = params[key]
+
         self.model.set_params(**model_params)
 
         return self
