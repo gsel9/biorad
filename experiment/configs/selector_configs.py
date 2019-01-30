@@ -59,39 +59,30 @@ selectors = {
                         n_jobs=-1, verbose=False, oob_score=False,
                     ),
                     score_func=roc_auc_score,
-                    num_rounds=1,
                     test_size=0.2,
+                    num_rounds=1,
                 )
             )
         ],
-        'params': hyperparams.permutation_hparam_space(
+        'params': hyperparams.trees_param_space(
             selector_name_func,
-            num_features=None,
-            max_num_features=NUM_ORIG_FEATURES,
-            model_hparams=hyperparams.trees_param_space(
-                selector_name_func,
-                n_estimators=None,
-                max_features=None,
-                max_depth=None,
-                min_samples_split=None,
-                min_samples_leaf=None,
-                bootstrap=None,
-                random_state=None,
-            ),
-        )
+            n_estimators=None,
+            max_features=None,
+            max_depth=None,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            bootstrap=None,
+            random_state=None,
+        ),
     },
     # Wilcoxon feature selection:
     # * Num features ensures equal number of features selected in ecah fold.
     WilcoxonSelection.__name__: {
         'selector': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, WilcoxonSelection(thresh=0.05))
+            (CLF_LABEL, WilcoxonSelection(thresh=0.05, bf_correction=True))
         ],
-        'params': hyperparams.wilcoxon_hparam_space(
-            selector_name_func,
-            num_features=None,
-            max_num_features=NUM_ORIG_FEATURES
-        )
+        'params': {}
     },
     # ReliefF feature selection:
     # * Num features ensures equal number of features selected in ecah fold.
