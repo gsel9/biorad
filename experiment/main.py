@@ -72,8 +72,6 @@ if __name__ == '__main__':
 
     # FEATURE SET:
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
-    X = X[:, :12]
-
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
@@ -85,9 +83,9 @@ if __name__ == '__main__':
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
-    CV = 10
-    MAX_EVALS = 200
-    NUM_EXP_REPS = 30
+    CV = 4
+    MAX_EVALS = 100
+    NUM_EXP_REPS = 5
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
@@ -103,7 +101,7 @@ if __name__ == '__main__':
         hyperopt.tpe.suggest,
         # Sample n candidates and select the candidate with highest
         # Expected Improvement (EI).
-        n_EI_candidates=1000,
+        n_EI_candidates=100,
         # Use 20 % of best observations to estimate next set of parameters.
         gamma=0.2,
         # First 20 trials are going to be random.

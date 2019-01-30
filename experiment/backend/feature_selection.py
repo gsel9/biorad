@@ -108,7 +108,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             if self.error_handling == 'all':
                 support = np.arange(X.shape[1], dtype=int)
             elif self.error_handling == 'nan':
-                support = np.nan
+                support = [np.nan]
             else:
                 raise RuntimeError('Cannot format support: {}'.format(support))
 
