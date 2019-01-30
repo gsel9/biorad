@@ -85,7 +85,7 @@ if __name__ == '__main__':
     CV = 10
     # As used in paper.
     OOB = 1000
-    MAX_EVALS = 200
+    MAX_EVALS = 60
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -122,7 +122,8 @@ if __name__ == '__main__':
         verbose=1,
         random_states=random_states,
         alpha=0.05,
-        balancing=True,
+        balancing=False,
+        screening=False,
         write_prelim=True,
         # NB: To ensure same number of features are selected in each fold for
         # making y_pred comparable across each fold.

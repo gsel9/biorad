@@ -18,13 +18,14 @@ setting:
   # and NGTDM feature classes. The GLSZM and GLRLM feature classes use a fixed
   # distance of 1 (infinity norm) to define neighbours.
   distances: [1]
-  # No gray level discretization. Defining the maximum number of unique values
-  # across all samples.
-  binWidth: 26.47
-  # Normalizing cause negative gray level values. Adding the largest mean
-  # across all samples to prevent negative values which is required by some
-  # feature calculations.
-  voxelArrayShift: 1138
+  # Gray level discretization: 32 bins.
+  binWidth: 0.45
+  # Shifting gray level values > 0 due to normalization as required by some
+  # texture features. Shift value is ceiling of average of global max across
+  # all PET samples, which is the largest value used in zero-centering for
+  # nomralization.
+  # NOTE: Requires <int>.
+  voxelArrayShift: 15
   # Value of ROI in mask (is binary).
   label: 1
   # Disable output of additional information from the extraction.
@@ -32,7 +33,6 @@ setting:
 
 
 imageType:
-  # Original filter: No filter applied.
   Original: {}
 
 

@@ -591,6 +591,46 @@ def mrmr_hparam_space(
     return param_space
 
 
+######################################################
+##==== DGUFS hyperparameter generators ====##
+######################################################
+
+
+# WIP:
+def _dgufs_num_clusters():
+    pass
+
+
+# WIP:
+def _dgufs_alpha():
+    pass
+
+
+# WIP:
+def _dgufs_beta():
+    pass
+
+
+def dgufs_hparam_space(
+    name_func,
+    num_features=None,
+    num_clusters=None,
+    alpha=None,
+    beta=None,
+):
+
+    param_space = {
+        name_func('num_features'): hp_num_features(
+            name_func('num_features'), max_num_features
+        ) if num_features is None else num_features,
+        name_func('num_clusters'): dgufs_num_clusters(
+            name_func('num_features')
+        ) if num_clusters is None elsenum_clusters,
+        name_func('alpha'): ,
+        name_func('betaa'):
+    }
+
+
 
 if __name__ == '__main__':
     pass
