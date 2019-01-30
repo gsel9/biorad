@@ -42,7 +42,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
 
     VALID_ERROR_MECHANISMS = ['all', 'nan']
 
-    def __init__(self, error_handling='random_subset'):
+    def __init__(self, error_handling='nan'):
 
         self.error_handling = error_handling
 
@@ -119,7 +119,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             support = support[np.newaxis]
 
         # Sanity check (breaks if error handling is `return NaN`).
-        if self.error_handling == 'return_all':
+        if self.error_handling == 'all':
             assert np.ndim(support) == 1
 
         return support
@@ -263,14 +263,14 @@ class WilcoxonSelection(BaseSelector):
     def __init__(
         self,
         thresh=0.05,
-        num_features=None,
+        bf_correction=True,
         error_handling='nan'
     ):
 
         super().__init__(error_handling)
 
         self.thresh = thresh
-        self.num_features = num_features
+        self.bf_correction = bf_correction
 
         # NOTE: Attribute set with instance.
         self.support = None
@@ -287,14 +287,13 @@ class WilcoxonSelection(BaseSelector):
 
     @staticmethod
     def _check_X_y(X, y):
-        # A wrapper around sklearn formatter.
+        # A wrapper around the sklearn formatter function.
 
         return check_X_y(X, y)
 
     def fit(self, X, y=None, *args, **kwargs):
 
         X, y = self._check_X_y(X, y)
-
         try:
             _support = self.wilcoxon_signed_rank(X, y)
         except:
@@ -414,10 +413,10 @@ class ReliefFSelection(BaseSelector):
         self._check_params(X)
         # Fallback error handling mechanism.
         try:
-            selector = ReliefF(n_neighbors=self.num_neighbors)
+            selector = ReliefF(n_neighbors=int(self.num_neighbors))
             selector.fit(X, y)
             # Select the predefined number of features from ReliefF ranking.
-            _support = selector.top_features[:self.num_features]
+            _support = selector.top_features[:int(self.num_features)]
             # Sanity check.
             assert len(_support) == self.num_features
         except:
