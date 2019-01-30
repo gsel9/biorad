@@ -49,12 +49,10 @@ def nested_kfold_selection(
     param_space,
     score_func,
     cv,
-    oob,
     max_evals,
     shuffle,
     verbose=1,
     random_state=None,
-    alpha=0.05,
     balancing=True,
     path_tmp_results=None,
     error_score=np.nan,
@@ -103,7 +101,6 @@ def nested_kfold_selection(
             shuffle,
             verbose=1,
             random_state=None,
-            alpha=0.05,
             balancing=True,
             path_tmp_results=None,
             error_score=np.nan,
@@ -133,7 +130,6 @@ def nested_kfold(
     shuffle,
     verbose=1,
     random_state=None,
-    alpha=0.05,
     balancing=True,
     path_tmp_results=None,
     error_score=np.nan,
@@ -181,106 +177,6 @@ def nested_kfold(
             ('train_loss_variance', np.nanvar(train_loss)),
         ]
     )
-
-
-class BootstrapBiasCorrectedCV:
-    """
-
-    Args:
-        score_func (function):
-        n_iter (int):
-        random_state (int):
-
-    """
-
-    def __init__(
-        self,
-        random_state,
-        score_func,
-        error_score=np.nan,
-        oob=10,
-        alpha=0.05,
-    ):
-        self.score_func = score_func
-        self.oob = oob
-        self.alpha = alpha
-        self.random_state = random_state
-        self.error_score = error_score
-
-        self._sampler = None
-
-    # TODO: Vectorization.
-    def evaluate(self, Y_pred, Y_true):
-        """Bootstrap bias corrected cross-validation proposed by .
-
-        Args:
-            Y_pred (array-like): A matrix (N x C) containing out-of-sample
-                predictions for N samples and C hyperparameter configurations.
-                Thus, scores[i, j] denotes the out-of-sample prediction of on
-                the i-th sample of the j-th configuration.
-            Y_true ():
-
-        Returns:
-            (dict):
-
-        """
-        if self._sampler is None:
-            self._sampler = utils.sampling.OOBSampler(
-                self.oob, self.random_state
-            )
-        bbc_scores = []
-        for train_idx, test_idx in self._sampler.split(Y_true, Y_pred):
-            # Sample rows with replacement from the prediction matrix.
-            opt_config = self.criterion(
-                Y_true[train_idx, :], Y_pred[train_idx, :]
-            )
-            bbc_scores.append(
-                self._score(
-                    Y_true[test_idx, opt_config], Y_pred[test_idx, opt_config]
-                )
-            )
-        return {
-            'oob_avg_score': np.nanmean(bbc_scores),
-            'oob_std_score': np.nanstd(bbc_scores),
-            'oob_median_score': np.nanmedian(bbc_scores),
-            'oob_score_ci': self.bootstrap_ci(bbc_scores),
-        }
-
-    def _score(self, y_true, y_pred):
-        # Score function error mechanism.
-        try:
-            output = self.score_func(y_true, y_pred)
-        except:
-            output = self.error_score
-
-        return output
-
-    def criterion(self, Y_true, Y_pred):
-        """Given a set of selected samples of predictions and ground truths,
-        determine the optimal configuration index from the sample subset.
-
-        Returns:
-            (int): Index of the optimal configuration according to the
-                score function.
-
-        """
-        _, num_configs = np.shape(Y_true)
-        losses = np.ones(num_configs, dtype=float) * np.nan
-        for num in range(num_configs):
-            # Calculate the loss for each configuration. Returns <float> or
-            # error score (1 - NaN = NaN).
-            losses[num] = 1.0 - self._score(Y_true[:, num], Y_pred[:, num])
-        # Select the configuration corresponding to the minimum loss.
-        return np.nanargmin(losses)
-
-    def bootstrap_ci(self, scores):
-        """Calculate the bootstrap confidence interval from sample data."""
-
-        upper_idx = (1 - self.alpha / 2) * len(scores)
-        lower_idx = self.alpha / 2 * len(scores)
-
-        asc_scores = sorted(scores)
-        return asc_scores[int(lower_idx)], asc_scores[int(upper_idx)]
 
 
 class ParameterSearchCV:
@@ -531,22 +427,3 @@ if __name__ == '__main__':
     )
     name = 'MRMRSelection_SVC'
     pipe, params = pipes_and_params[name]
-
-    results = bbc_cv_selection(
-        X, y,
-        tpe.suggest,
-        name,
-        pipe,
-        params,
-        SCORING,
-        CV,
-        OOB,
-        MAX_EVALS,
-        shuffle=True,
-        verbose=0,
-        random_state=0,
-        alpha=0.05,
-        balancing=True,
-        error_score=np.nan,
-        path_tmp_results=None,
-    )

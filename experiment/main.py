@@ -86,9 +86,7 @@ if __name__ == '__main__':
 
     # EXPERIMENTAL SETUP:
     CV = 10
-    # As used in paper.
-    OOB = 100
-    MAX_EVALS = 100
+    MAX_EVALS = 200
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -105,7 +103,7 @@ if __name__ == '__main__':
         hyperopt.tpe.suggest,
         # Sample n candidates and select the candidate with highest
         # Expected Improvement (EI).
-        n_EI_candidates=100,
+        n_EI_candidates=1000,
         # Use 20 % of best observations to estimate next set of parameters.
         gamma=0.2,
         # First 20 trials are going to be random.
@@ -118,17 +116,12 @@ if __name__ == '__main__':
         pipes_and_params,
         SCORING,
         CV,
-        OOB,
         MAX_EVALS,
         shuffle=True,
         verbose=1,
         random_states=random_states,
-        alpha=0.05,
         balancing=False,
-        #screening=False,
         write_prelim=True,
-        # NB: To ensure same number of features are selected in each fold for
-        # making y_pred comparable across each fold.
         error_score='nan',
         n_jobs=None,
         path_final_results=path_to_results

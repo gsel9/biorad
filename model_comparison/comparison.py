@@ -34,15 +34,13 @@ def model_comparison(
     pipes_and_params,
     score_func,
     cv,
-    oob,
     max_evals,
     shuffle=True,
     verbose=0,
     random_states=None,
-    alpha=0.05,
     balancing=True,
     write_prelim=True,
-    error_score=np.nan,
+    error_score='nan',
     n_jobs=1,
     path_final_results=None
 ):
@@ -55,12 +53,10 @@ def model_comparison(
         y (array-like):
         algo ():
         cv (int):
-        obb (int):
         max_evals (int):
         shuffle ():
         verbose ():
         random_states (array-like):
-        alpha ():
         balancing ():
         write_prelim (bool):
         error_score (float):
@@ -95,12 +91,10 @@ def model_comparison(
                     param_space=params,
                     score_func=score_func,
                     cv=cv,
-                    oob=oob,
                     max_evals=max_evals,
                     shuffle=shuffle,
                     verbose=verbose,
                     random_state=random_state,
-                    alpha=alpha,
                     balancing=balancing,
                     path_tmp_results=path_tmp_results,
                     error_score=error_score
