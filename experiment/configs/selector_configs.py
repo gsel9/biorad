@@ -39,7 +39,7 @@ NUM_ORIG_FEATURES = 1200
 
 @scope.define
 def screener_name_func(param_name):
-
+    # Label hyperparameters associated with screener.
     global SCREENER_LABEL
 
     return '{}__{}'.format(SCREENER_LABEL, param_name)
@@ -47,7 +47,7 @@ def screener_name_func(param_name):
 
 @scope.define
 def selector_name_func(param_name):
-
+    # Label hyperparameters associated with selector.
     global SELECTOR_LABEL
 
     return '{}__{}'.format(SELECTOR_LABEL, param_name)
@@ -64,7 +64,6 @@ def _setup_hparam_space(param_configs):
 
 selectors = {
     # Random forest classifier permutation importance selection:
-    # * Num features ensures equal number of features selected in ecah fold.
     # * Permutation procedure specific parameters are not part of the
     #   optimization objective.
     # * Specify classifier hyperparamters as the only parameters part of the
@@ -81,12 +80,14 @@ selectors = {
             (
                 SELECTOR_LABEL, PermutationSelection(
                     model=RandomForestClassifier(
-                        n_jobs=-1, verbose=False, oob_score=False,
+                        n_jobs=-1,
+                        verbose=False,
+                        oob_score=False,
+                        class_weight='balanced'
                     ),
                     score_func=roc_auc_score,
                     test_size=0.15,
                     num_rounds=2,
-                    # ERROR: class_weight='balanced'
                 )
             )
         ],
@@ -111,7 +112,6 @@ selectors = {
         )
     },
     # Wilcoxon feature selection:
-    # * Num features ensures equal number of features selected in ecah fold.
     WilcoxonSelection.__name__: {
         'selector': [
             (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
@@ -132,7 +132,6 @@ selectors = {
         ),
     },
     # ReliefF feature selection:
-    # * Num features ensures equal number of features selected in ecah fold.
     ReliefFSelection.__name__: {
         'selector': [
             (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
