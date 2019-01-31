@@ -534,6 +534,8 @@ class MRMRSelection(BaseSelector):
 
 class FeatureScreening(BaseSelector):
 
+    NAME = 'FeatureScreening'
+
     def __init__(
         self,
         alpha=0.05,
@@ -556,7 +558,7 @@ class FeatureScreening(BaseSelector):
 
     def __name__(self):
 
-        return 'FeatureScreening'
+        return self.NAME
 
     # NOTE:
     # * Requires target vector. Should build on other basis than
@@ -573,11 +575,11 @@ class FeatureScreening(BaseSelector):
         X, y = self._check_X_y(X, y)
         # Checking for correlations is the most tedious task.
         try:
-            _support = self._filter_low_variance(X[:, _support])
-            _support = self._filter_mutual_info(X[:, _support])
-            #_support = self._filter_correalted(X[:, _support])
+            _support = self._filter_low_variance(X)
+            _support = self._filter_mutual_info(X[:, _support], y)
+            #_support = self._filter_correalted(X[:, _support], y)
         except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
+            warnings.warn('Failed support with: {}.'.format(self.NAME))
             _support = []
 
         self.support = self.check_support(_support, X)
@@ -585,17 +587,17 @@ class FeatureScreening(BaseSelector):
         return self
 
     def _filter_low_variance(self, X):
-        # Remove features with mutial information.
-        mut_info = mutual_info_classif(X, y)
-        return np.squeeze(np.where(mut_info > self.info_thresh))
-
-    def _filter_mutual_info(self, X):
         # Remove features with low variance.
         var_filter = VarianceThreshold(threshold=self.var_thresh)
         var_filter.fit(X)
-        return var_filter.get_support(get_indices=True)
+        return var_filter.get_support(indices=True)
 
-    def _filter_correalted(self, X):
+    def _filter_mutual_info(self, X, y):
+        # Remove features with mutual information.
+        mut_info = mutual_info_classif(X, y)
+        return np.squeeze(np.where(mut_info > self.info_thresh))
+
+    def _filter_correalted(self, X, y):
         # Remove features without significant correlation to target.
 
         # Separate between into ordinal-oridinal/nominal-ordinal
