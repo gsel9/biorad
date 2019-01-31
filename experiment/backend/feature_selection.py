@@ -25,8 +25,10 @@ from ReliefF import ReliefF
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import VarianceThreshold
 
 from sklearn.ensemble import RandomForestClassifier
+from from sklearn.feature_selection import mutual_info_classif
 
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -210,7 +212,7 @@ class PermutationSelection(BaseSelector):
 
         return self.model.get_params(deep=deep)
 
-    def fit(self, X, y, *args, **kwargs):
+    def fit(self, X, y, **kwargs):
 
         X, y = self._check_X_y(X, y)
 
@@ -297,7 +299,7 @@ class WilcoxonSelection(BaseSelector):
 
         return check_X_y(X, y)
 
-    def fit(self, X, y=None, *args, **kwargs):
+    def fit(self, X, y=None, **kwargs):
 
         X, y = self._check_X_y(X, y)
         try:
@@ -411,7 +413,7 @@ class ReliefFSelection(BaseSelector):
 
         return X, y
 
-    def fit(self, X, y=None, *args, **kwargs):
+    def fit(self, X, y=None, **kwargs):
 
         # NOTE: Includes scaling to [0, 1] range.
         X, y = self._check_X_y(X, y)
@@ -486,7 +488,7 @@ class MRMRSelection(BaseSelector):
 
         return check_X_y(X, y)
 
-    def fit(self, X, y=None, *args, **kwargs):
+    def fit(self, X, y=None, **kwargs):
 
         X, y = self._check_X_y(X, y)
         # Hyperparameter adjustments.
@@ -525,22 +527,64 @@ class MRMRSelection(BaseSelector):
         return self
 
 
-class GainSelection(BaseSelector):
+# Hyperparameters:
+# * corr_thresh
+class Screening(BaseSelector):
     """Based on the Gain equation propsed by Vallieres (2015)."""
 
-    def __init__(self, thresh, error_handling='all'):
+    def __init__(
+        self,
+        var_thresh,
+        mi_thresh,
+        alpha,
+        error_handling='all',
+        random_state=None
+    ):
 
         super().__init__(error_handling)
 
-        self.thresh = thresh
+        self.var_thresh = var_thresh
+        self.mi_thresh = mi_thresh
+        self.alpha = alpha
+        self.random_state = random_state
+
+        # NOTE: Attributes set with instance.
+        self.support = None
 
     def __name__(self):
 
         return 'GainSelection'
 
+    # NOTE:
+    # * Requires target vector. Should build on other basis than
+    #   transformer mix in?
+    # * Vallieres Gain equation: https://github.com/mvallieres/radiomics/blob/master/MultivariableModeling/featureSetReduction.m
+    def fit(self, X, y, **kwargs):
+        """
 
+        If p-value > thresh:
+            Samples are uncorrelated (fail to reject H0).
+        else:
+            Samples are correlated (reject H0).
 
+        """
+        X, y = self._check_X_y(X, y)
 
+        try:
+            # Removes all low-variance features.
+            var_filter = VarianceThreshold(threshold=self.var_thresh)
+            X = var_filter.fit_transform(X)
+
+            # Estimate mutual information for a discrete target variable.
+            mi = mutual_info_classif(X, y)
+            _support = np.squeeze(np.where(mi > self.mi_thresh))
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
 
 
 if __name__ == '__main__':
