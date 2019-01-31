@@ -76,9 +76,7 @@ selectors = {
     #   experiments.
     PermutationSelection.__name__: {
         'selector': [
-            (
-            SCREENER_LABEL, FeatureScreening(alpha=0.05)
-            ),
+            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL, PermutationSelection(
@@ -93,62 +91,93 @@ selectors = {
             )
         ],
         'params': _setup_hparam_space(
-            hyperparams.feature_screening_hparam_space(
-                screener_name_func,
-                info_thresh=None,
-                var_thresh=None,
-            ),
-            hyperparams.trees_param_space(
-                selector_name_func,
-                min_samples_split=None,
-                min_samples_leaf=None,
-                n_estimators=None,
-                max_features=None,
-                random_state=None,
-                bootstrap=None,
-                max_depth=None,
-            ),
+            [
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    info_thresh=None,
+                    var_thresh=None,
+                ),
+                hyperparams.trees_param_space(
+                    selector_name_func,
+                    min_samples_split=None,
+                    min_samples_leaf=None,
+                    n_estimators=None,
+                    max_features=None,
+                    random_state=None,
+                    bootstrap=None,
+                    max_depth=None,
+                ),
+            ]
         )
     },
     # Wilcoxon feature selection:
     # * Num features ensures equal number of features selected in ecah fold.
     WilcoxonSelection.__name__: {
         'selector': [
+            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL,
                 WilcoxonSelection(thresh=0.05, bf_correction=True)
             )
         ],
-        'params': {}
+        'params': _setup_hparam_space(
+            [
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    info_thresh=None,
+                    var_thresh=None,
+                )
+            ]
+        ),
     },
     # ReliefF feature selection:
     # * Num features ensures equal number of features selected in ecah fold.
     ReliefFSelection.__name__: {
         'selector': [
+            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (SELECTOR_LABEL, ReliefFSelection())
         ],
-        'params': hyperparams.relieff_hparam_space(
-            selector_name_func,
-            num_neighbors=None,
-            num_features=None,
-            max_num_features=NUM_ORIG_FEATURES
-        ),
+        'params': _setup_hparam_space(
+            [
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    info_thresh=None,
+                    var_thresh=None,
+                ),
+                hyperparams.relieff_hparam_space(
+                    selector_name_func,
+                    num_neighbors=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
+                ),
+            ]
+        )
     },
     # Maximum relevance minimum redundancy selection:
     # * Num features ensures equal number of features selected in ecah fold.
     MRMRSelection.__name__: {
         'selector': [
+            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (SELECTOR_LABEL, MRMRSelection())
         ],
-        'params': hyperparams.mrmr_hparam_space(
-            selector_name_func,
-            k=None,
-            num_features=None,
-            max_num_features=NUM_ORIG_FEATURES
-        ),
+        'params': _setup_hparam_space(
+            [
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    info_thresh=None,
+                    var_thresh=None,
+                ),
+                hyperparams.mrmr_hparam_space(
+                    selector_name_func,
+                    k=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
+                ),
+            ]
+        )
     }
 }
 
