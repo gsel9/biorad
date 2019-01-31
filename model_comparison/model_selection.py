@@ -40,10 +40,8 @@ from hyperopt import space_eval
 from hyperopt import STATUS_OK
 
 from sklearn.utils import check_X_y
-from sklearn.metrics import make_scorer
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import cross_val_score
 
 
 def nested_kfold_selection(
@@ -87,7 +85,6 @@ def nested_kfold_selection(
         output = utils.ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        # Experimental results container.
         output = {'exp_id': random_state, 'model_id': model_id}
         if verbose > 0:
             print('Running experiment: {}'.format(random_state))
@@ -109,6 +106,7 @@ def nested_kfold_selection(
             path_tmp_results=None,
             error_score=np.nan,
         )
+        output.update(results)
         if path_tmp_results is not None:
             print('Writing results...')
             utils.ioutil.write_prelim_results(path_case_file, output)
@@ -118,7 +116,7 @@ def nested_kfold_selection(
             print('Experiment {} completed in {}'.format(random_state, durat))
             output['exp_duration'] = durat
 
-        return output
+    return output
 
 
 # TODO:
@@ -210,26 +208,32 @@ def nested_kfold(
         end_search = datetime.now() - start_search
         print('Parameter search finished in {}'.format(end_search))
 
-    """
-    m = optimizer.best_model
-    m.fit(X, y)
+    test_scores, train_scores = [], []
+    folds = StratifiedKFold(cv, shuffle, random_state)
+    for train_idx, test_idx in folds.split(X, y):
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
 
-    test_scores = cross_val_score(
-        X=X_std, y=y,
-        estimator=optimizer.best_model,
-        scoring=make_scorer(score_func),
-        n_jobs=-1,
-        cv=cv
-    )
+        # Setup best model with hyperparameters from parameter search.
+        _model = deepcopy(optimizer.best_model)
+        _model.fit(X_train, y_train)
+
+        # Tracking scores for each fold.
+        test_scores.append(
+            score_func(y_test, np.squeeze(_model.predict(X_test)))
+        )
+        train_scores.append(
+            score_func(y_train, np.squeeze(_model.predict(X_train)))
+        )
     if verbose > 0:
         print('Score CV finished in {}'.format(datetime.now() - end_search))
-    """
+
     return OrderedDict(
         [
             ('test_score', np.nanmedian(test_scores)),
-            #('train_score', np.nanmedian(train_loss)),
+            ('train_score', np.nanmedian(train_scores)),
             ('test_score_variance', np.nanvar(test_scores)),
-            #('train_score_variance', np.nanvar(train_loss)),
+            ('train_score_variance', np.nanvar(train_scores)),
         ]
     )
 
@@ -395,7 +399,7 @@ class BayesianSearchCV:
             warnings.warn('Exiting by early stopping.')
             return self._best_params
 
-        test_loss, train_loss, Y_test, Y_pred = [], [], [], []
+        test_loss, train_loss = [], []
         folds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
         for train_idx, test_idx in folds.split(self.X, self.y):
             X_train, X_test = self.X[train_idx], self.X[test_idx]

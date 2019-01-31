@@ -82,7 +82,7 @@ classifiers = {
                     n_jobs=-1,
                     verbose=False,
                     oob_score=False,
-                    class_weight='balanced',
+                    # ERROR: class_weight='balanced',
                 )
             ))
         ],

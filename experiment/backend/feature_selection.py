@@ -187,6 +187,7 @@ class PermutationSelection(BaseSelector):
 
         return check_X_y(X, y)
 
+    # Are procedure params passed along? Required to sett random state?
     def set_params(self, **params):
         """Update model hyperparameters."""
 
@@ -195,20 +196,19 @@ class PermutationSelection(BaseSelector):
         if 'num_features' in params.keys():
             self.num_features = params['num_features']
 
-        self.all_params = params
-
-        # Retain only the parameters relevant for the wrapped algorithm.
-        model_params = {}
+        """
+        # Separate model and procedure parameters:
+        model_params, procedure_params = {}, {}
         for key in params.keys():
-            if key in self.get_params().keys():
+            if key in self.model.get_params():
                 model_params[key] = params[key]
+            else:
+                procedure_params[key] = params[key]
 
-        print('Selected model params: \n')
-        print(model_params)
-        print()
-        print('Fetched model params: \n')
-        print(self.get_params)
+        # Set model psecific params and store all procedure params.
         self.model.set_params(**model_params)
+        """
+        self.model.set_params(**params)
 
         return self
 
@@ -572,15 +572,11 @@ class Screening(BaseSelector):
 
         """
         X, y = self._check_X_y(X, y)
-
+        # Checking for correlations is the most tedious task.
         try:
-            # Removes all low-variance features.
-            var_filter = VarianceThreshold(threshold=self.var_thresh)
-            X = var_filter.fit_transform(X)
-
-            # Estimate mutual information for a discrete target variable.
-            mi = mutual_info_classif(X, y)
-            _support = np.squeeze(np.where(mi > self.mi_thresh))
+            _support = self._filter_low_variance(X[:, _support])
+            _support = self._filter_mutual_info(X[:, _support])
+            _support = self._filter_correalted(X[:, _support])
         except:
             warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
@@ -588,6 +584,23 @@ class Screening(BaseSelector):
         self.support = self.check_support(_support, X)
 
         return self
+
+    def _filter_low_variance(self, X):
+        # Remove features with mutial information.
+        minfo = mutual_info_classif(X, y)
+        return np.squeeze(np.where(minfo > self.mi_thresh))
+
+    def _filter_mutual_info(self, X):
+        # Remove features with low variance.
+        var_filter = VarianceThreshold(threshold=self.var_thresh)
+        var_filter.fit(X)
+        return var_filter.get_support(get_indices=True)
+
+    def _filter_correalted(self, X):
+        # Remove features without significant correlation to target.
+
+        # Separate into ordinal-oridinal/nominal-ordinal
+        pass
 
 
 if __name__ == '__main__':

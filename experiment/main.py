@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
-    X = X[:, :10]
+    #X = X[:, :10]
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
@@ -92,8 +92,8 @@ if __name__ == '__main__':
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
-    CV = 2#4
-    MAX_EVALS = 2#200
+    CV = 4
+    MAX_EVALS = 200
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -110,12 +110,12 @@ if __name__ == '__main__':
         hyperopt.tpe.suggest,
         # Sample 1000 candidates and select the candidate with highest
         # Expected Improvement (EI).
-        n_EI_candidates=2,#500,
+        n_EI_candidates=500,
         # Use 20 % of best observations to estimate next set of parameters.
         gamma=0.20,
         # First 20 trials are going to be random (include probability theory
         # for 90 % CI with this setup).
-        n_startup_jobs=2#25,
+        n_startup_jobs=25,
     )
     comparison.model_comparison(
         model_selection.nested_kfold_selection,
