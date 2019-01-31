@@ -21,14 +21,17 @@ from backend import hyperparams
 
 from hyperopt.pyll import scope
 
+from backend.feature_selection import MutualInformationSelection
 from backend.feature_selection import PermutationSelection
 from backend.feature_selection import WilcoxonSelection
 from backend.feature_selection import FeatureScreening
 from backend.feature_selection import ReliefFSelection
 from backend.feature_selection import MRMRSelection
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import SelectKBest
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 
 # Globals
@@ -73,6 +76,26 @@ selectors = {
     #   the similar effect may be achieved by repeating the procedure for
     #   different random states and averaging the result accross the repeated
     #   experiments.
+    MutualInformationSelection.__name__: {
+        'selector': [
+            (SCREENER_LABEL, FeatureScreening()),
+            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            (
+                SELECTOR_LABEL,
+                MutualInformationSelection()
+            )
+        ],
+        'params': _setup_hparam_space(
+            [
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    var_thresh=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
+                )
+            ]
+        ),
+    },
     PermutationSelection.__name__: {
         'selector': [
             (SCREENER_LABEL, FeatureScreening()),
@@ -157,6 +180,7 @@ selectors = {
             ]
         )
     },
+    """
     # Maximum relevance minimum redundancy selection:
     MRMRSelection.__name__: {
         'selector': [
@@ -181,6 +205,7 @@ selectors = {
             ]
         )
     }
+    """
 }
 
 if __name__ == '__main__':

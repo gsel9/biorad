@@ -33,6 +33,8 @@ from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import mutual_info_classif
 
+from backend.feature_selection import MRMRSelection
+
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -136,6 +138,45 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             return X
         else:
             return self.check_subset(X[:, self.support])
+
+
+class MutualInformationSelection(BaseSelector):
+
+    def __init__(self, num_features, error_handling='all'):
+
+        super().__init__(error_handling)
+
+        self.num_features = num_features
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def fit(self, X, y, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+        try:
+            selector = SelectKBest(
+                score_func=mutual_info_classif, k=self.num_features
+            )
+            selector.fit(X, y)
+            _support = selector.get_support(indices=True)
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    def __name__(self):
+
+        return 'MutualInformationSelection'
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        return check_X_y(X, y)
 
 
 class PermutationSelection(BaseSelector):
