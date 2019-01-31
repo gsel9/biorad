@@ -38,7 +38,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # Globals
 CLF_LABEL = 'clf'
-NUM_ORIG_FEATURES = 1200
+NUM_ORIG_FEATURES = 200
 
 
 @scope.define
