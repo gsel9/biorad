@@ -79,7 +79,10 @@ classifiers = {
         'estimator': [
             (CLF_LABEL, PipeEstimator(
                 RandomForestClassifier(
-                    n_jobs=-1, verbose=False, oob_score=False,
+                    n_jobs=-1,
+                    verbose=False,
+                    oob_score=False,
+                    class_weight='balanced',
                 )
             ))
         ],

@@ -55,8 +55,8 @@ from sklearn.base import MetaEstimatorMixin
 
 
 class PipeEstimator(BaseEstimator, MetaEstimatorMixin):
-    """A scikit-learn estimator wrapper enabling intermediate configuration of
-    the wrapped model between pipeline steps.
+    """A wrapper for scikit-learn estimators. Enables intermediate
+    configuration of the wrapped classifier model between pipeline steps.
 
     In particular, configrations are necessary with respect to:
     - Adjusting the number of components to keep in decomposition methods
@@ -87,8 +87,6 @@ class PipeEstimator(BaseEstimator, MetaEstimatorMixin):
             params (dict): Hyperparameter settings.
 
         """
-
-        # Update hyperparameters and estimator configuration.
         self.params = params
 
         return self

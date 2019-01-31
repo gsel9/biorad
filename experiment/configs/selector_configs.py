@@ -61,6 +61,7 @@ selectors = {
                     score_func=roc_auc_score,
                     test_size=0.15,
                     num_rounds=2,
+                    class_weight='balanced'
                 )
             )
         ],

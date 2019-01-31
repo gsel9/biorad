@@ -40,13 +40,10 @@ from hyperopt import space_eval
 from hyperopt import STATUS_OK
 
 from sklearn.utils import check_X_y
+from sklearn.metrics import make_scorer
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
-
-# TEMP:
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.feature_selection import mutual_info_classif
 
 
 def nested_kfold_selection(
@@ -124,6 +121,9 @@ def nested_kfold_selection(
         return output
 
 
+# TODO:
+# * Multi scoring with
+#   >>> scoring = {'AUC': 'roc_auc', 'Accuracy': make_scorer(accuracy_score)}
 def nested_kfold(
     X, y,
     algo,
@@ -210,11 +210,15 @@ def nested_kfold(
         end_search = datetime.now() - start_search
         print('Parameter search finished in {}'.format(end_search))
 
+
+    m = optimizer.best_model
+    m.fit(X, y)
+
     test_scores = cross_val_score(
         X=X_std, y=y,
         estimator=optimizer.best_model,
-        scoring=score_func,
-        n_jobs=n_jobs,
+        scoring=make_scorer(score_func),
+        n_jobs=-1,
         cv=cv
     )
     if verbose > 0:
@@ -288,12 +292,25 @@ class BayesianSearchCV:
         return {'param_search_eval_params': params}
 
     @property
+    def best_results(self):
+
+        return min(self.trials.results, key=lambda item: item['loss'])
+
+    @property
+    def best_config(self):
+        """Returns the optimal hyperparameter configuration."""
+
+        return self.best_results['hparams']
+
+    @property
     def best_model(self):
         """Returns an instance of the estimator with the optimal
         hyperparameters."""
-        best_run = min(self.trials.results, key=lambda item: item['loss'])
 
-        return self.model.set_params(**best_run['hparams'])
+        _model = deepcopy(self.model)
+        _model.set_params(self.best_results['hparams'])
+
+        return _model
 
     @property
     def train_loss(self):
@@ -384,17 +401,6 @@ class BayesianSearchCV:
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
 
-            """
-            # TEMP:
-            # Removes all low-variance features.
-            var_filter = VarianceThreshold(threshold=0.001)
-            X_train = var_filter.fit_transform(X_train)
-            # Estimate mutual information for a discrete target variable.
-            mi = mutual_info_classif(X_train, y_train)
-            _support = np.squeeze(np.where(mi > 0.003))
-            X_train = X_train[:, _support]
-            X_test = X_test[:, _support]
-            """
             _model = deepcopy(self.model)
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)

@@ -203,6 +203,11 @@ class PermutationSelection(BaseSelector):
             if key in self.get_params().keys():
                 model_params[key] = params[key]
 
+        print('Selected model params: \n')
+        print(model_params)
+        print()
+        print('Fetched model params: \n')
+        print(self.get_params)
         self.model.set_params(**model_params)
 
         return self

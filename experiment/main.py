@@ -74,11 +74,13 @@ if __name__ == '__main__':
 
     # FEATURE SET:
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
-    print(X.shape)
-    rater = DGUFS(num_clusters=2, num_features=50)
-    rater.fit(X)
-    X = X[:, rater.support]
-    print(X.shape)
+
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.decomposition import PCA
+
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+    X = X[:, :10]
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
@@ -90,8 +92,8 @@ if __name__ == '__main__':
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
-    CV = 4
-    MAX_EVALS = 100
+    CV = 2#4
+    MAX_EVALS = 2#200
     NUM_EXP_REPS = 30
     SCORING = roc_auc_score
 
@@ -106,19 +108,20 @@ if __name__ == '__main__':
     # Parameters to tune the TPE algorithm.
     tpe = partial(
         hyperopt.tpe.suggest,
-        # Sample n candidates and select the candidate with highest
+        # Sample 1000 candidates and select the candidate with highest
         # Expected Improvement (EI).
-        n_EI_candidates=100,
+        n_EI_candidates=2,#500,
         # Use 20 % of best observations to estimate next set of parameters.
-        gamma=0.2,
-        # First p trials are going to be random.
-        n_startup_jobs=40,
+        gamma=0.20,
+        # First 20 trials are going to be random (include probability theory
+        # for 90 % CI with this setup).
+        n_startup_jobs=2#25,
     )
     comparison.model_comparison(
         model_selection.nested_kfold_selection,
         X, y,
         tpe,
-        pipes_and_params,
+        {'PermutationSelection_PLSRegression': pipes_and_params['PermutationSelection_PLSRegression']},
         SCORING,
         CV,
         MAX_EVALS,
