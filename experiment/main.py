@@ -46,13 +46,14 @@ def load_predictors(path_to_data, index_col=0, regex=None):
 
 
 if __name__ == '__main__':
-    # TODO: run for multiple configurations and select the features with ICC greater than thresh.
+    """To Dos:
 
+    * Extract CT 128 + PET 16 square root features.
+    * Remove low variance features (thresh approx 0.01).
+    * Adjust max num features in config modules.
+    * Run experiment for comparison with Alise's results.
 
-    # EXPERIMENT:
-    # Baseline experiment including all features. Results compared to sessions
-    # including dim reduction a priori.
-    #
+    """
     import sys
     sys.path.append('./../model_comparison')
 
@@ -73,11 +74,7 @@ if __name__ == '__main__':
     from sklearn.metrics import roc_auc_score
 
     # FEATURE SET:
-    # * NB: Do not scale prior to model comparison due to min variance
-    #   filtering. If Z-score transform, var(X) = 1. Use scaler in pipeline
-    #   instead.
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
-    data = pd.read_csv('./../../data_source/to_analysis/no_filter_concat.csv', index_col=0)
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
@@ -91,7 +88,7 @@ if __name__ == '__main__':
     # EXPERIMENTAL SETUP:
     CV = 4
     MAX_EVALS = 200
-    NUM_EXP_REPS = 30
+    NUM_EXP_REPS = 20
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
