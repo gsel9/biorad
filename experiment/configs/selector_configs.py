@@ -92,6 +92,11 @@ selectors = {
                     var_thresh=None,
                     num_features=None,
                     max_num_features=NUM_ORIG_FEATURES
+                ),
+                hyperparams.mutual_info_param_space(
+                    selector_name_func,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
                 )
             ]
         ),
