@@ -27,6 +27,7 @@ from backend.formatting import PipeEstimator
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.cross_decomposition import PLSRegression
@@ -46,6 +47,20 @@ def estimator_name_func(param_name):
 
 
 classifiers = {
+    AdaBoostClassifier.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                AdaBoostClassifier(
+                    base=LogisticRegression(), n_estimators=1000
+                )
+            ))
+        ],
+        'params': hyperparams.adaboost_param_space(
+
+        )
+    }
+
     # Support Vector Machines:
     # * Must select kernel a priori because the hyperparamter space
     #   generator function is not evaluated for each suggested
@@ -142,7 +157,7 @@ classifiers = {
         ],
         'params': hyperparams.logreg_hparam_space(
             estimator_name_func,
-            penalty='l1',
+            penalty='l2',
             C=None,
             tol=None,
             random_state=None,
