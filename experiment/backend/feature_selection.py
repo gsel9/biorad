@@ -532,36 +532,35 @@ class MRMRSelection(BaseSelector):
         return self
 
 
-class Screening(BaseSelector):
-    """Based on the Gain equation propsed by Vallieres (2015)."""
+class FeatureScreening(BaseSelector):
 
     def __init__(
         self,
-        var_thresh=1e-4,
-        mi_thresh=0.01,
         alpha=0.05,
+        var_thresh=1e-4,
+        info_thresh=0.01,
+        random_state=None,
         error_handling='all',
-        random_state=None
     ):
 
         super().__init__(error_handling)
 
-        self.var_thresh = var_thresh
-        self.mi_thresh = mi_thresh
         self.alpha = alpha
+        self.var_thresh = var_thresh
+        self.info_thresh = info_thresh
         self.random_state = random_state
+        self.error_handling = error_handling
 
         # NOTE: Attributes set with instance.
         self.support = None
 
     def __name__(self):
 
-        return 'GainSelection'
+        return 'FeatureScreening'
 
     # NOTE:
     # * Requires target vector. Should build on other basis than
     #   transformer mix in?
-    # * Vallieres Gain equation: https://github.com/mvallieres/radiomics/blob/master/MultivariableModeling/featureSetReduction.m
     def fit(self, X, y, **kwargs):
         """
 
@@ -576,7 +575,7 @@ class Screening(BaseSelector):
         try:
             _support = self._filter_low_variance(X[:, _support])
             _support = self._filter_mutual_info(X[:, _support])
-            _support = self._filter_correalted(X[:, _support])
+            #_support = self._filter_correalted(X[:, _support])
         except:
             warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
@@ -587,8 +586,8 @@ class Screening(BaseSelector):
 
     def _filter_low_variance(self, X):
         # Remove features with mutial information.
-        minfo = mutual_info_classif(X, y)
-        return np.squeeze(np.where(minfo > self.mi_thresh))
+        mut_info = mutual_info_classif(X, y)
+        return np.squeeze(np.where(mut_info > self.info_thresh))
 
     def _filter_mutual_info(self, X):
         # Remove features with low variance.
@@ -599,7 +598,7 @@ class Screening(BaseSelector):
     def _filter_correalted(self, X):
         # Remove features without significant correlation to target.
 
-        # Separate into ordinal-oridinal/nominal-ordinal
+        # Separate between into ordinal-oridinal/nominal-ordinal
         pass
 
 
