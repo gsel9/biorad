@@ -42,6 +42,10 @@ from hyperopt import STATUS_OK
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
 
+# TEMP:
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.feature_selection import mutual_info_classif
+
 
 def nested_kfold_selection(
     X, y,
@@ -340,6 +344,15 @@ class ParameterSearchCV:
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
 
+            # TEMP:
+            # Removes all low-variance features.
+            var_filter = VarianceThreshold(threshold=0.001)
+            X = var_filter.fit_transform(X)
+            # Estimate mutual information for a discrete target variable.
+            mi = mutual_info_classif(X, y)
+            _support = np.squeeze(np.where(mi > 0.003))
+            X_train = X_train[:, _support], X_test = X_test[:, _support]
+
             _model = deepcopy(self.model)
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
@@ -349,9 +362,7 @@ class ParameterSearchCV:
 
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
-        # TEMP:
-        print(self.trails.best_trial.keys())
-
+        print(np.median(test_loss))
         self._best_params = OrderedDict(
             [
                 ('status', STATUS_OK),
