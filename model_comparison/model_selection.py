@@ -138,48 +138,6 @@ def nested_kfold(
     path_tmp_results=None,
     error_score=np.nan,
 ):
-
-    """
-    test_loss, train_loss, Y_test, Y_pred = [], [], [], []
-    _cv = StratifiedKFold(cv, shuffle, random_state)
-    for num, (train_idx, test_idx) in enumerate(_cv.split(X, y)):
-
-        if verbose > 0:
-            # Adjusting to Python counting logic.
-            print('Outer loop iteration number {}'.format(num + 1))
-
-        X_train, X_test = X[train_idx], X[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
-
-        start_time = datetime.now()
-        optimizer = ParameterSearchCV(
-            algo=algo,
-            model=model,
-            space=param_space,
-            score_func=score_func,
-            cv=cv,
-            verbose=verbose,
-            max_evals=max_evals,
-            shuffle=shuffle,
-            random_state=random_state,
-            error_score=error_score,
-            balancing=balancing
-        )
-        optimizer.fit(X_train, y_train)
-
-        if verbose > 0:
-            print('Parameter search finished in {}'
-                  ''.format(datetime.now() - start_time))
-
-        _model = optimizer.best_model
-        _model.fit(X_test)
-
-        pred_y_test = np.squeeze(_model.predict(X_test))
-        pred_y_train = np.squeeze(_model.predict(X_train))
-
-        test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
-        train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
-    """
     if verbose > 0:
         start_search = datetime.now()
 
