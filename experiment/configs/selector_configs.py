@@ -75,7 +75,7 @@ selectors = {
     #   experiments.
     PermutationSelection.__name__: {
         'selector': [
-            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
+            (SCREENER_LABEL, FeatureScreening()),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL, PermutationSelection(
@@ -95,8 +95,9 @@ selectors = {
             [
                 hyperparams.feature_screening_hparam_space(
                     screener_name_func,
-                    info_thresh=None,
                     var_thresh=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
                 ),
                 hyperparams.trees_param_space(
                     selector_name_func,
@@ -114,7 +115,7 @@ selectors = {
     # Wilcoxon feature selection:
     WilcoxonSelection.__name__: {
         'selector': [
-            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
+            (SCREENER_LABEL, FeatureScreening()),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL,
@@ -125,8 +126,9 @@ selectors = {
             [
                 hyperparams.feature_screening_hparam_space(
                     screener_name_func,
-                    info_thresh=None,
                     var_thresh=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
                 )
             ]
         ),
@@ -134,7 +136,7 @@ selectors = {
     # ReliefF feature selection:
     ReliefFSelection.__name__: {
         'selector': [
-            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
+            (SCREENER_LABEL, FeatureScreening()),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (SELECTOR_LABEL, ReliefFSelection())
         ],
@@ -142,8 +144,9 @@ selectors = {
             [
                 hyperparams.feature_screening_hparam_space(
                     screener_name_func,
-                    info_thresh=None,
                     var_thresh=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
                 ),
                 hyperparams.relieff_hparam_space(
                     selector_name_func,
@@ -157,7 +160,7 @@ selectors = {
     # Maximum relevance minimum redundancy selection:
     MRMRSelection.__name__: {
         'selector': [
-            (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
+            (SCREENER_LABEL, FeatureScreening()),
             ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
             (SELECTOR_LABEL, MRMRSelection())
         ],
@@ -165,8 +168,9 @@ selectors = {
             [
                 hyperparams.feature_screening_hparam_space(
                     screener_name_func,
-                    info_thresh=None,
                     var_thresh=None,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
                 ),
                 hyperparams.mrmr_hparam_space(
                     selector_name_func,

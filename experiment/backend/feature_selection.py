@@ -24,6 +24,7 @@ from ReliefF import ReliefF
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import VarianceThreshold
 
@@ -540,18 +541,16 @@ class FeatureScreening(BaseSelector):
 
     def __init__(
         self,
-        alpha=0.05,
-        var_thresh=1e-4,
-        info_thresh=0.01,
+        var_thresh=0,
+        num_features=10,
         random_state=None,
         error_handling='all',
     ):
 
         super().__init__(error_handling)
 
-        self.alpha = alpha
         self.var_thresh = var_thresh
-        self.info_thresh = info_thresh
+        self.num_features = num_features
         self.random_state = random_state
         self.error_handling = error_handling
 
@@ -562,43 +561,57 @@ class FeatureScreening(BaseSelector):
 
         return self.NAME
 
-    # NOTE:
-    # * Requires target vector. Should build on other basis than
-    #   transformer mix in?
+    # TODO:
+    # * Remove highly correlated features.
+    # * Remove features with weak correlation to target.
     def fit(self, X, y, **kwargs):
         """
-
-        If p-value > thresh:
-            Samples are uncorrelated (fail to reject H0).
-        else:
-            Samples are correlated (reject H0).
-
         """
         X, y = self._check_X_y(X, y)
-        # Checking for correlations is the most tedious task.
-        try:
-            _support = self._filter_low_variance(X)
-            _support = self._filter_mutual_info(X[:, _support], y)
-            _support = self._filter_correlated(X[:, _support], y)
-        except:
-            warnings.warn('Failed support with: {}.'.format(self.NAME))
-            _support = []
+
+        #try:
+        _support = self._filter_low_variance(X)
+        # TODO:
+        #   A CM-filter to remove correlated features. See:
+        #   * https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0189875
+        #   * https://www.cs.waikato.ac.nz/ml/publications/1997/Hall-LSmith97.pdf
+        # NB:
+        #   * Remember to separate between categorical and continous features!
+
+        _support = self._filter_mutual_information(X[:, _support], y)
+
+        #except:
+        #    warnings.warn('Failed support with: {}.'.format(self.NAME))
+        #    _support = []
 
         self.support = self.check_support(_support, X)
 
         return self
 
+    # NB: Difference between categorical/continous variables???
     def _filter_low_variance(self, X):
         # Remove features with low variance.
         var_filter = VarianceThreshold(threshold=self.var_thresh)
         var_filter.fit(X)
         return var_filter.get_support(indices=True)
 
-    def _filter_mutual_info(self, X, y):
-        # Remove features with mutual information.
-        mut_info = mutual_info_classif(X, y)
-        return np.squeeze(np.where(mut_info > self.info_thresh))
+    # NB: Difference between categorical/continous variables???
+    def _filter_mutual_information(self, X, y):
+        # Mutual information methods can capture any kind of tatistical
+        # dependency (not only linear), but require more samples for
+        # accurate estimation by being nonparametric (scikit-learn).
+        scaler = StandardScaler()
+        X_std = scaler.fit_transform(X)
+        # Handle range limit to number of features that can be selected.
+        if self.num_features > X.shape[1]:
+            self.num_features = X.shape[1]
 
+        selector = SelectKBest(mutual_info_classif, k=self.num_features)
+        selector.fit(X_std, y)
+
+        return selector.get_support(indices=True)
+
+    # NB: Difference between categorical/continous variables???
     def _filter_correlated(self, X, y):
         # Remove features without significant correlation to target.
         _, ncols = np.shape(X)
@@ -610,9 +623,16 @@ class FeatureScreening(BaseSelector):
                 categorical.append(col_num)
             else:
                 continous.append(col_num)
-
         categorical = np.array(categorical, dtype=int)
         continous = np.array(continous, dtype=int)
+
+        scaler = StandardScaler()
+        X_std = scaler.fit_transform(X)
+
+        # Filter features weakly correlated to target.
+        # Filter features correalted with each other.
+
+        # https://github.com/BIG-S2/BCORSIS
 
         # Sanity check.
         assert ncols == len(continous) + len(categorical)
@@ -630,10 +650,10 @@ class FeatureScreening(BaseSelector):
         # apply BF correction.
         #cat_support = cat_p_values / len(categorical) <= self.alpha
         #cont_support = cont_p_values / len(continous) <= self.alpha
-        cat_support = categorical[cat_p_values <= self.alpha]
-        cont_support = continous[cont_p_values <= self.alpha]
+        cat_support = np.squeeze(np.where(cat_p_values <= self.alpha))
+        cont_support = np.squeeze(np.where(cont_p_values <= self.alpha))
 
-        return np.append(cat_support, cont_support)
+        return np.append(categorical[cat_support], continous[cont_support])
 
     @staticmethod
     def _check_X_y(X, y):

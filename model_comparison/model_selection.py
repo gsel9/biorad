@@ -384,7 +384,7 @@ class BayesianSearchCV:
             warnings.warn('Reduced buffer for eacly stopping to {}'
                           ''.format(self.early_stopping))
         else:
-            print(self._best_params['loss'])
+            print('loss:', self._best_params['loss'])
             self._prev_score = self._best_params['loss']
 
         return self._best_params

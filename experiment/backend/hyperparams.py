@@ -552,17 +552,7 @@ def mrmr_hparam_space(
 #########################################################
 
 
-def _significance_level(name):
-
-    return hp.loguniform(name, np.log(1e-5), np.log(1e-1))
-
-
 def _screening_var_thresh(name):
-
-    return hp.loguniform(name, np.log(1e-6), np.log(1e2))
-
-
-def _screening_info_thresh(name):
 
     return hp.loguniform(name, np.log(1e-6), np.log(1e2))
 
@@ -570,22 +560,19 @@ def _screening_info_thresh(name):
 def feature_screening_hparam_space(
     name_func,
     var_thresh=None,
-    info_thresh=None,
-    alpha=None
+    num_features=None,
+    max_num_features=None,
 ):
     """
 
     """
     param_space = {
-        name_func('alpha'): _significance_level(
-            name_func('alpha')
-        ) if alpha is None else alpha,
         name_func('var_thresh'): _screening_var_thresh(
             name_func('var_thresh')
         ) if var_thresh is None else var_thresh,
-        name_func('info_thresh'): _screening_info_thresh(
-            name_func('info_thresh')
-        ) if info_thresh is None else info_thresh,
+        name_func('num_features'): hp_num_features(
+            name_func('num_features'), max_num_features=max_num_features
+        ) if num_features is None else num_features,
     }
     return param_space
 
