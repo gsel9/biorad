@@ -155,7 +155,6 @@ selectors = {
         )
     },
     # Maximum relevance minimum redundancy selection:
-    # * Num features ensures equal number of features selected in ecah fold.
     MRMRSelection.__name__: {
         'selector': [
             (SCREENER_LABEL, FeatureScreening(alpha=0.05)),
