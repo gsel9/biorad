@@ -527,16 +527,14 @@ class MRMRSelection(BaseSelector):
         return self
 
 
-# Hyperparameters:
-# * corr_thresh
 class Screening(BaseSelector):
     """Based on the Gain equation propsed by Vallieres (2015)."""
 
     def __init__(
         self,
-        var_thresh,
-        mi_thresh,
-        alpha,
+        var_thresh=1e-4,
+        mi_thresh=0.01,
+        alpha=0.05,
         error_handling='all',
         random_state=None
     ):
