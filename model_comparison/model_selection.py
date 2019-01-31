@@ -134,6 +134,7 @@ def nested_kfold(
     cv,
     max_evals,
     shuffle,
+    scaling=True,
     verbose=1,
     random_state=None,
     balancing=True,
@@ -183,10 +184,13 @@ def nested_kfold(
         train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
     """
 
-    scaler = StandardScaler()
-    X_std = sca.fit_transform(X)
+    if scaling:
+        scaler = StandardScaler()
+        X_std = scaler.fit_transform(X)
 
-    start_time = datetime.now()
+    if verbose > 0:
+        start_search = datetime.now()
+
     optimizer = BayesianSearchCV(
         algo=algo,
         model=model,
@@ -201,19 +205,27 @@ def nested_kfold(
         balancing=balancing
     )
     optimizer.fit(X, y)
+
     if verbose > 0:
-        print('Parameter search finished in {}'
-              ''.format(datetime.now() - start_time))
+        end_search = datetime.now() - start_search
+        print('Parameter search finished in {}'.format(end_search))
 
-
-    cross_val_score()
+    test_scores = cross_val_score(
+        X=X_std, y=y,
+        estimator=optimizer.best_model,
+        scoring=score_func,
+        n_jobs=n_jobs,
+        cv=cv
+    )
+    if verbose > 0:
+        print('Score CV finished in {}'.format(datetime.now() - end_search))
 
     return OrderedDict(
         [
-            ('loss', np.nanmedian(test_loss)),
-            ('loss_variance', np.nanvar(test_loss)),
-            ('train_loss', np.nanmedian(train_loss)),
-            ('train_loss_variance', np.nanvar(train_loss)),
+            ('test_score', np.nanmedian(test_scores)),
+            #('train_score', np.nanmedian(train_loss)),
+            ('test_score_variance', np.nanvar(test_scores)),
+            #('train_score_variance', np.nanvar(train_loss)),
         ]
     )
 
