@@ -73,14 +73,10 @@ if __name__ == '__main__':
     from sklearn.metrics import roc_auc_score
 
     # FEATURE SET:
+    # * NB: Do not scale prior to model comparison due to min variance
+    #   filtering. If Z-score transform, var(X) = 1. Use scaler in pipeline
+    #   instead.
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
-
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.decomposition import PCA
-
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
-    #X = X[:, :10]
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
