@@ -543,7 +543,6 @@ class FeatureScreening(BaseSelector):
         alpha=0.05,
         var_thresh=1e-4,
         info_thresh=0.01,
-        num_features=None,
         random_state=None,
         error_handling='all',
     ):
@@ -553,7 +552,6 @@ class FeatureScreening(BaseSelector):
         self.alpha = alpha
         self.var_thresh = var_thresh
         self.info_thresh = info_thresh
-        self.num_features = num_features
         self.random_state = random_state
         self.error_handling = error_handling
 
@@ -581,7 +579,7 @@ class FeatureScreening(BaseSelector):
         try:
             _support = self._filter_low_variance(X)
             _support = self._filter_mutual_info(X[:, _support], y)
-            #_support = self._filter_correalted(X[:, _support], y)
+            _support = self._filter_correlated(X[:, _support], y)
         except:
             warnings.warn('Failed support with: {}.'.format(self.NAME))
             _support = []
@@ -601,7 +599,7 @@ class FeatureScreening(BaseSelector):
         mut_info = mutual_info_classif(X, y)
         return np.squeeze(np.where(mut_info > self.info_thresh))
 
-    def _filter_correalted(self, X, y):
+    def _filter_correlated(self, X, y):
         # Remove features without significant correlation to target.
         _, ncols = np.shape(X)
 
@@ -612,20 +610,30 @@ class FeatureScreening(BaseSelector):
                 categorical.append(col_num)
             else:
                 continous.append(col_num)
-        # * Correlation between two discrete or categorical variables
-        _, p_values = chi2(X[:, categorical], y)
-        # Bonferroni correction.
-        cat_support = p_values / len(categorical) <= self.alpha
 
-        # * Correlation between a continuous and categorical variable.
-        _, p_values = f_classif(X[:, categorical], y)
-        # Bonferroni correction.
-        cont_support = p_values / len(categorical) <= self.alpha
+        categorical = np.array(categorical, dtype=int)
+        continous = np.array(continous, dtype=int)
 
-        support = np.append(
-            categorical[cat_support], continous[cont_support]
-        )
-        return support
+        # Sanity check.
+        assert ncols == len(continous) + len(categorical)
+
+        # Correlation between two discrete or categorical variables
+        _, cat_p_values = chi2(X[:, categorical], y)
+        # Correlation between a continuous and categorical variable.
+        _, cont_p_values = f_classif(X[:, continous], y)
+
+        # Sanity check.
+        assert len(cat_p_values) == len(categorical)
+        assert len(cont_p_values) == len(continous)
+
+        # NOTE: Bonferroni correction. No feature that significant that can
+        # apply BF correction.
+        #cat_support = cat_p_values / len(categorical) <= self.alpha
+        #cont_support = cont_p_values / len(continous) <= self.alpha
+        cat_support = categorical[cat_p_values <= self.alpha]
+        cont_support = continous[cont_p_values <= self.alpha]
+
+        return np.append(cat_support, cont_support)
 
     @staticmethod
     def _check_X_y(X, y):

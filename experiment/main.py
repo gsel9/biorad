@@ -77,6 +77,7 @@ if __name__ == '__main__':
     #   filtering. If Z-score transform, var(X) = 1. Use scaler in pipeline
     #   instead.
     X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
+    data = pd.read_csv('./../../data_source/to_analysis/no_filter_concat.csv', index_col=0)
 
     # TARGET:
     #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
