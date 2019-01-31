@@ -25,6 +25,7 @@ from backend import hyperparams
 from backend.formatting import PipeEstimator
 
 from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import AdaBoostClassifier
@@ -57,15 +58,42 @@ classifiers = {
             ))
         ],
         'params': hyperparams.adaboost_param_space(
-
+            estimator_name_func,
+            n_estimators=None,
+            learning_rate=None,
+            random_state=None
         )
-    }
-
+    },
     # Support Vector Machines:
     # * Must select kernel a priori because the hyperparamter space
     #   generator function is not evaluated for each suggested
     #   configuration. Thus, settings depending on the specified kernel
     #   will not be updated according to the sampled kernel function.
+    LinearSVC.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                LinearSVC(
+                    class_weight='balanced',
+                    verbose=False,
+                    max_iter=-1,
+                    decision_function_shape='ovr'
+                )
+            ))
+        ],
+        'params': hyperparams.linear_svc_param_space(
+            estimator_name_func,
+            penalty=None,
+            loss=None,
+            dual=None,
+            tol=None,
+            C=None,
+            fit_intercept=True,
+            intercept_scaling=None,
+            random_state=None,
+        ),
+    },
+    },
     SVC.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -81,7 +109,7 @@ classifiers = {
         ],
         'params': hyperparams.svc_param_space(
             estimator_name_func,
-            kernel='poly', #'rbf'
+            kernel='rbf'
             gamma=None,
             degree=None,
             tol=None,
@@ -157,7 +185,7 @@ classifiers = {
         ],
         'params': hyperparams.logreg_hparam_space(
             estimator_name_func,
-            penalty='l2',
+            penalty=None,
             C=None,
             tol=None,
             random_state=None,
