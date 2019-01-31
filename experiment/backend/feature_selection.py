@@ -28,7 +28,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import VarianceThreshold
 
 from sklearn.ensemble import RandomForestClassifier
-from from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import mutual_info_classif
 
 from sklearn.base import BaseEstimator, TransformerMixin
 

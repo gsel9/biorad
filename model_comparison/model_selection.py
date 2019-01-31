@@ -209,7 +209,7 @@ class ParameterSearchCV:
         random_state=None,
         error_score=np.nan,
         balancing=True,
-        early_stopping=2
+        early_stopping=3
     ):
         self.algo = algo
         self.model = model
@@ -230,9 +230,8 @@ class ParameterSearchCV:
         self.trials = None
 
         self._rgen = None
-        self._results = None
-        self._prev_score = None
         self._best_params = None
+        self._prev_score = float(np.inf)
 
     @property
     def params(self):
@@ -248,7 +247,9 @@ class ParameterSearchCV:
         """Returns an instance of the estimator with the optimal
         hyperparameters."""
 
-        return self.model.set_params(**self.best_params)
+        return self.model.set_params(
+            **self.trials.best_trial['spec'] #['hparams']
+        )
 
     @property
     def train_loss(self):
@@ -304,9 +305,6 @@ class ParameterSearchCV:
         if self._rgen is None:
             self._rgen = np.random.RandomState(self.random_state)
 
-        if self._prev_score is None:
-            self._prev_score = 1.0
-
         if self.trials is None:
             self.trials = Trials()
 
@@ -334,16 +332,11 @@ class ParameterSearchCV:
         """
         if self.early_stopping < 1:
             warnings.warn('Exiting by early stopping.')
-            return self._results
-
-        if self.verbose > 1:
-            self._num_evals = self._num_evals + 1
-            print('Evaluating objective at round {}'.format(self._num_evals))
+            return self._best_params
 
         test_loss, train_loss, Y_test, Y_pred = [], [], [], []
         folds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
         for train_idx, test_idx in folds.split(self.X, self.y):
-
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
 
@@ -356,8 +349,10 @@ class ParameterSearchCV:
 
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
+        # TEMP:
+        print(self.trails.best_trial.keys())
 
-        self._results = OrderedDict(
+        self._best_params = OrderedDict(
             [
                 ('status', STATUS_OK),
                 ('eval_time', time.time()),
@@ -365,17 +360,19 @@ class ParameterSearchCV:
                 ('loss_variance', np.nanvar(test_loss)),
                 ('train_loss', np.nanmedian(train_loss)),
                 ('train_loss_variance', np.nanvar(train_loss)),
+                ('hparams', hparams)
             ]
         )
         # Record the minimum loss to monitor if diverging from optimum.
-        if self._prev_score < self._results['loss']:
+        if self._prev_score < self._best_params['loss']:
             self.early_stopping = self.early_stopping - 1
             warnings.warn('Reduced buffer for eacly stopping to {}'
                           ''.format(self.early_stopping))
         else:
-            self._prev_score = self._results
+            print(self._best_params['loss'])
+            self._prev_score = self._best_params['loss']
 
-        return self._results
+        return self._best_params
 
     @staticmethod
     def _check_X_y(X, y):
