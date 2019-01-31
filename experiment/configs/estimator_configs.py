@@ -33,6 +33,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.cross_decomposition import PLSRegression
+from sklearn.neighbors import KNeighborsClassifier
 
 
 # Globals
@@ -49,6 +50,21 @@ def estimator_name_func(param_name):
 
 
 classifiers = {
+    KNeighborsClassifier.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                KNeighborsClassifier(algorithm='auto')
+            ))
+        ],
+        'params': hyperparams.knn_param_space(
+            n_neighbors=None,
+            weights=None,
+            leaf_size=None,
+            metric=None,
+            p=None,
+        )
+    },
     DecisionTreeClassifier.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
