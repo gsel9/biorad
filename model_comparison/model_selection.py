@@ -210,7 +210,7 @@ def nested_kfold(
         end_search = datetime.now() - start_search
         print('Parameter search finished in {}'.format(end_search))
 
-
+    """
     m = optimizer.best_model
     m.fit(X, y)
 
@@ -223,7 +223,7 @@ def nested_kfold(
     )
     if verbose > 0:
         print('Score CV finished in {}'.format(datetime.now() - end_search))
-
+    """
     return OrderedDict(
         [
             ('test_score', np.nanmedian(test_scores)),
@@ -308,7 +308,7 @@ class BayesianSearchCV:
         hyperparameters."""
 
         _model = deepcopy(self.model)
-        _model.set_params(self.best_results['hparams'])
+        _model.set_params(**self.best_results['hparams'])
 
         return _model
 
