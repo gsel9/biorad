@@ -27,7 +27,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import VarianceThreshold
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import chi2
+from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import mutual_info_classif
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -541,6 +543,7 @@ class FeatureScreening(BaseSelector):
         alpha=0.05,
         var_thresh=1e-4,
         info_thresh=0.01,
+        num_features=None,
         random_state=None,
         error_handling='all',
     ):
@@ -550,6 +553,7 @@ class FeatureScreening(BaseSelector):
         self.alpha = alpha
         self.var_thresh = var_thresh
         self.info_thresh = info_thresh
+        self.num_features = num_features
         self.random_state = random_state
         self.error_handling = error_handling
 
@@ -599,9 +603,29 @@ class FeatureScreening(BaseSelector):
 
     def _filter_correalted(self, X, y):
         # Remove features without significant correlation to target.
+        _, ncols = np.shape(X)
 
-        # Separate between into ordinal-oridinal/nominal-ordinal
-        pass
+        categorical, continous = [], []
+        for col_num in range(ncols):
+            # Assumes categorical variables if fewer than five unique elements.
+            if len(np.unique(X[:, col_num])) < 5:
+                categorical.append(col_num)
+            else:
+                continous.append(col_num)
+        # * Correlation between two discrete or categorical variables
+        _, p_values = chi2(X[:, categorical], y)
+        # Bonferroni correction.
+        cat_support = p_values / len(categorical) <= self.alpha
+
+        # * Correlation between a continuous and categorical variable.
+        _, p_values = f_classif(X[:, categorical], y)
+        # Bonferroni correction.
+        cont_support = p_values / len(categorical) <= self.alpha
+
+        support = np.append(
+            categorical[cat_support], continous[cont_support]
+        )
+        return support
 
     @staticmethod
     def _check_X_y(X, y):
