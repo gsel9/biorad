@@ -205,7 +205,7 @@ def _svm_degree(name):
     # Equivalent to round(uniform(low, high) / q) * q. The default hyperopt
     # setting.
     # Cast to <int> according to hyperopt issue #253.
-    return scope.int(quniform(name, 1.5, 6.5, 1))
+    return scope.int(hp.quniform(name, 1.5, 6.5, 1))
 
 
 def _svm_tol(name):
