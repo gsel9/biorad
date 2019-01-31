@@ -28,6 +28,7 @@ from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -48,6 +49,24 @@ def estimator_name_func(param_name):
 
 
 classifiers = {
+    DecisionTreeClassifier.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                DecisionTreeClassifier(class_weight='balanced',)
+            ))
+        ],
+        'params': hyperparams.decision_tree_param_space(
+            estimator_name_func,
+            criterion=None,
+            max_depth=None,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            max_features=None,
+            random_state=None,
+            max_leaf_nodes=None,
+        )
+    },
     AdaBoostClassifier.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -136,6 +155,7 @@ classifiers = {
             estimator_name_func,
             n_estimators=None,
             max_features=None,
+            criterion=None,
             max_depth=None,
             min_samples_split=None,
             min_samples_leaf=None,
