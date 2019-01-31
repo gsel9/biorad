@@ -601,6 +601,12 @@ class FeatureScreening(BaseSelector):
         # Separate between into ordinal-oridinal/nominal-ordinal
         pass
 
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        return check_X_y(X, y)
+
 
 if __name__ == '__main__':
 
