@@ -525,6 +525,24 @@ class MRMRSelection(BaseSelector):
         return self
 
 
+class GainSelection(BaseSelector):
+    """Based on the Gain equation propsed by Vallieres (2015)."""
+
+    def __init__(self, thresh, error_handling='all'):
+
+        super().__init__(error_handling)
+
+        self.thresh = thresh
+
+    def __name__(self):
+
+        return 'GainSelection'
+
+
+
+
+
+
 if __name__ == '__main__':
 
     # TODO: Write test on selecting exactly num features.
