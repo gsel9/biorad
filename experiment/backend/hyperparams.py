@@ -176,6 +176,105 @@ def trees_param_space(
     return param_space
 
 
+################################################################
+##==== Decision Tree Classifier hyperparameter generators ====##
+################################################################
+
+
+def decision_tree_param_space(
+    name_func,
+    criterion=None,
+    max_depth=None,
+    min_samples_split=None,
+    min_samples_leaf=None,
+    max_features=None,
+    random_state=None,
+    max_leaf_nodes=None,
+):
+    """
+    """
+    param_space = {
+        # criterion
+        name_func('criterion'): _trees_criterion(name_func('criterion'))
+        if criterion is None else criterion,
+        # max_depth
+        name_func('max_depth'): _trees_max_depth(name_func('max_depth'))
+        if max_depth is None else max_depth,
+        # min_samples_split
+        name_func('min_samples_split'): _trees_min_samples_split(
+            name_func('min_samples_split')
+        ) if min_samples_split is None else min_samples_split,
+        # min_samples_leaf
+        name_func('min_samples_leaf'): _trees_min_samples_leaf(
+            name_func('min_samples_leaf')
+        ) if min_samples_leaf is None else min_samples_leaf,
+        # max_features
+        name_func('max_features'): _trees_max_features(
+            name_func('max_features')
+        ) if max_features is None else max_features,
+        # random_state
+        name_func('random_state'): hp_random_state(name_func('random_state'))
+        if random_state is None else random_state,
+    }
+    return param_space
+
+
+###############################################################
+##==== K-Neighbors Classifier hyperparameter generators ====##
+###############################################################
+
+
+def _knn_n_neighbors(name):
+    # Equivalent to exp(uniform(low, high)).
+    # Cast to <int> according to hyperopt issue #253.
+    return scope.int(hp.qloguniform(name, np.log(2), np.log(50), 1))
+
+
+def _knn_weights(name):
+    # Returns one of the alternatives.
+    return hp.choice(name, ['uniform', 'distance'])
+
+
+def _knn_leaf_size(name):
+    # Equivalent to exp(uniform(low, high)).
+    # Cast to <int> according to hyperopt issue #253.
+    return scope.int(hp.qloguniform(name, np.log(5), np.log(50), 5))
+
+
+def _knn_p(name):
+    # Equivalent to exp(uniform(low, high)).
+    # Cast to <int> according to hyperopt issue #253.
+    return scope.int(hp.qloguniform(name, np.log(1), np.log(4), 1))
+
+
+def _knn_metric(name):
+    # Returns one of the alternatives.
+    return hp.choice(
+        name, ['minkowski', 'euclidean', 'manhattan', 'chebyshev']
+    )
+
+
+def knn_param_space(
+    name_func,
+    n_neighbors=None,
+    weights=None,
+    leaf_size=None,
+    p=None,
+    metric=None
+):
+    param_space = {
+        name_func('n_neighbors'): _knn_n_neighbors(name_func('n_neighbors'))
+        if n_neighbors is None else n_neighbors,
+        name_func('weights'): _knn_weights(name_func('weights'))
+        if weights is None else weights,
+        name_func('leaf_size'): _knn_leaf_size(name_func('leaf_size'))
+        if leaf_size is None else leaf_size,
+        name_func('p'): _knn_p(name_func('p')) if p is None else p,
+        name_func('metric'): _knn_metric(name_func('metric'))
+        if metric is None else metric,
+    }
+    return param_space
+
 
 ###############################################################
 ##==== Support Vector Machines hyperparameter generators ====##
@@ -216,6 +315,42 @@ def _svm_tol(name):
 def _svm_C(name):
     # Equivalent to exp(uniform(low, high)). The default hyperopt setting.
     return hp.loguniform(name, np.log(1e-5), np.log(1e5))
+
+
+def _svc_loss(name):
+
+    return hp.choice(name, ['hinge', 'squared_hinge'])
+
+
+def linear_svc_param_space(
+    name_func,
+    penalty=None,
+    loss=None,
+    dual=None,
+    tol=None,
+    C=None,
+    fit_intercept=True,
+    intercept_scaling=None,
+    random_state=None,
+):
+    param_space = {
+        name_func('penalty'): _penalty(name_func('penalty'))
+        if penalty is None else penalty,
+        name_func('loss'): _svc_loss(name_func('loss'))
+        if loss is None else loss,
+        name_func('dual'): hp_bool(name_func('dual'))
+        if dual is None else dual,
+        name_func('C'): _svm_C(name_func('C')) if C is None else C,
+        name_func('tol'): _svm_tol(name_func('tol')) if tol is None else tol,
+        name_func('random_state'): hp_random_state(name_func('random_state'))
+        if random_state is None else random_state,
+        # Defaults to True in Hyperopt.
+        name_func('fit_intercept'): fit_intercept,
+        name_func('intercept_scaling'): _inter_scaling(
+            name_func('intercept_scaling')
+        ) if intercept_scaling is None else intercept_scaling,
+    }
+    return param_space
 
 
 # TODO:
@@ -354,14 +489,19 @@ def gnb_param_space(name_func, priors=None, var_smoothing=None):
     return param_space
 
 
+def _penalty(name):
+    # Returns one of the alternatives.
+    return hp.choice(name, ['l1', 'l2'])
+
+
+def _inter_scaling(name):
+    # From Hyperopt SVM settings.
+    return hp.loguniform(name, np.log(1e-1), np.log(1e1))
+
+
 ###########################################################
 ##==== Logistic Regression hyperparameter generators ====##
 ###########################################################
-
-
-def _logreg_penalty(name):
-    # Returns one of the alternatives.
-    return hp.choice(name, ['l1', 'l2'])
 
 
 def _logreg_C(name):
@@ -374,11 +514,6 @@ def _logreg_tol(name):
     # magnitude down compared to SVM motivated by comparing logreg and SVM
     # default settings.
     return hp.loguniform(name, np.log(1e-6), np.log(1e-3))
-
-
-def _logreg_inter_scaling(name):
-    # From Hyperopt SVM settings.
-    return hp.loguniform(name, np.log(1e-1), np.log(1e1))
 
 
 def logreg_hparam_space(
@@ -410,13 +545,13 @@ def logreg_hparam_space(
 
     """
     param_space = {
-        name_func('penalty'): _logreg_penalty(name_func('penalty'))
+        name_func('penalty'): _penalty(name_func('penalty'))
         if penalty is None else penalty,
         name_func('C'): _logreg_C(name_func('C')) if C is None else C,
         name_func('tol'): _logreg_tol(name_func('tol')) if tol is None else tol,
         # Defaults to True in Hyperopt.
         name_func('fit_intercept'): fit_intercept,
-        name_func('intercept_scaling'): _logreg_inter_scaling(
+        name_func('intercept_scaling'): _inter_scaling(
             name_func('intercept_scaling')
         ) if intercept_scaling is None else intercept_scaling,
         name_func('random_state'): hp_random_state(
@@ -573,6 +708,41 @@ def feature_screening_hparam_space(
         name_func('num_features'): hp_num_features(
             name_func('num_features'), max_num_features=max_num_features
         ) if num_features is None else num_features,
+    }
+    return param_space
+
+
+######################################################
+##==== Adaboost hyperparameter generators ====##
+######################################################
+
+
+def _boosting_n_estimators(name):
+    return scope.int(hp.qloguniform(name, np.log(10.5), np.log(1000.5), 1))
+
+
+def _ada_boost_learning_rate(name):
+    return hp.lognormal(name, np.log(0.01), np.log(10.0))
+
+
+def adaboost_param_space(
+    name_func,
+    n_estimators=None,
+    learning_rate=None,
+    random_state=None
+):
+    """
+    """
+
+    param_space = {
+        name_func('n_estimators'): _boosting_n_estimators(
+            name_func('n_estimators')
+        ) if n_estimators is None else n_estimators,
+        name_func('learning_rate'): _ada_boost_learning_rate(
+            name_func('learning_rate')
+        ) if learning_rate is None else learning_rate,
+        name_func('random_state'): hp_random_state(name_func('random_state'))
+        if random_state is None else random_state,
     }
     return param_space
 

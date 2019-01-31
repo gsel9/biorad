@@ -58,6 +58,7 @@ classifiers = {
             ))
         ],
         'params': hyperparams.knn_param_space(
+            estimator_name_func,
             n_neighbors=None,
             weights=None,
             leaf_size=None,
@@ -87,9 +88,7 @@ classifiers = {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, PipeEstimator(
-                AdaBoostClassifier(
-                    base=LogisticRegression(), n_estimators=1000
-                )
+                AdaBoostClassifier(base_estimator=LogisticRegression())
             ))
         ],
         'params': hyperparams.adaboost_param_space(
@@ -112,7 +111,7 @@ classifiers = {
                     class_weight='balanced',
                     verbose=False,
                     max_iter=-1,
-                    decision_function_shape='ovr'
+                    multi_class='ovr'
                 )
             ))
         ],
@@ -127,7 +126,6 @@ classifiers = {
             intercept_scaling=None,
             random_state=None,
         ),
-    },
     },
     SVC.__name__: {
         'estimator': [
@@ -144,7 +142,7 @@ classifiers = {
         ],
         'params': hyperparams.svc_param_space(
             estimator_name_func,
-            kernel='rbf'
+            kernel='rbf',
             gamma=None,
             degree=None,
             tol=None,
@@ -246,3 +244,8 @@ classifiers = {
         )
     }
 }
+
+
+if __name__ == '__main__':
+
+    print(classifiers)
