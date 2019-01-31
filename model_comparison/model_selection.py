@@ -40,7 +40,6 @@ from hyperopt import space_eval
 from hyperopt import STATUS_OK
 
 from sklearn.utils import check_X_y
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
 
 
@@ -181,11 +180,6 @@ def nested_kfold(
         test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
         train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
     """
-
-    if scaling:
-        scaler = StandardScaler()
-        X_std = scaler.fit_transform(X)
-
     if verbose > 0:
         start_search = datetime.now()
 
