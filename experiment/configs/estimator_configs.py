@@ -14,6 +14,9 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
+import sys
+sys.path.append('./..')
+
 import numpy as np
 
 from hyperopt.pyll import scope
@@ -63,7 +66,7 @@ classifiers = {
         ],
         'params': hyperparams.svc_param_space(
             estimator_name_func,
-            kernel='rbf',
+            kernel='poly', #'rbf'
             gamma=None,
             degree=None,
             tol=None,

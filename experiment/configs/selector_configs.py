@@ -14,12 +14,16 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
+import sys
+sys.path.append('./..')
+
 from backend import hyperparams
 
 from hyperopt.pyll import scope
 
 from backend.feature_selection import PermutationSelection
 from backend.feature_selection import WilcoxonSelection
+from backend.feature_selection import FeatureScreening
 from backend.feature_selection import ReliefFSelection
 from backend.feature_selection import MRMRSelection
 
@@ -28,16 +32,34 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_auc_score
 
 # Globals
-CLF_LABEL = 'selector'
+SCREENER_LABEL = 'screener'
+SELECTOR_LABEL = 'selector'
 NUM_ORIG_FEATURES = 1200
+
+
+@scope.define
+def screener_name_func(param_name):
+
+    global SCREENER_LABEL
+
+    return '{}__{}'.format(SCREENER_LABEL, param_name)
 
 
 @scope.define
 def selector_name_func(param_name):
 
-    global CLF_LABEL
+    global SELECTOR_LABEL
 
-    return '{}__{}'.format(CLF_LABEL, param_name)
+    return '{}__{}'.format(SELECTOR_LABEL, param_name)
+
+
+def _setup_hparam_space(param_configs):
+    # Combine multiple hyperparameter spaces.
+    hparams = {}
+    for config in param_configs:
+        hparams.update(config)
+
+    return hparams
 
 
 selectors = {
@@ -54,7 +76,12 @@ selectors = {
     #   experiments.
     PermutationSelection.__name__: {
         'selector': [
-            (CLF_LABEL, PermutationSelection(
+            (
+            SCREENER_LABEL, FeatureScreening(alpha=0.05)
+            ),
+            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            (
+                SELECTOR_LABEL, PermutationSelection(
                     model=RandomForestClassifier(
                         n_jobs=-1, verbose=False, oob_score=False,
                     ),
@@ -65,23 +92,33 @@ selectors = {
                 )
             )
         ],
-        'params': hyperparams.trees_param_space(
-            selector_name_func,
-            n_estimators=None,
-            max_features=None,
-            max_depth=None,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            bootstrap=None,
-            random_state=None,
-        ),
+        'params': _setup_hparam_space(
+            hyperparams.feature_screening_hparam_space(
+                screener_name_func,
+                info_thresh=None,
+                var_thresh=None,
+            ),
+            hyperparams.trees_param_space(
+                selector_name_func,
+                min_samples_split=None,
+                min_samples_leaf=None,
+                n_estimators=None,
+                max_features=None,
+                random_state=None,
+                bootstrap=None,
+                max_depth=None,
+            ),
+        )
     },
     # Wilcoxon feature selection:
     # * Num features ensures equal number of features selected in ecah fold.
     WilcoxonSelection.__name__: {
         'selector': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, WilcoxonSelection(thresh=0.05, bf_correction=True))
+            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            (
+                SELECTOR_LABEL,
+                WilcoxonSelection(thresh=0.05, bf_correction=True)
+            )
         ],
         'params': {}
     },
@@ -89,8 +126,8 @@ selectors = {
     # * Num features ensures equal number of features selected in ecah fold.
     ReliefFSelection.__name__: {
         'selector': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, ReliefFSelection())
+            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            (SELECTOR_LABEL, ReliefFSelection())
         ],
         'params': hyperparams.relieff_hparam_space(
             selector_name_func,
@@ -103,8 +140,8 @@ selectors = {
     # * Num features ensures equal number of features selected in ecah fold.
     MRMRSelection.__name__: {
         'selector': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, MRMRSelection())
+            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            (SELECTOR_LABEL, MRMRSelection())
         ],
         'params': hyperparams.mrmr_hparam_space(
             selector_name_func,
@@ -114,3 +151,7 @@ selectors = {
         ),
     }
 }
+
+if __name__ == '__main__':
+
+    print(selectors)
