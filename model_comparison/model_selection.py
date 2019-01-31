@@ -40,7 +40,9 @@ from hyperopt import space_eval
 from hyperopt import STATUS_OK
 
 from sklearn.utils import check_X_y
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import cross_val_score
 
 # TEMP:
 from sklearn.feature_selection import VarianceThreshold
@@ -139,6 +141,7 @@ def nested_kfold(
     error_score=np.nan,
 ):
 
+    """
     test_loss, train_loss, Y_test, Y_pred = [], [], [], []
     _cv = StratifiedKFold(cv, shuffle, random_state)
     for num, (train_idx, test_idx) in enumerate(_cv.split(X, y)):
@@ -171,13 +174,39 @@ def nested_kfold(
                   ''.format(datetime.now() - start_time))
 
         _model = optimizer.best_model
-        _model.train(X_test)
+        _model.fit(X_test)
 
         pred_y_test = np.squeeze(_model.predict(X_test))
         pred_y_train = np.squeeze(_model.predict(X_train))
 
         test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
         train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
+    """
+
+    scaler = StandardScaler()
+    X_std = sca.fit_transform(X)
+
+    start_time = datetime.now()
+    optimizer = BayesianSearchCV(
+        algo=algo,
+        model=model,
+        space=param_space,
+        score_func=score_func,
+        cv=cv,
+        verbose=verbose,
+        max_evals=max_evals,
+        shuffle=shuffle,
+        random_state=random_state,
+        error_score=error_score,
+        balancing=balancing
+    )
+    optimizer.fit(X, y)
+    if verbose > 0:
+        print('Parameter search finished in {}'
+              ''.format(datetime.now() - start_time))
+
+
+    cross_val_score()
 
     return OrderedDict(
         [
@@ -189,7 +218,7 @@ def nested_kfold(
     )
 
 
-class ParameterSearchCV:
+class BayesianSearchCV:
     """Perform K-fold cross-validated hyperparameter search with the Bayesian
     optimization Tree Parzen Estimator.
 
@@ -213,7 +242,7 @@ class ParameterSearchCV:
         random_state=None,
         error_score=np.nan,
         balancing=True,
-        early_stopping=3
+        early_stopping=30
     ):
         self.algo = algo
         self.model = model
@@ -250,10 +279,9 @@ class ParameterSearchCV:
     def best_model(self):
         """Returns an instance of the estimator with the optimal
         hyperparameters."""
+        best_run = min(self.trials.results, key=lambda item: item['loss'])
 
-        return self.model.set_params(
-            **self.trials.best_trial['spec'] #['hparams']
-        )
+        return self.model.set_params(**best_run['hparams'])
 
     @property
     def train_loss(self):
@@ -344,15 +372,17 @@ class ParameterSearchCV:
             X_train, X_test = self.X[train_idx], self.X[test_idx]
             y_train, y_test = self.y[train_idx], self.y[test_idx]
 
+            """
             # TEMP:
             # Removes all low-variance features.
             var_filter = VarianceThreshold(threshold=0.001)
-            X = var_filter.fit_transform(X)
+            X_train = var_filter.fit_transform(X_train)
             # Estimate mutual information for a discrete target variable.
-            mi = mutual_info_classif(X, y)
+            mi = mutual_info_classif(X_train, y_train)
             _support = np.squeeze(np.where(mi > 0.003))
-            X_train = X_train[:, _support], X_test = X_test[:, _support]
-
+            X_train = X_train[:, _support]
+            X_test = X_test[:, _support]
+            """
             _model = deepcopy(self.model)
             _model.set_params(**hparams)
             _model.fit(X_train, y_train)
@@ -362,7 +392,7 @@ class ParameterSearchCV:
 
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
-        print(np.median(test_loss))
+
         self._best_params = OrderedDict(
             [
                 ('status', STATUS_OK),
