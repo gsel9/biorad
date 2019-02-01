@@ -705,27 +705,23 @@ def mrmr_hparam_space(
 #########################################################
 
 
-def _screening_var_thresh(name):
-
-    return hp.loguniform(name, np.log(1e-6), np.log(1e2))
-
-
 def feature_screening_hparam_space(
     name_func,
-    var_thresh=None,
-    num_features=None,
+    chi2_num_features=None,
+    f_classif_num_features=None,
     max_num_features=None,
 ):
     """
 
     """
     param_space = {
-        name_func('var_thresh'): _screening_var_thresh(
-            name_func('var_thresh')
-        ) if var_thresh is None else var_thresh,
-        name_func('num_features'): hp_num_features(
-            name_func('num_features'), max_num_features=max_num_features
-        ) if num_features is None else num_features,
+        name_func('chi2_num_features'): hp_num_features(
+            name_func('chi2_num_features'), max_num_features=max_num_features
+        ) if chi2_num_features is None else chi2_num_features,
+        name_func('f_classif_num_features'): hp_num_features(
+            name_func('f_classif_num_features'),
+            max_num_features=max_num_features
+        ) if f_classif_num_features is None else f_classif_num_features,
     }
     return param_space
 

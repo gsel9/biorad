@@ -8,6 +8,8 @@ Classification algorithm setup including hyperparameter configurations.
 
 NB: Make sure to update the number of original features in the data set.
 
+TODO: Put estimators + param spaces in separate modules with formatting function.
+
 """
 
 __author__ = 'Severin Langberg'
@@ -38,7 +40,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # Globals
 CLF_LABEL = 'clf'
-NUM_ORIG_FEATURES = 200
+NUM_ORIG_FEATURES = 70
 
 
 @scope.define
@@ -50,40 +52,6 @@ def estimator_name_func(param_name):
 
 
 classifiers = {
-    KNeighborsClassifier.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                KNeighborsClassifier(algorithm='auto')
-            ))
-        ],
-        'params': hyperparams.knn_param_space(
-            estimator_name_func,
-            n_neighbors=None,
-            weights=None,
-            leaf_size=None,
-            metric=None,
-            p=None,
-        )
-    },
-    DecisionTreeClassifier.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                DecisionTreeClassifier(class_weight='balanced',)
-            ))
-        ],
-        'params': hyperparams.decision_tree_param_space(
-            estimator_name_func,
-            criterion=None,
-            max_depth=None,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            max_features=None,
-            random_state=None,
-            max_leaf_nodes=None,
-        )
-    },
     AdaBoostClassifier.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
@@ -97,35 +65,6 @@ classifiers = {
             learning_rate=None,
             random_state=None
         )
-    },
-    # Support Vector Machines:
-    # * Must select kernel a priori because the hyperparamter space
-    #   generator function is not evaluated for each suggested
-    #   configuration. Thus, settings depending on the specified kernel
-    #   will not be updated according to the sampled kernel function.
-    LinearSVC.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                LinearSVC(
-                    class_weight='balanced',
-                    verbose=False,
-                    max_iter=-1,
-                    multi_class='ovr'
-                )
-            ))
-        ],
-        'params': hyperparams.linear_svc_param_space(
-            estimator_name_func,
-            penalty=None,
-            loss=None,
-            dual=None,
-            tol=None,
-            C=None,
-            fit_intercept=True,
-            intercept_scaling=None,
-            random_state=None,
-        ),
     },
     SVC.__name__: {
         'estimator': [
@@ -152,30 +91,6 @@ classifiers = {
             random_state=None,
             n_features=NUM_ORIG_FEATURES,
         ),
-    },
-    # Random Forest Classifier:
-    RandomForestClassifier.__name__: {
-        'estimator': [
-            (CLF_LABEL, PipeEstimator(
-                RandomForestClassifier(
-                    n_jobs=-1,
-                    verbose=False,
-                    oob_score=False,
-                    class_weight='balanced',
-                )
-            ))
-        ],
-        'params': hyperparams.trees_param_space(
-            estimator_name_func,
-            n_estimators=None,
-            max_features=None,
-            criterion=None,
-            max_depth=None,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            bootstrap=None,
-            random_state=None,
-        )
     },
     # Gaussian Naive Bayes:
     GaussianNB.__name__: {
@@ -247,5 +162,95 @@ classifiers = {
 
 
 if __name__ == '__main__':
+
+    """
+    KNeighborsClassifier.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                KNeighborsClassifier(algorithm='auto')
+            ))
+        ],
+        'params': hyperparams.knn_param_space(
+            estimator_name_func,
+            n_neighbors=None,
+            weights=None,
+            leaf_size=None,
+            metric=None,
+            p=None,
+        )
+    },
+    DecisionTreeClassifier.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                DecisionTreeClassifier(class_weight='balanced',)
+            ))
+        ],
+        'params': hyperparams.decision_tree_param_space(
+            estimator_name_func,
+            criterion=None,
+            max_depth=None,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            max_features=None,
+            random_state=None,
+            max_leaf_nodes=None,
+        )
+    },
+    # Linear Support Vector Machines:
+    # * Must select kernel a priori because the hyperparamter space
+    #   generator function is not evaluated for each suggested
+    #   configuration. Thus, settings depending on the specified kernel
+    #   will not be updated according to the sampled kernel function.
+    LinearSVC.__name__: {
+        'estimator': [
+            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
+            (CLF_LABEL, PipeEstimator(
+                LinearSVC(
+                    class_weight='balanced',
+                    verbose=False,
+                    max_iter=-1,
+                    multi_class='ovr'
+                )
+            ))
+        ],
+        'params': hyperparams.linear_svc_param_space(
+            estimator_name_func,
+            penalty=None,
+            loss=None,
+            dual=None,
+            tol=None,
+            C=None,
+            fit_intercept=True,
+            intercept_scaling=None,
+            random_state=None,
+        ),
+    },
+    # Random Forest Classifier:
+    RandomForestClassifier.__name__: {
+        'estimator': [
+            (CLF_LABEL, PipeEstimator(
+                RandomForestClassifier(
+                    n_jobs=-1,
+                    verbose=False,
+                    oob_score=False,
+                    class_weight='balanced',
+                )
+            ))
+        ],
+        'params': hyperparams.trees_param_space(
+            estimator_name_func,
+            n_estimators=None,
+            max_features=None,
+            criterion=None,
+            max_depth=None,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            bootstrap=None,
+            random_state=None,
+        )
+    },
+    """
 
     print(classifiers)

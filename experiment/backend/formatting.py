@@ -31,7 +31,7 @@ from imblearn import over_sampling
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.base import MetaEstimatorMixin
 
 

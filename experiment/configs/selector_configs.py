@@ -8,6 +8,8 @@ Feature selection algorithm setup including hyperparameter configurations.
 
 NB: Make sure to update the number of original features in the data set.
 
+TODO: Put selectors + param spaces in separate modules with formatting function.
+
 """
 
 __author__ = 'Severin Langberg'
@@ -24,7 +26,7 @@ from hyperopt.pyll import scope
 from backend.feature_selection import MutualInformationSelection
 from backend.feature_selection import PermutationSelection
 from backend.feature_selection import WilcoxonSelection
-#from backend.feature_selection import FeatureScreening
+from backend.feature_selection import FeatureScreening
 from backend.feature_selection import ReliefFSelection
 from backend.feature_selection import MRMRSelection
 
@@ -38,7 +40,7 @@ from sklearn.metrics import roc_auc_score
 # Globals
 SCREENER_LABEL = 'screener'
 SELECTOR_LABEL = 'selector'
-NUM_ORIG_FEATURES = 200
+NUM_ORIG_FEATURES = 70
 
 
 @scope.define
@@ -77,35 +79,11 @@ selectors = {
     #   the similar effect may be achieved by repeating the procedure for
     #   different random states and averaging the result accross the repeated
     #   experiments.
-    MutualInformationSelection.__name__: {
-        'selector': [
-            (SCREENER_LABEL, MRMRSelection()),
-            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
-            (
-                SELECTOR_LABEL,
-                MutualInformationSelection()
-            )
-        ],
-        'params': _setup_hparam_space(
-            [
-                hyperparams.mrmr_hparam_space(
-                    selector_name_func,
-                    k=None,
-                    num_features=None,
-                    max_num_features=NUM_ORIG_FEATURES
-                ),
-                hyperparams.mutual_info_param_space(
-                    selector_name_func,
-                    num_features=None,
-                    max_num_features=NUM_ORIG_FEATURES
-                )
-            ]
-        ),
-    },
     'rf_{}'.format(PermutationSelection.__name__): {
         'selector': [
-            (SCREENER_LABEL, MRMRSelection()),
-            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            ('{}_scaler1'.format(SELECTOR_LABEL), StandardScaler()),
+            (SCREENER_LABEL, FeatureScreening()),
+            ('{}_scaler2'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL, PermutationSelection(
                     model=RandomForestClassifier(
@@ -122,11 +100,11 @@ selectors = {
         ],
         'params': _setup_hparam_space(
             [
-                hyperparams.mrmr_hparam_space(
-                    selector_name_func,
-                    k=None,
-                    num_features=None,
-                    max_num_features=NUM_ORIG_FEATURES
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    chi2_num_features=None,
+                    f_classif_num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES,
                 ),
                 hyperparams.trees_param_space(
                     selector_name_func,
@@ -143,8 +121,9 @@ selectors = {
     },
     'logreg_{}'.format(PermutationSelection.__name__): {
         'selector': [
-            (SCREENER_LABEL, MRMRSelection()),
-            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            ('{}_scaler1'.format(SELECTOR_LABEL), StandardScaler()),
+            (SCREENER_LABEL, FeatureScreening()),
+            ('{}_scaler2'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL, PermutationSelection(
                     model=LogisticRegression(
@@ -165,11 +144,11 @@ selectors = {
         ],
         'params': _setup_hparam_space(
             [
-                hyperparams.mrmr_hparam_space(
-                    selector_name_func,
-                    k=None,
-                    num_features=None,
-                    max_num_features=NUM_ORIG_FEATURES
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    chi2_num_features=None,
+                    f_classif_num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES,
                 ),
                 hyperparams.logreg_hparam_space(
                     selector_name_func,
@@ -186,8 +165,9 @@ selectors = {
     # Wilcoxon feature selection:
     WilcoxonSelection.__name__: {
         'selector': [
-            (SCREENER_LABEL, MRMRSelection()),
-            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            ('{}_scaler1'.format(SELECTOR_LABEL), StandardScaler()),
+            (SCREENER_LABEL, FeatureScreening()),
+            ('{}_scaler2'.format(SELECTOR_LABEL), StandardScaler()),
             (
                 SELECTOR_LABEL,
                 WilcoxonSelection(thresh=0.05, bf_correction=True)
@@ -195,11 +175,11 @@ selectors = {
         ],
         'params': _setup_hparam_space(
             [
-                hyperparams.mrmr_hparam_space(
-                    selector_name_func,
-                    k=None,
-                    num_features=None,
-                    max_num_features=NUM_ORIG_FEATURES
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    chi2_num_features=None,
+                    f_classif_num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES,
                 ),
             ]
         ),
@@ -207,17 +187,18 @@ selectors = {
     # ReliefF feature selection:
     ReliefFSelection.__name__: {
         'selector': [
-            (SCREENER_LABEL, MRMRSelection()),
-            ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
+            ('{}_scaler1'.format(SELECTOR_LABEL), StandardScaler()),
+            (SCREENER_LABEL, FeatureScreening()),
+            ('{}_scaler2'.format(SELECTOR_LABEL), StandardScaler()),
             (SELECTOR_LABEL, ReliefFSelection())
         ],
         'params': _setup_hparam_space(
             [
-                hyperparams.mrmr_hparam_space(
-                    selector_name_func,
-                    k=None,
-                    num_features=None,
-                    max_num_features=NUM_ORIG_FEATURES
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    chi2_num_features=None,
+                    f_classif_num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES,
                 ),
                 hyperparams.relieff_hparam_space(
                     selector_name_func,
@@ -230,34 +211,43 @@ selectors = {
     },
 }
 
-"""
-# Maximum relevance minimum redundancy selection:
-MRMRSelection.__name__: {
-    'selector': [
-        (SCREENER_LABEL, MRMRSelection()),
-        ('{}_scaler'.format(SELECTOR_LABEL), StandardScaler()),
-        (SELECTOR_LABEL, MRMRSelection())
-    ],
-    'params': _setup_hparam_space(
-        [
-            hyperparams.feature_screening_hparam_space(
-                screener_name_func,
-                var_thresh=None,
-                num_features=None,
-                max_num_features=NUM_ORIG_FEATURES
-            ),
-            hyperparams.mrmr_hparam_space(
-                selector_name_func,
-                k=None,
-                num_features=None,
-                max_num_features=NUM_ORIG_FEATURES
-            ),
-        ]
-    )
-}
-"""
-
-
 if __name__ == '__main__':
+
+    """
+    MutualInformationSelection.__name__: {
+        'selector': [
+            ('{}_scaler1'.format(SELECTOR_LABEL), StandardScaler()),
+            #(SCREENER_LABEL, MRMRSelection()),
+            (SCREENER_LABEL, FeatureScreening()),
+            ('{}_scaler2'.format(SELECTOR_LABEL), StandardScaler()),
+            (
+                SELECTOR_LABEL,
+                MutualInformationSelection()
+            )
+        ],
+        'params': _setup_hparam_space(
+            [
+                hyperparams.feature_screening_hparam_space(
+                    screener_name_func,
+                    chi2_num_features=None,
+                    f_classif_num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES,
+                ),
+                #hyperparams.mrmr_hparam_space(
+                #    screener_name_func,
+                #    k=None,
+                #    num_features=None,
+                #    max_num_features=NUM_ORIG_FEATURES
+                #),
+                hyperparams.mutual_info_param_space(
+                    selector_name_func,
+                    num_features=None,
+                    max_num_features=NUM_ORIG_FEATURES
+                )
+            ]
+        ),
+    },
+
+    """
 
     print(selectors)

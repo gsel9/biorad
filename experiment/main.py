@@ -48,9 +48,7 @@ def load_predictors(path_to_data, index_col=0, regex=None):
 if __name__ == '__main__':
     """To Dos:
 
-    * Extract CT 128 + PET 16 square root features.
     * Remove low variance features (thresh approx 0.01).
-    * Adjust max num features in config modules.
     * Run experiment for comparison with Alise's results.
 
     """
@@ -69,26 +67,44 @@ if __name__ == '__main__':
     import hyperopt
     from functools import partial
 
-    from dgufs.dgufs import DGUFS
-
     from sklearn.metrics import roc_auc_score
 
+    # TEMP:
+    from sklearn.preprocessing import StandardScaler
+    from dgufs.dgufs import DGUFS
+    from scipy import linalg
+    from mlxtend.preprocessing import minmax_scaling
+    from sklearn.decomposition import PCA
+
     # FEATURE SET:
-    X = load_predictors('./../../data_source/to_analysis/no_filter_concat.csv')
+    X = load_predictors('./../../data_source/to_analysis/alise_setup.csv')
+    #X = load_predictors('./../../data_source/to_analysis/sqroot_concat.csv')
 
     # TARGET:
-    #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
-    y = load_target('./../../data_source/to_analysis/target_lrr.csv')
+    y = load_target('./../../data_source/to_analysis/target_dfs.csv')
+    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
 
     # RESULTS LOCATION:
-    path_to_results = '.test.csv'
+    # Categorical/continous
+    #path_to_results = './chi2_mi.csv' (slow)
+    #path_to_results = './chi2_anova.csv' #(fast)
+    #path_to_results = './mi_mi.csv' (slow)
+    #path_to_results = './mi_anovatest.csv' #(fast) + winner!
+    #path_to_results = './mi_mrmr.csv' #(fast) + winner!
+    #path_to_results = './zca_corr_mi_anovatest.csv.csv'
+    #path_to_results = './pca_mi_anovatest.csv.csv'
+    #path_to_results = './mi_dgufs.csv' (slow)
+    path_to_results = './test.csv'
+
+    # mRMR feature screening is very slow, but indicates the best results.
+
     #path_to_results = './../data/experiments/no_filter_concat_dfs.csv'
     #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
 
     # EXPERIMENTAL SETUP:
     CV = 4
-    MAX_EVALS = 200
-    NUM_EXP_REPS = 20
+    MAX_EVALS = 100
+    NUM_EXP_REPS = 10
     SCORING = roc_auc_score
 
     # Generate seeds for pseudo-random generators to use in each experiment.
@@ -104,9 +120,9 @@ if __name__ == '__main__':
         hyperopt.tpe.suggest,
         # Sample 1000 candidates and select the candidate with highest
         # Expected Improvement (EI).
-        n_EI_candidates=500,
+        n_EI_candidates=1000,
         # Use 20 % of best observations to estimate next set of parameters.
-        gamma=0.20,
+        gamma=0.2,
         # First 20 trials are going to be random (include probability theory
         # for 90 % CI with this setup).
         n_startup_jobs=25,
@@ -115,7 +131,7 @@ if __name__ == '__main__':
         model_selection.nested_kfold_selection,
         X, y,
         tpe,
-        {'PermutationSelection_PLSRegression': pipes_and_params['PermutationSelection_PLSRegression']},
+        {'ReliefFSelection_PLSRegression': pipes_and_params['ReliefFSelection_PLSRegression']},
         SCORING,
         CV,
         MAX_EVALS,
@@ -128,3 +144,5 @@ if __name__ == '__main__':
         n_jobs=None,
         path_final_results=path_to_results
     )
+    res = pd.read_csv(path_to_results, index_col=0)
+    print(np.mean(res['test_score']))

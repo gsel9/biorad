@@ -78,7 +78,6 @@ def nested_kfold_selection(
         )
     else:
         path_case_file = ''
-
     # Determine if results already exists.
     if os.path.isfile(path_case_file):
         output = utils.ioutil.read_prelim_result(path_case_file)
@@ -99,7 +98,7 @@ def nested_kfold_selection(
             cv,
             max_evals,
             shuffle,
-            verbose=1,
+            verbose=verbose,
             random_state=None,
             balancing=True,
             path_tmp_results=None,
@@ -140,6 +139,7 @@ def nested_kfold(
 ):
     if verbose > 0:
         start_search = datetime.now()
+        print('Entering parameter search')
 
     optimizer = BayesianSearchCV(
         algo=algo,
@@ -186,6 +186,7 @@ def nested_kfold(
             ('train_score', np.nanmedian(train_scores)),
             ('test_score_variance', np.nanvar(test_scores)),
             ('train_score_variance', np.nanvar(train_scores)),
+            #('hparams', )
         ]
     )
 
@@ -207,7 +208,7 @@ class BayesianSearchCV:
         model,
         space,
         score_func,
-        cv=10,
+        cv=4,
         verbose=0,
         max_evals=100,
         shuffle=True,
@@ -384,7 +385,7 @@ class BayesianSearchCV:
             warnings.warn('Reduced buffer for eacly stopping to {}'
                           ''.format(self.early_stopping))
         else:
-            print('loss:', self._best_params['loss'])
+            print('score:', 1 - self._best_params['loss'])
             self._prev_score = self._best_params['loss']
 
         return self._best_params

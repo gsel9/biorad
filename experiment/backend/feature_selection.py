@@ -21,6 +21,7 @@ import pandas as pd
 
 from scipy import stats
 from ReliefF import ReliefF
+from dgufs.dgufs import DGUFS
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
@@ -472,8 +473,6 @@ class ReliefFSelection(BaseSelector):
             selector.fit(X, y)
             # Select the predefined number of features from ReliefF ranking.
             _support = selector.top_features[:int(self.num_features)]
-            # Sanity check.
-            assert len(_support) == self.num_features
         except:
             warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
@@ -494,7 +493,7 @@ class ReliefFSelection(BaseSelector):
 
 # NOTE:
 # * Cloned from: https://github.com/danielhomola/mifs
-# * Use conda to install bottleneck=1.2.1 and pip to install local mifs clone.
+# * Use conda to install bottleneck V1.2.1 and pip to install local mifs clone.
 class MRMRSelection(BaseSelector):
     """Perform feature selection with the minimum redundancy maximum relevancy
     algortihm.
@@ -535,28 +534,29 @@ class MRMRSelection(BaseSelector):
 
         return check_X_y(X, y)
 
+    # ERROR: All NaN-slices encountered.
     def fit(self, X, y=None, **kwargs):
 
         X, y = self._check_X_y(X, y)
+        # Shifting to all positive values.
+        X = X + abs(np.min(X)) + 1
         # Hyperparameter adjustments.
         self._check_params(y)
         # Fallback error handling mechanism.
-        try:
-            selector = mifs.MutualInformationFeatureSelector(
-                method='MRMR',
-                k=int(self.k),
-                n_features=int(self.num_features),
-                categorical=True,
-            )
-            selector.fit(X, y)
-            # Extract features from the mask array of selected features.
-            _support = np.where(selector.support_ == True)
+        #try:
+        selector = mifs.MutualInformationFeatureSelector(
+            method='MRMR',
+            k=int(self.k),
+            n_features=int(self.num_features),
+            categorical=True,
+        )
+        selector.fit(X, y)
+        # Extract features from the mask array of selected features.
+        _support = np.squeeze(np.where(selector.support_))
             # Sanity check.
-            assert len(_support) == self.num_features
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
-
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self
@@ -570,6 +570,115 @@ class MRMRSelection(BaseSelector):
             self.k = min_class_count
         if self.k < 1:
             self.k = 1
+
+        return self
+
+
+class FeatureScreening(BaseSelector):
+
+    def __init__(
+        self,
+        chi2_num_features=None,
+        f_classif_num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.chi2_num_features = chi2_num_features
+        self.f_classif_num_features = f_classif_num_features
+
+        # NOTE: Attributes set with instance.
+        self.support = None
+
+    @property
+    def num_sel_features(self):
+        """Returns the size of the reduced feature set."""
+
+        return np.size(self.support)
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        return check_X_y(X, y)
+
+    # NB: Z-score transform converts categorical features to continous.
+    # Current best: F-ANOVA
+    def fit(self, X, y=None, **kwargs):
+
+        # QUESTIONS:
+        # * Not do any form of feature screening? How to justify doing an
+        #   initial feature selection prior to modelling based on an algorithm
+        #   unknown if selects the optimal features wrt. a specific procedure?
+
+        # TODO:
+        # * Try modeling without prior feature selection.
+        # * Can justify use of e.g. F-ANOVA or MRMR prior to modeling procedure?
+
+        X, y = self._check_X_y(X, y)
+
+        #mut_infos = mutual_info_classif(X, y, discrete_features=False)
+        #_support = np.argsort(mut_infos)[::-1][:self.chi2_num_features]
+
+        # TODO:
+        #selector = mifs.MutualInformationFeatureSelector(
+        #    method='MRMR',
+        #    k=self.f_classif_num_features,
+        #    n_features='auto',
+        #    categorical=False,
+        #)
+        #selector.fit(X, y)
+        # Extract features from the mask array of selected features.
+        #_support = np.squeeze(np.where(selector.support_))
+
+        # TODO:
+        #selector = DGUFS(
+        #    num_features=self.chi2_num_features,
+        #    num_clusters=self.f_classif_num_features,
+        #    alpha=0.5,
+        #    beta=0.9,
+        #    max_iter=50
+        #)
+        #selector.fit(X)
+        #_support = selector.support
+
+        # Assumes normally distributed (Z-score transformation shifts feature
+        # distributions towards Gaussian).
+        #selector = SelectKBest(f_classif, k=self.f_classif_num_features)
+        #selector.fit(X, y)
+        #_support = np.array(selector.get_support(indices=True), dtype=int)
+
+        #self.support = self.check_support(_support, X)
+        self.support = np.arange(X.shape[1], dtype=int)
+
+        return self
+
+    @staticmethod
+    def _categorical_continous(X, thresh=5):
+
+        _, ncols = np.shape(X)
+
+        categorical, continous = [], []
+        for col_num in range(ncols):
+            if len(np.unique(X[:, col_num])) < thresh:
+                categorical.append(col_num)
+            else:
+                continous.append(col_num)
+
+        return X[:, categorical], X[:, continous]
+
+    def _check_params(self, X_cat, X_cont):
+        # Parapmeter adjustments.
+        if self.chi2_num_features >= X_cat.shape[1]:
+            self.chi2_num_features = X_cat.shape[1] - 1
+        elif self.chi2_num_features < 2:
+            self.chi2_num_features = 2
+
+        if self.f_classif_num_features < 2:
+            self.f_classif_num_features = 2
+        if self.f_classif_num_features >= X_cont.shape[1]:
+            self.f_classif_num_features = X_cont.shape[1] - 1
 
         return self
 
