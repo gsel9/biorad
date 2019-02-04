@@ -4,17 +4,6 @@
 #
 
 """
-hyperopt with sklearn
-http://steventhornton.ca/hyperparameter-tuning-with-hyperopt-in-python/
-
-Parallelizing Evaluations During Search via MongoDB
-https://github.com/hyperopt/hyperopt/wiki/Parallelizing-Evaluations-During-Search-via-MongoDB
-
-Practical notes on SGD: https://scikit-learn.org/stable/modules/sgd.html#tips-on-practical-use
-
-Checkout for plots ++:
-* https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
-* https://github.com/tmadl/highdimensional-decision-boundary-plot
 
 """
 
@@ -42,20 +31,23 @@ from hyperopt import STATUS_OK
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
 
+from smac.facade.smac_facade import SMAC
+from smac.scenario.scenario import Scenario
+from smac.tae.execute_func import ExecuteTAFuncDict
+
 
 def nested_kfold_selection(
     X, y,
-    algo,
-    model_id,
+    experiment_id,
     model,
-    param_space,
+    hparam_space,
     score_func,
     cv,
+    execdir,
     max_evals,
-    shuffle,
     verbose=1,
+    shuffle=True,
     random_state=None,
-    balancing=True,
     path_tmp_results=None,
     error_score='all',
 ):
@@ -73,7 +65,7 @@ def nested_kfold_selection(
     if path_tmp_results is not None:
         path_case_file = os.path.join(
             path_tmp_results, 'experiment_{}_{}'.format(
-                random_state, model_id
+                random_state, experiment_id
             )
         )
     else:
@@ -83,24 +75,23 @@ def nested_kfold_selection(
         output = utils.ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        output = {'exp_id': random_state, 'model_id': model_id}
+        output = {'exp_id': random_state, 'model_id': experiment_id}
         if verbose > 0:
             print('Running experiment: {}'.format(random_state))
             start_time = datetime.now()
 
         results = nested_kfold(
-            X, y,
-            algo,
-            model_id,
-            model,
-            param_space,
-            score_func,
-            cv,
-            max_evals,
-            shuffle,
+            X=X, y=y,
+            experiment_id=experiment_id,
+            model=model,
+            hparam_space=hparam_space,
+            score_func=score_func,
+            cv=cv,
+            execdir=execdir,
+            max_evals=max_evals,
             verbose=verbose,
+            shuffle=shuffle,
             random_state=None,
-            balancing=True,
             path_tmp_results=None,
             error_score=np.nan,
         )
@@ -122,18 +113,16 @@ def nested_kfold_selection(
 #   >>> scoring = {'AUC': 'roc_auc', 'Accuracy': make_scorer(accuracy_score)}
 def nested_kfold(
     X, y,
-    algo,
-    model_id,
+    experiment_id,
     model,
-    param_space,
+    hparam_space,
     score_func,
     cv,
     max_evals,
-    shuffle,
-    scaling=True,
+    shuffle=True,
     verbose=1,
+    execdir=None,
     random_state=None,
-    balancing=True,
     path_tmp_results=None,
     error_score=np.nan,
 ):
@@ -141,18 +130,16 @@ def nested_kfold(
         start_search = datetime.now()
         print('Entering parameter search')
 
-    optimizer = BayesianSearchCV(
-        algo=algo,
+    optimizer = SMACSearchCV(
         model=model,
-        space=param_space,
+        hparam_space=hparam_space,
         score_func=score_func,
         cv=cv,
+        shuffle=shuffle,
         verbose=verbose,
         max_evals=max_evals,
-        shuffle=shuffle,
         random_state=random_state,
-        error_score=error_score,
-        balancing=balancing
+        execdir=execdir
     )
     optimizer.fit(X, y)
 
@@ -163,14 +150,14 @@ def nested_kfold(
     test_scores, train_scores = [], []
     folds = StratifiedKFold(cv, shuffle, random_state)
     for train_idx, test_idx in folds.split(X, y):
+
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # Setup best model with hyperparameters from parameter search.
-        _model = deepcopy(optimizer.best_model)
+        _model = deepcopy(model)
+        _model.set_params(**optimizer.best_config)
         _model.fit(X_train, y_train)
 
-        # Tracking scores for each fold.
         test_scores.append(
             score_func(y_test, np.squeeze(_model.predict(X_test)))
         )
@@ -180,6 +167,7 @@ def nested_kfold(
     if verbose > 0:
         print('Score CV finished in {}'.format(datetime.now() - end_search))
 
+    # NOTE: Consider using median rather than mean.
     return OrderedDict(
         [
             ('test_score', np.nanmedian(test_scores)),
@@ -191,7 +179,127 @@ def nested_kfold(
     )
 
 
-class BayesianSearchCV:
+class SMACSearchCV:
+
+    def __init__(
+        self,
+        model=None,
+        hparam_space=None,
+        score_func=None,
+        cv=4,
+        verbose=0,
+        objective='quality',
+        max_evals=2,
+        random_state=None,
+        shuffle=True,
+        deterministic=True,
+        execdir='./outputs',
+        early_stopping=25
+    ):
+        self.model = model
+        self.hparam_space = hparam_space
+        self.score_func = score_func
+        self.cv = cv
+        self.shuffle = shuffle
+        self.verbose = verbose
+        # Optimization objective (quality or runtime).
+        self.run_obj = objective
+        # Maximum function evaluations.
+        self.max_evals = max_evals
+        # Configuration space.
+        self.model = model
+        self.execdir = execdir
+        self.random_state = random_state
+        self.early_stopping = early_stopping
+
+        if deterministic:
+            self.deterministic = 'true'
+        else:
+            self.deterministic = 'false'
+
+        self._rgen = None
+        self._best_config = None
+        self._current_min = None
+
+    @property
+    def best_config(self):
+
+        return self._best_config
+
+    @property
+    def best_model(self):
+
+        _model = deepcopy(self.model)
+        _model.set_params(**self.best_config)
+
+        return _model
+
+    def fit(self, X, y):
+
+        # NB: Carefull!
+        self.X, self.y = self._check_X_y(X, y)
+
+        if self._rgen is None:
+            self._rgen = np.random.RandomState(self.random_state)
+
+        if self._current_min is None:
+            self._current_min = float(np.inf)
+
+        # Scenario object.
+        scenario = Scenario(
+            {
+                'run_obj': self.run_obj,
+                'runcount-limit': self.max_evals,
+                'cs': self.hparam_space,
+                'deterministic': self.deterministic,
+                'execdir': self.execdir
+             }
+        )
+        # Optimize using a SMAC-object.
+        smac = SMAC(
+            scenario=scenario,
+            rng=np.random.RandomState(self.random_state),
+            tae_runner=self.objective
+        )
+        self._best_config = smac.optimize()
+
+        return self
+
+    def objective(self, hparams):
+
+        if self.early_stopping < 1:
+            warnings.warn('Exiting by early stopping.')
+            return self._best_params
+
+        test_scores = []
+        folds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+        for train_idx, test_idx in folds.split(self.X, self.y):
+
+            X_train, X_test = self.X[train_idx], self.X[test_idx]
+            y_train, y_test = self.y[train_idx], self.y[test_idx]
+
+            _model = deepcopy(self.model)
+            _model.set_params(**hparams)
+            _model.fit(X_train, y_train)
+
+            test_scores.append(
+                self.score_func(y_test, np.squeeze(_model.predict(X_test)))
+            )
+        loss = 1.0 - np.mean(test_scores)
+        if self._current_min < loss:
+            self.early_stopping = self.early_stopping - 1
+        else:
+            self._current_min = loss
+
+        return loss
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # Wrapping the sklearn formatter function.
+        return check_X_y(X, y)
+
+
+class TPESearchCV:
     """Perform K-fold cross-validated hyperparameter search with the Bayesian
     optimization Tree Parzen Estimator.
 
@@ -265,7 +373,7 @@ class BayesianSearchCV:
         hyperparameters."""
 
         _model = deepcopy(self.model)
-        _model.set_params(**self.best_results['hparams'])
+        _model.set_params(**self.best_config)
 
         return _model
 
@@ -368,13 +476,14 @@ class BayesianSearchCV:
             test_loss.append(1.0 - self.score_func(y_test, pred_y_test))
             train_loss.append(1.0 - self.score_func(y_train, pred_y_train))
 
+        # NOTE: Consider using median rather than mean.
         self._best_params = OrderedDict(
             [
                 ('status', STATUS_OK),
                 ('eval_time', time.time()),
-                ('loss', np.nanmedian(test_loss)),
+                ('loss', np.nanmean(test_loss)),
                 ('loss_variance', np.nanvar(test_loss)),
-                ('train_loss', np.nanmedian(train_loss)),
+                ('train_loss', np.nanmean(train_loss)),
                 ('train_loss_variance', np.nanvar(train_loss)),
                 ('hparams', hparams)
             ]
@@ -382,10 +491,9 @@ class BayesianSearchCV:
         # Record the minimum loss to monitor if diverging from optimum.
         if self._prev_score < self._best_params['loss']:
             self.early_stopping = self.early_stopping - 1
-            warnings.warn('Reduced buffer for eacly stopping to {}'
-                          ''.format(self.early_stopping))
+            #warnings.warn('Reduced buffer for eacly stopping to {}'
+            #              ''.format(self.early_stopping))
         else:
-            print('score:', 1 - self._best_params['loss'])
             self._prev_score = self._best_params['loss']
 
         return self._best_params
@@ -394,11 +502,3 @@ class BayesianSearchCV:
     def _check_X_y(X, y):
         # Wrapping the sklearn formatter function.
         return check_X_y(X, y)
-
-    @staticmethod
-    def safe_predict(y_pred):
-
-        if np.ndim(y_pred) > 1:
-            y_pred = np.squeeze(y_pred)
-
-        return y_pred

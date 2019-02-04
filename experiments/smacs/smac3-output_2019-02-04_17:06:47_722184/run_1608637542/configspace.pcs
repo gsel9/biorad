@@ -1,0 +1,2 @@
+clf__n_components integer [1, 20] [10]
+clf__tol real [1e-08, 0.001] [0.000500005]

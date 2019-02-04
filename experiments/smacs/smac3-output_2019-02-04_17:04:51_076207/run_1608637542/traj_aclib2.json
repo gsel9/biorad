@@ -1,0 +1,2 @@
+{"cpu_time": 0, "total_cpu_time": null, "wallclock_time": 0.00015807151794433594, "evaluations": 0, "cost": 2147483648, "incumbent": ["clf__n_components='10'", "clf__tol='0.000500005'"], "origin": "Default"}
+{"cpu_time": 0.35730671882629395, "total_cpu_time": null, "wallclock_time": 0.37994384765625, "evaluations": 1, "cost": 0.40071403692093344, "incumbent": ["clf__n_components='10'", "clf__tol='0.000500005'"], "origin": "Default"}

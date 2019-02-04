@@ -30,16 +30,16 @@ TMP_RESULTS_DIR = 'tmp_model_comparison'
 def model_comparison(
     comparison_scheme,
     X, y,
-    algo,
-    pipes_and_params,
+    experiments,
     score_func,
     cv,
     max_evals,
     shuffle=True,
     verbose=0,
     random_states=None,
-    balancing=True,
-    write_prelim=True,
+    balancing=False,
+    execdir=None,
+    write_prelim=False,
     error_score='nan',
     n_jobs=1,
     path_final_results=None
@@ -66,55 +66,56 @@ def model_comparison(
     """
     global TMP_RESULTS_DIR, ESTIMATOR_ID, SELECTOR_ID
 
+    # Setup temporary directory to store preliminary results.
     if write_prelim:
-        # Setup temporary directory to store preliminary results.
         path_tmp_results = ioutil.setup_tempdir(TMP_RESULTS_DIR, root='.')
+    else:
+        path_tmp_results = None
 
     # Set the default number of available working CPUs.
     if n_jobs is None:
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else cpu_count()
 
     results = []
-    for label, (pipe, params) in pipes_and_params.items():
-        # Create a temporary folder to store the state of the pipeline
-        # transformers for quick access.
-        #_cachedir = mkdtemp()
-        #pipe.memory = Memory(cachedir=_cachedir, verbose=10)
-        #
+    for experiment_id, (pipe, hparam_space) in experiments.items():
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
                     X=X, y=y,
-                    algo=algo,
-                    model_id=label,
+                    experiment_id=experiment_id,
                     model=pipe,
-                    param_space=params,
+                    execdir=execdir,
+                    hparam_space=hparam_space,
                     score_func=score_func,
                     cv=cv,
                     max_evals=max_evals,
-                    shuffle=shuffle,
                     verbose=verbose,
                     random_state=random_state,
-                    balancing=balancing,
                     path_tmp_results=path_tmp_results,
                     error_score=error_score
                 )
                 for random_state in random_states
             )
         )
-        # Delete the temporary pipeline cache.
-        #rmtree(_cachedir)
+    # Tear down temporary dirs after saving final results to disk.
     if write_prelim:
-        # Tear down temporary dirs after saving final results to disk.
-        _save_and_cleanup(path_final_results, path_tmp_results, results)
+        _cleanup_prelim(path_tmp_results)
+
+    _write_results(path_final_results, results)
 
     return None
 
 
-def _save_and_cleanup(path_final_results, path_tmp_results, results):
+def _write_results(path_final_results, results):
 
     # Write final results to disk.
     ioutil.write_final_results(path_final_results, results)
+
+    return None
+
+
+def _cleanup_prelim(path_tmp_results):
+
     # Remove temporary directory if process completed succesfully.
     ioutil.teardown_tempdir(path_tmp_results)
 
