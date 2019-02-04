@@ -49,9 +49,32 @@ class PostProcessor:
         self.error_dir = error_dir
         self.verbose = verbose
 
-        self.data = None
+        self.data = self._read_data()
 
-    def produce(self, drop_redundant=True, drop_missing=True):
+    def _read_data(self):
+        # Read raw data.
+
+        data  = []
+        for path_to_file in self.path_to_features:
+
+            if not os.path.isfile(path_to_file):
+                raise RunetimeError('Unable to located: {}'
+                                    ''.format(path_to_file))
+            else:
+                raw_data = pd.read_csv(path_to_file)
+
+            # Drop redundant columns.
+            _data = raw_data.filter(regex=self.filter_type)
+
+            # Set index.
+            if not np.array_equal(_data.index.values, self.indices):
+                _data.index = self.indices
+
+            data.append(_data)
+
+        return data
+
+    def process(self, drop_redundant=True, drop_missing=True, var_thresh=0):
         """Apply a series of transformations to multiple feature sets.
 
         Kwargs:
@@ -62,69 +85,57 @@ class PostProcessor:
             (list): Processed feature sets.
 
         """
-        self.data  = []
-        for path_to_file in self.path_to_features:
-            raw_data = pd.read_csv(path_to_file)
-
-            # Drop redundant columns.
-            _data = raw_data.filter(regex=self.filter_type)
-
-            # Set index.
-            if not np.array_equal(_data.index.values, self.indices):
-                _data.index = self.indices
+        for num, dset in enumerate(self.data):
             # Drop redundant features.
             if drop_redundant:
-                _data = self.drop_redundant(
-                    self.get_filename(path_to_file), _data
+                self.drop_redundant(
+                    self.get_filename(self.path_to_features[num]),
+                    dset,
+                    var_thresh=var_thresh
                 )
             # Drop missing features.
             if drop_missing:
-                _data = self.drop_missing(
-                    self.get_filename(path_to_file), _data
+                self.drop_missing(
+                    self.get_filename(self.path_to_features[num]), dset
                 )
-            self.data.append(_data)
 
         return self
 
-    def drop_redundant(self, filename, features):
+    def drop_redundant(self, filename, features, var_thresh=0):
         """Drop redundant features.
 
         """
-        output = features.copy()
-
-        redundant = output.columns[features.var() == 0.0].values
+        redundant = features.columns[features.var() <= var_thresh].values
         if len(redundant) > 0:
             # Save redundant feature labels to disk.
             pd.Series(redundant).to_csv(
                 os.path.join(self.error_dir, 'redundant_{}'.format(filename))
             )
             # Drop from feature set.
-            output.drop(redundant, axis=1, inplace=True)
+            features.drop(redundant, axis=1, inplace=True)
 
             if self.verbose > 0:
                 print('Num redundant features: {}'.format(len(redundant)))
 
-        return output
+        return self
 
     def drop_missing(self, filename, features):
         """Drop features with missing values.
 
         """
-        output = features.copy()
-
-        missing = output.columns[features.isnull().any()].values
+        missing = features.columns[features.isnull().any()].values
         if len(missing) > 0:
             # Save redundant feature labels to disk.
             pd.Series(missing).to_csv(
                 os.path.join(self.error_dir, 'missing_{}'.format(filename))
             )
             # Drop from feature set.
-            output.drop(missing, axis=1, inplace=True)
+            features.drop(missing, axis=1, inplace=True)
 
             if self.verbose > 0:
                 print('Num missing features: {}'.format(len(missing)))
 
-        return output
+        return features
 
     @staticmethod
     def get_filename(path_to_file, file_format=None):
@@ -185,14 +196,19 @@ class PostProcessor:
     @property
     def mins(self):
 
-        [dset.min().values for dset in self.data]
+        return [dset.min().values for dset in self.data]
 
     @property
     def maxes(self):
 
-        [dset.max().values for dset in self.data]
+        return [dset.max().values for dset in self.data]
+
+    @property
+    def vars(self):
+
+        return [dset.var().values for dset in self.data]
 
     @property
     def stds(self):
 
-        [dset.std().values for dset in self.data]
+        return [dset.std().values for dset in self.data]
