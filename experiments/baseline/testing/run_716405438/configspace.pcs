@@ -1,0 +1,4 @@
+PLSREstimator__n_components integer [1, 40] [27]
+PLSREstimator__tol real [1e-09, 0.001] [1e-07]
+ReliefFSelection__num_features integer [2, 50] [20]
+ReliefFSelection__num_neighbors integer [10, 100] [20]

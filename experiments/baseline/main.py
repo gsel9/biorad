@@ -4,7 +4,7 @@
 #
 
 """
-Execute radiomic model comparison experiments.
+Perform model comparison experiments.
 
 """
 
@@ -16,15 +16,17 @@ from collections import OrderedDict
 from sklearn.pipeline import Pipeline
 
 from smac.configspace import ConfigurationSpace
-from ConfigSpace.conditions import InCondition
-from ConfigSpace.hyperparameters import CategoricalHyperparameter
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter
-from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
+#from ConfigSpace.conditions import InCondition
+#from ConfigSpace.hyperparameters import CategoricalHyperparameter
+#from ConfigSpace.hyperparameters import UniformFloatHyperparameter
+#from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
 # TODO: To utils!
 def load_target(path_to_target, index_col=0, classify=True):
+    """
 
+    """
     var = pd.read_csv(path_to_target, index_col=index_col)
     if classify:
         return np.squeeze(var.values).astype(np.int32)
@@ -34,7 +36,9 @@ def load_target(path_to_target, index_col=0, classify=True):
 
 # TODO: To utils!
 def load_predictors(path_to_data, index_col=0, regex=None):
+    """
 
+    """
     data = pd.read_csv(path_to_data, index_col=index_col)
     if regex is None:
         return np.array(data.values, dtype=np.float32)
@@ -45,7 +49,9 @@ def load_predictors(path_to_data, index_col=0, regex=None):
 
 # TODO: To utils!
 def config_experiments(experiments):
+    """
 
+    """
     pipes_and_params = OrderedDict()
     for (experiment_id, setup) in experiments.items():
         spaces = []
@@ -85,22 +91,73 @@ if __name__ == '__main__':
 
     from sklearn.metrics import roc_auc_score
 
-    # FEATURE SET:
-    # QUESTION: Something in the feature extraction or preprocessing procedure
-    # conducted by Alise that rendering features superior?
+    # ERROR: Issue with reproduciability (probably random states).
+
     #X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
     # Score (DFS): 0.5299233140225786
     # Score (LRR):
 
+    #X_orig = pd.read_csv('./../../../data_source/to_analysis/no_filter_concat.csv', index_col=0)
+    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
+    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
+    #target_samples = [idx for idx in X_orig.index if idx in data.index]
+    #X = X_orig.loc[target_samples, :].values
+    #y = np.squeeze(y_orig.loc[target_samples].values)
+    # Score (DFS): 0.6611585922247688
+    # Score (LRR):
+
+    #X = load_predictors('./../../../data_source/to_analysis/gauss05_concat.csv')
+    #y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
+    # Score (DFS): 0.5612211267082591 (compared to all samples: 0.6972678465325525)
+    #X = X_orig.loc[target_samples, :].values
+    #y = np.squeeze(y_orig.loc[target_samples].values)
+    #X_orig = pd.read_csv('./../../../data_source/to_analysis/gauss05_concat.csv', index_col=0)
+    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
+    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
+    #target_samples = [idx for idx in X_orig.index if idx in data.index]
+    #X = X_orig.loc[target_samples, :].values
+    #y = np.squeeze(y_orig.loc[target_samples].values)
+    # Score (DFS): 0.6972678465325525
+
+    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
+    #y = np.squeeze(data['Toklasser'].values)
+    #X = data.drop('Toklasser', 1).values
+    # Score (DFS): 0.801366474620151/0.8068724270011033/0.7968821619556914
+
+    # Alises samples are of better quality? YES!
     #X = load_predictors('./../../../data_source/to_analysis/alise_setup.csv')
     # Score (DFS): 0.5338309566250743
     # Score (LRR): 0.5012103196313723
+    #X_orig = pd.read_csv('./../../../data_source/to_analysis/alise_setup.csv', index_col=0)
+    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
+    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
+    #target_samples = [idx for idx in X_orig.index if idx in data.index]
+    #X = X_orig.loc[target_samples, :].values
+    #y = np.squeeze(y_orig.loc[target_samples].values)
+    # Score (DFS): 0.7081126389949919 (compared to all samples: 0.5338309566250743)
 
-    X = load_predictors('./../../../data_source/to_analysis/sqroot_concat.csv')
-    # Score (DFS):
+    # Check if my targets give different results from Alises targets.
+    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
+    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
+    #X = data.drop('Toklasser', 1).values
+    #target_samples = [idx for idx in y_orig.index if idx in data.index]
+    #y = np.squeeze(y_orig.loc[target_samples].values)
+    # Score (DFS): 0.8114627100840335/0.8137376920465156
+
+    # Alises samples are of better quality? YES!
+    #X = load_predictors('./../../../data_source/to_analysis/sqroot_concat.csv')
+    # Score (DFS): 0.5539652035056447
     # Score (LRR): 0.4963584789242684
+    #X_orig = pd.read_csv('./../../../data_source/to_analysis/sqroot_concat.csv', index_col=0)
+    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
+    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
+    #target_samples = [idx for idx in X_orig.index if idx in data.index]
+    #X = X_orig.loc[target_samples, :].values
+    #y = np.squeeze(y_orig.loc[target_samples].values)
+    # Score (DFS): 0.65200136872931 (compared to all samples: 0.5539652035056447)
 
-    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
+    # Difference between using Alises target vector and my target vector?
+
 
     path_to_results = './test.csv'
 
@@ -112,6 +169,11 @@ if __name__ == '__main__':
             (ReliefFSelection.__name__, ReliefFSelection()),
             (PLSREstimator.__name__, PLSREstimator())
         ),
+        #'relieff_plsr': (
+        #    (StandardScaler.__name__, StandardScaler()),
+        #    (ReliefFSelection.__name__, ReliefFSelection()),
+        #    (PLSREstimator.__name__, PLSREstimator())
+        #),
     }
 
     np.random.seed(0)
@@ -124,7 +186,7 @@ if __name__ == '__main__':
         score_func=roc_auc_score,
         cv=4,
         max_evals=25,
-        execdir='./outputs',
+        output_dir='./testing',
         random_states=random_states,
         path_final_results=path_to_results
     )
@@ -133,7 +195,6 @@ if __name__ == '__main__':
     print(np.mean(res['test_score']))
 
     """
-
     data_raw_df = pd.read_excel(xls, sheet_name='tilbakefall_siste', index_col=0)
     X = data_raw_df.values
     #load_predictors('./../../data_source/to_analysis/alise_setup.csv')
@@ -149,33 +210,6 @@ if __name__ == '__main__':
     #y_lrr = np.squeeze(y_lrr.iloc[np.squeeze(np.where(np.isin(y_lrr.index.values, data_raw_df.index.values))), :].values)
 
 
-
-    # RESULTS LOCATION:
-    # Categorical/continous
-    #path_to_results = './chi2_mi.csv' (slow)
-    #path_to_results = './chi2_anova.csv' #(fast)
-    #path_to_results = './mi_mi.csv' (slow)
-    #path_to_results = './mi_anovatest.csv' #(fast) + winner!
-    #path_to_results = './mi_mrmr.csv' #(fast) + winner!
-    #path_to_results = './zca_corr_mi_anovatest.csv.csv'
-    #path_to_results = './pca_mi_anovatest.csv.csv'
-    #path_to_results = './mi_dgufs.csv' (slow)
-    path_to_results = './test.csv'
-
-    # mRMR feature screening is very slow, but indicates the best results.
-
-    #path_to_results = './../data/experiments/no_filter_concat_dfs.csv'
-    #path_to_results = './../data/experiments/complete_decorr_lrr.csv'
-
-    # EXPERIMENTAL SETUP:
-    CV = 4
-    MAX_EVALS = 200
-    NUM_EXP_REPS = 10
-    SCORING = roc_auc_score
-
-    # Generate seeds for pseudo-random generators to use in each experiment.
-    np.random.seed(0)
-    random_states = np.random.randint(1000, size=NUM_EXP_REPS)
 
     # Generate pipelines from config elements.
     pipes_and_params = backend.formatting.pipelines_from_configs(
