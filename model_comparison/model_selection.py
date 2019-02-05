@@ -43,7 +43,7 @@ def nested_kfold_selection(
     hparam_space,
     score_func,
     cv,
-    execdir,
+    output_dir,
     max_evals,
     verbose=1,
     shuffle=True,
@@ -87,7 +87,7 @@ def nested_kfold_selection(
             hparam_space=hparam_space,
             score_func=score_func,
             cv=cv,
-            execdir=execdir,
+            output_dir=output_dir,
             max_evals=max_evals,
             verbose=verbose,
             shuffle=shuffle,
@@ -121,7 +121,7 @@ def nested_kfold(
     max_evals,
     shuffle=True,
     verbose=1,
-    execdir=None,
+    output_dir=None,
     random_state=None,
     path_tmp_results=None,
     error_score=np.nan,
@@ -139,7 +139,7 @@ def nested_kfold(
         verbose=verbose,
         max_evals=max_evals,
         random_state=random_state,
-        execdir=execdir
+        output_dir=output_dir
     )
     optimizer.fit(X, y)
 
@@ -193,7 +193,7 @@ class SMACSearchCV:
         random_state=None,
         shuffle=True,
         deterministic=True,
-        execdir='./outputs',
+        output_dir='./outputs',
         early_stopping=25
     ):
         self.model = model
@@ -208,7 +208,7 @@ class SMACSearchCV:
         self.max_evals = max_evals
         # Configuration space.
         self.model = model
-        self.execdir = execdir
+        self.output_dir = output_dir
         self.random_state = random_state
         self.early_stopping = early_stopping
 
@@ -252,7 +252,7 @@ class SMACSearchCV:
                 'runcount-limit': self.max_evals,
                 'cs': self.hparam_space,
                 'deterministic': self.deterministic,
-                'execdir': self.execdir
+                'output_dir': self.output_dir
              }
         )
         # Optimize using a SMAC-object.

@@ -1,6 +1,0 @@
-"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
-0.000000, 2147483648.000000, 0.000213, 1, 0.000213, PLSREstimator__n_components='27', PLSREstimator__tol='1e-07', ReliefFSelection__num_features='20', ReliefFSelection__num_neighbors='20'
-0.156556, 0.190671, 0.167848, 1, 0.011292, PLSREstimator__n_components='27', PLSREstimator__tol='1e-07', ReliefFSelection__num_features='20', ReliefFSelection__num_neighbors='20'
-1.288985, 0.188399, 5.050924, 2, 3.761939, PLSREstimator__n_components='3', PLSREstimator__tol='1.99129024849298e-06', ReliefFSelection__num_features='22', ReliefFSelection__num_neighbors='64'
-2.253109, 0.178934, 12.475762, 3, 10.222653, PLSREstimator__n_components='40', PLSREstimator__tol='0.0005587198938446538', ReliefFSelection__num_features='18', ReliefFSelection__num_neighbors='100'
-3.162728, 0.157424, 20.271900, 4, 17.109172, PLSREstimator__n_components='2', PLSREstimator__tol='1.99129024849298e-06', ReliefFSelection__num_features='23', ReliefFSelection__num_neighbors='68'
