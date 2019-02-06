@@ -27,17 +27,18 @@ class PLSREstimator(base.BaseEstimator):
 
     def __init__(
         self,
+        mode='classification',
         model=PLSRegression(scale=False, copy=True, max_iter=-1)
     ):
 
-        super().__init__(model=model)
+        super().__init__(model=model, mode=mode)
 
     @property
     def hparam_space(self):
         """Returns the PLS Regression hyperparameter space."""
 
         # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator. 
+        # varying depending on a random number generator.
         hparam_space = (
             UniformFloatHyperparameter(
                 '{}__tol'.format(self.NAME),

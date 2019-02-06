@@ -144,10 +144,11 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
 
     """
 
-    def __init__(self, model=None):
+    def __init__(self, mode=None, model=None):
 
         super().__init__()
 
+        self._mode = mode
         self._model = model
 
     def set_params(self, **params):
@@ -181,7 +182,14 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
         """
 
         """
-        return self._model.predict(X)
+        y_pred = np.squeeze(self._model.predict(X))
+
+        if self._mode == 'classification':
+            return np.array(y_pred, dtype=int)
+        elif self._mode == 'regression':
+            return np.array(y_pred, dtype=float)
+        else:
+            raise ValueError('Invalid estimator mode: {}'.format(self._mode))
 
     def _check_config(self, X, y=None, **kwargs):
         # Validate model configuration by updating hyperparameter settings.

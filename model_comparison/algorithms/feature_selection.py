@@ -16,9 +16,15 @@ import numpy as np
 from . import base
 
 from ReliefF import ReliefF
+from scipy.stats import spearmanr
+from sklearn.feature_selection import chi2
+from sklearn.feature_selection import f_classif
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
+
+from skfeature.utility.sparse_learning import feature_ranking
+from skfeature.function.sparse_learning_based import RFS
 
 from smac.configspace import ConfigurationSpace
 from ConfigSpace.conditions import InCondition
@@ -122,16 +128,16 @@ class ReliefFSelection(base.BaseSelector):
         X, y = self._check_X_y(X, y)
 
         self._check_params(X)
-        #try:
-        selector = ReliefF(
-            n_neighbors=self.num_neighbors,
-            n_features_to_keep=self.num_features
-        )
-        selector.fit(X, y)
-        _support = selector.top_features[:self.num_features]
-        #except:
-        #    warnings.warn('Failed to select support with {}'.format(self.NAME))
-        #    _support = []
+        try:
+            selector = ReliefF(
+                n_neighbors=self.num_neighbors,
+                n_features_to_keep=self.num_features
+            )
+            selector.fit(X, y)
+            _support = selector.top_features[:self.num_features]
+        except:
+            warnings.warn('Failed to select support with {}'.format(self.NAME))
+            _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -152,6 +158,126 @@ class ReliefFSelection(base.BaseSelector):
             self.num_features = int(self.num_features)
 
         return self
+
+
+class FeatureScreening(base.BaseSelector):
+
+    NAME = 'FeatureScreening'
+
+    def __init__(
+        self,
+        gamma=None,
+        #corr_thresh=None,
+        num_features=None,
+        #num_clusters=None,
+        #alpha=None,
+        #beta=None,
+        tol=1e-6,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.gamma = gamma
+        #self.corr_thresh = corr_thresh
+        self.num_features = num_features
+        #self.num_clusters = num_clusters
+        #self.alpha = alpha
+        #self.beta = beta
+        self.tol = tol
+
+        # NOTE: Attributes set with instance.
+        self.support = None
+        self.scaler = None
+        self.generator = None
+        self.discriminator = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def hparam_space(self):
+        """Return the feature screening protocol hyperparameter space."""
+
+        # NOTE: This algorithm is not stochastic and its performance does not
+        # varying depending on a random number generator.
+        hparam_space = (
+            #UniformIntegerHyperparameter(
+            #    '{}__num_clusters'.format(self.NAME),
+            #    lower=2,
+            #    upper=50,
+            #    default_value=5
+            #),
+            UniformIntegerHyperparameter(
+                '{}__num_features'.format(self.NAME),
+                lower=2,
+                upper=50,
+                default_value=20
+            ),
+            #UniformFloatHyperparameter(
+            #    '{}__beta'.format(self.NAME),
+            #    lower=self.tol,
+            #    upper=1 - self.tol,
+            #    default_value=0.9
+            #),
+            #UniformFloatHyperparameter(
+            #    '{}__alpha'.format(self.NAME),
+            #    lower=self.tol,
+            #    upper=1000.0,
+            #    default_value=0.5
+            #)
+            #UniformFloatHyperparameter(
+            #    '{}__corr_thresh'.format(self.NAME),
+            #    lower=self.tol,
+            #    upper=1 - self.tol,
+            #    default_value=0.9
+            #),
+            UniformFloatHyperparameter(
+                '{}__gamma'.format(self.NAME),
+                lower=0,
+                upper=1000.0,
+                default_value=1.0
+            ),
+        )
+        return hparam_space
+
+    # TODO:
+    # * Include Ficher score (https://github.com/jundongl/scikit-feature)
+    #   Do Fisher score selection prior to Chi2 since this fails in some occasions.
+    # * Checkout "Efficient and Robust Feature Selection via Joint`2,1-Norms Minimization"
+    #   Redo implementation with decreased nunmber of iters to speed up algorithm if works very well.
+    #   See https://github.com/jundongl/scikit-feature/tree/master/skfeature/function/sparse_learning_based
+    def fit(self, X, y):
+        # Shifting all values of X > 0.
+        X, y = self._check_X_y(X, y)
+        try:
+            # ERROR: Breaks down at some point.
+            #_, p_values = chi2(X, y)
+            #_, p_values = f_classif(X, y)
+            #_support = np.squeeze(np.where(p_values >= self.corr_thresh))
+
+            weighting = RFS.rfs(X, y, gamma=self.gamma)
+            # sort the feature scores in an ascending order according to the feature scores
+            ranking = feature_ranking(weighting)
+            _support = ranking[:self.num_features]
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+        print(_support)
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        X, y = check_X_y(X, y)
+        if np.ndim(y) < 2:
+            y = y[:, np.newaxis]
+
+        return X, y
 
 
 class MutualInformationSelection(base.BaseSelector):
