@@ -245,7 +245,7 @@ class SMACSearchCV:
         if self._current_min is None:
             self._current_min = float(np.inf)
 
-        # Scenario object.
+        # Setup scenario object and optimize.
         scenario = Scenario(
             {
                 'run_obj': self.run_obj,
@@ -255,10 +255,9 @@ class SMACSearchCV:
                 'output_dir': self.output_dir
              }
         )
-        # Optimize using a SMAC-object.
         smac = SMAC(
             scenario=scenario,
-            rng=np.random.RandomState(self.random_state),
+            rng=self._rgen,
             tae_runner=self.objective
         )
         self._best_config = smac.optimize()
