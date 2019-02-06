@@ -16,10 +16,10 @@ from collections import OrderedDict
 from sklearn.pipeline import Pipeline
 
 from smac.configspace import ConfigurationSpace
-#from ConfigSpace.conditions import InCondition
-#from ConfigSpace.hyperparameters import CategoricalHyperparameter
-#from ConfigSpace.hyperparameters import UniformFloatHyperparameter
-#from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
+
+
+# Globals.
+SEED = 0
 
 
 # TODO: To utils!
@@ -52,6 +52,8 @@ def config_experiments(experiments):
     """
 
     """
+    global SEED
+
     pipes_and_params = OrderedDict()
     for (experiment_id, setup) in experiments.items():
         spaces = []
@@ -61,8 +63,10 @@ def config_experiments(experiments):
                 spaces.extend(algorithm.hparam_space)
             except:
                 pass
-        # Merge algorithms config spaces.
         config_space = ConfigurationSpace()
+        # Set seed for config space random sampler.
+        config_space.seed(SEED)
+        # Merge algorithms config spaces.
         config_space.add_hyperparameters(spaces)
 
         pipes_and_params[experiment_id] = (Pipeline(setup), config_space)
