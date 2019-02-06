@@ -85,8 +85,10 @@ class ReliefFSelection(base.BaseSelector):
 
     @property
     def hparam_space(self):
-        """Hyperparameter configuration space."""
+        """Return the ReliefF hyperparameter space."""
 
+        # NOTE: This algorithm is not stochastic and its performance does not
+        # varying depending on a random number generator.
         hparam_space = (
             UniformIntegerHyperparameter(
                 '{}__num_neighbors'.format(self.NAME),

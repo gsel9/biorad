@@ -34,7 +34,10 @@ class PLSREstimator(base.BaseEstimator):
 
     @property
     def hparam_space(self):
+        """Returns the PLS Regression hyperparameter space."""
 
+        # NOTE: This algorithm is not stochastic and its performance does not
+        # varying depending on a random number generator. 
         hparam_space = (
             UniformFloatHyperparameter(
                 '{}__tol'.format(self.NAME),
@@ -50,17 +53,6 @@ class PLSREstimator(base.BaseEstimator):
             )
         )
         return hparam_space
-
-
-def plsr(label):
-
-    # Construct hyperparameter configuration space.
-
-    # Wrapped estimator handles configuration adjustments.
-    estimator = PipeEstimator(
-
-    )
-    return (hparam_space, (label, estimator))
 
 
 def svc(_):
