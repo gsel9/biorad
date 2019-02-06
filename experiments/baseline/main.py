@@ -15,6 +15,8 @@ __email__ = 'langberg91@gmail.com'
 from collections import OrderedDict
 from sklearn.pipeline import Pipeline
 
+from sklearn.metrics import roc_auc_score
+
 from smac.configspace import ConfigurationSpace
 
 
@@ -74,6 +76,11 @@ def config_experiments(experiments):
     return pipes_and_params
 
 
+def balanced_roc_auc(y_true, y_pred):
+
+    return roc_auc_score(y_true, y_pred, average='weighted')
+
+
 if __name__ == '__main__':
     import sys
     sys.path.append('./../')
@@ -89,87 +96,29 @@ if __name__ == '__main__':
     import pandas as pd
 
     from algorithms.feature_selection import ReliefFSelection
+    from algorithms.feature_selection import FeatureScreening
     from algorithms.classification import PLSREstimator
 
     from sklearn.preprocessing import StandardScaler
 
-    from sklearn.metrics import roc_auc_score
 
-    # ERROR: Issue with reproduciability (probably random states).
+    np.random.seed(0)
+    random_states = np.random.randint(1000, size=30)
 
-    #X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
-    # Score (DFS): 0.5299233140225786
-    # Score (LRR):
+    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
+    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
 
-    #X_orig = pd.read_csv('./../../../data_source/to_analysis/no_filter_concat.csv', index_col=0)
-    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
-    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
-    #target_samples = [idx for idx in X_orig.index if idx in data.index]
-    #X = X_orig.loc[target_samples, :].values
-    #y = np.squeeze(y_orig.loc[target_samples].values)
-    # Score (DFS): 0.6611585922247688
-    # Score (LRR):
-
-    #X = load_predictors('./../../../data_source/to_analysis/gauss05_concat.csv')
-    #y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
-    # Score (DFS): 0.5612211267082591 (compared to all samples: 0.6972678465325525)
-    #X = X_orig.loc[target_samples, :].values
-    #y = np.squeeze(y_orig.loc[target_samples].values)
-    #X_orig = pd.read_csv('./../../../data_source/to_analysis/gauss05_concat.csv', index_col=0)
-    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
-    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
-    #target_samples = [idx for idx in X_orig.index if idx in data.index]
-    #X = X_orig.loc[target_samples, :].values
-    #y = np.squeeze(y_orig.loc[target_samples].values)
-    # Score (DFS): 0.6972678465325525
-
-    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
-    #y = np.squeeze(data['Toklasser'].values)
-    #X = data.drop('Toklasser', 1).values
-    # Score (DFS): 0.801366474620151/0.8068724270011033/0.7968821619556914
-
-    # Alises samples are of better quality? YES!
-    #X = load_predictors('./../../../data_source/to_analysis/alise_setup.csv')
-    # Score (DFS): 0.5338309566250743
-    # Score (LRR): 0.5012103196313723
-    #X_orig = pd.read_csv('./../../../data_source/to_analysis/alise_setup.csv', index_col=0)
-    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
-    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
-    #target_samples = [idx for idx in X_orig.index if idx in data.index]
-    #X = X_orig.loc[target_samples, :].values
-    #y = np.squeeze(y_orig.loc[target_samples].values)
-    # Score (DFS): 0.7081126389949919 (compared to all samples: 0.5338309566250743)
-
-    # Check if my targets give different results from Alises targets.
-    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
-    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
-    #X = data.drop('Toklasser', 1).values
-    #target_samples = [idx for idx in y_orig.index if idx in data.index]
-    #y = np.squeeze(y_orig.loc[target_samples].values)
-    # Score (DFS): 0.8114627100840335/0.8137376920465156
-
-    # Alises samples are of better quality? YES!
-    #X = load_predictors('./../../../data_source/to_analysis/sqroot_concat.csv')
-    # Score (DFS): 0.5539652035056447
-    # Score (LRR): 0.4963584789242684
-    #X_orig = pd.read_csv('./../../../data_source/to_analysis/sqroot_concat.csv', index_col=0)
-    #y_orig = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
-    #data = pd.read_excel('./../../../data_source/to_analysis/alise_orig.xlsx', index_col=0)
-    #target_samples = [idx for idx in X_orig.index if idx in data.index]
-    #X = X_orig.loc[target_samples, :].values
-    #y = np.squeeze(y_orig.loc[target_samples].values)
-    # Score (DFS): 0.65200136872931 (compared to all samples: 0.5539652035056447)
-
-    # Difference between using Alises target vector and my target vector?
-
-
-    path_to_results = './test.csv'
+    #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
+    path_to_results = './rfs_nofilter_dfs.csv'
+    #path_to_results = './dgufs_nofilter_dfs.csv'
 
     # Possible to define multiple experiments (e.g. all possible combos of a
-    # clf and a fs.)
+    # clf and a FS).
     setup = {
-        'relieff_plsr': (
-            (StandardScaler.__name__, StandardScaler()),
+        'rfs_relieff_plsr': (
+            ('1_{}'.format(StandardScaler.__name__), StandardScaler()),
+            (FeatureScreening.__name__, FeatureScreening()),
+            ('2_{}'.format(StandardScaler.__name__), StandardScaler()),
             (ReliefFSelection.__name__, ReliefFSelection()),
             (PLSREstimator.__name__, PLSREstimator())
         ),
@@ -179,75 +128,20 @@ if __name__ == '__main__':
         #    (PLSREstimator.__name__, PLSREstimator())
         #),
     }
-
-    np.random.seed(0)
-    random_states = np.random.randint(1000, size=30)
-
+    # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
+    # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
+    # TODO: Write prelim results!!!
     comparison.model_comparison(
-        comparison_scheme=model_selection.nested_kfold_selection,
+        comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
         experiments=config_experiments(setup),
-        score_func=roc_auc_score,
-        cv=4,
+        score_func=balanced_roc_auc,
+        selection_scheme='k-fold',
+        n_splits=5,
         max_evals=25,
-        output_dir='./testing',
+        output_dir='./rfs_nofilter_dfs',
         random_states=random_states,
-        path_final_results=path_to_results
-    )
-
-    res = pd.read_csv(path_to_results, index_col=0)
-    print(np.mean(res['test_score']))
-
-    """
-    data_raw_df = pd.read_excel(xls, sheet_name='tilbakefall_siste', index_col=0)
-    X = data_raw_df.values
-    #load_predictors('./../../data_source/to_analysis/alise_setup.csv')
-    #X = load_predictors('./../../data_source/to_analysis/sqroot_concat.csv')
-
-    # TARGET:
-    #y = load_target('./../../data_source/to_analysis/target_dfs.csv')
-    #y = load_target('./../../data_source/to_analysis/target_lrr.csv')
-    y_dfs = pd.read_csv('./alise/target_dfs.csv', index_col=0)
-    y_dfs = np.squeeze(y_dfs.iloc[np.squeeze(np.where(np.isin(y_dfs.index.values, data_raw_df.index.values))), :].values)
-
-    #y_lrr = pd.read_csv('./alise/target_lrr.csv', index_col=0)
-    #y_lrr = np.squeeze(y_lrr.iloc[np.squeeze(np.where(np.isin(y_lrr.index.values, data_raw_df.index.values))), :].values)
-
-
-
-    # Generate pipelines from config elements.
-    pipes_and_params = backend.formatting.pipelines_from_configs(
-        selectors, classifiers
-    )
-    # Parameters to tune the TPE algorithm.
-    tpe = partial(
-        hyperopt.tpe.suggest,
-        # Sample 1000 candidates and select the candidate with highest
-        # Expected Improvement (EI).
-        n_EI_candidates=1000,
-        # Use 20 % of best observations to estimate next set of parameters.
-        gamma=0.2,
-        # First 20 trials are going to be random (include probability theory
-        # for 90 % CI with this setup).
-        n_startup_jobs=60,
-    )
-    comparison.model_comparison(
-        model_selection.nested_kfold_selection,
-        X, y,
-        tpe,
-        {'ReliefFSelection_PLSRegression': pipes_and_params['ReliefFSelection_PLSRegression']},
-        SCORING,
-        CV,
-        MAX_EVALS,
-        shuffle=True,
-        verbose=1,
-        random_states=random_states,
-        balancing=False,
-        write_prelim=True,
-        error_score='all',
-        n_jobs=None,
         path_final_results=path_to_results
     )
     res = pd.read_csv(path_to_results, index_col=0)
     print(np.mean(res['test_score']))
-    """
