@@ -102,6 +102,10 @@ if __name__ == '__main__':
     from sklearn.preprocessing import StandardScaler
 
 
+    # TODO:
+    # * Setup Fisher score and Chi2 feature screening experiments.
+
+
     np.random.seed(0)
     random_states = np.random.randint(1000, size=30)
 
@@ -109,7 +113,7 @@ if __name__ == '__main__':
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
 
     #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
-    path_to_results = './rfs_nofilter_dfs.csv'
+    #path_to_results = './rfs_nofilter_dfs.csv'
     #path_to_results = './dgufs_nofilter_dfs.csv'
 
     # Possible to define multiple experiments (e.g. all possible combos of a
