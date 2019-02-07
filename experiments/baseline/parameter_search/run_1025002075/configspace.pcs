@@ -1,8 +1,0 @@
-KNNEstimator__leaf_size integer [10, 100] [30]
-KNNEstimator__metric categorical {euclidean, manhattan, chebyshev, minkowski} [minkowski]
-KNNEstimator__n_neighbors integer [3, 100] [5]
-ReliefFSelection__num_features integer [2, 50] [20]
-ReliefFSelection__num_neighbors integer [10, 100] [20]
-KNNEstimator__p integer [1, 5] [2]
-
-KNNEstimator__p | KNNEstimator__metric in {minkowski}

@@ -1,3 +1,0 @@
-"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
-0.000000, 2147483648.000000, 0.000360, 1, 0.000360, LogRegEstimator__C='1.0', LogRegEstimator__penalty=''l2'', LogRegEstimator__random_state='500', ReliefFSelection__num_features='20', ReliefFSelection__num_neighbors='20'
-0.145515, 0.470849, 0.159087, 1, 0.013572, LogRegEstimator__C='1.0', LogRegEstimator__penalty=''l2'', LogRegEstimator__random_state='500', ReliefFSelection__num_features='20', ReliefFSelection__num_neighbors='20'
