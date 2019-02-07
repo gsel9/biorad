@@ -58,10 +58,8 @@ def config_experiments(experiments):
 
     pipes_and_params = OrderedDict()
     for (experiment_id, setup) in experiments.items():
-
         config_space = ConfigurationSpace()
         config_space.seed(SEED)
-
         for name, algorithm in setup:
             # Avoid transformers without hyperparameters.
             try:
@@ -83,12 +81,12 @@ def balanced_roc_auc(y_true, y_pred):
 
 
 if __name__ == '__main__':
+    # TEMP:
     import sys
     sys.path.append('./../')
+    sys.path.append('./../../model_comparison')
 
     import os
-    # TEMP:
-    sys.path.append('./../../model_comparison')
 
     import comparison
     import model_selection
@@ -96,12 +94,12 @@ if __name__ == '__main__':
     import numpy as np
     import pandas as pd
 
-    from algorithms.feature_selection import ReliefFSelection
     from algorithms.feature_selection import MutualInformationSelection
+    from algorithms.feature_selection import WilcoxonSelection
+    from algorithms.feature_selection import ReliefFSelection
+    from algorithms.feature_selection import FScoreSelection
     from algorithms.feature_selection import Chi2Selection
     from algorithms.feature_selection import MRMRSelection
-    from algorithms.feature_selection import WilcoxonSelection
-    from algorithms.feature_selection import FScoreSelection
 
     from algorithms.classification import LogRegEstimator
     from algorithms.classification import PLSREstimator
@@ -139,7 +137,11 @@ if __name__ == '__main__':
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
 
     np.random.seed(0)
-    random_states = np.random.randint(1000, size=5)
+    random_states = np.random.randint(1000, size=2)
+
+    path_to_results = './baseline_nofilter_dfs.csv'
+    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
+    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
 
     estimators = {
         PLSREstimator.__name__: PLSREstimator(),
@@ -168,22 +170,16 @@ if __name__ == '__main__':
                 (estimator_id, estimator)
             )
 
-    path_to_results = './baseline_nofilter_dfs.csv'
-    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
-    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
-
-    """
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
         experiments=config_experiments(setup),
         score_func=balanced_roc_auc,
         selection_scheme='k-fold',
-        n_splits=5,
+        n_splits=2,
         write_prelim=True,
-        max_evals=10,
+        max_evals=3,
         output_dir='./parameter_search',
         random_states=random_states,
         path_final_results=path_to_results
     )
-    """
