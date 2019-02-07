@@ -9,6 +9,7 @@
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
+import mifs
 import warnings
 
 import numpy as np
@@ -16,17 +17,15 @@ import numpy as np
 from . import base
 
 from ReliefF import ReliefF
-from scipy.stats import spearmanr
-from sklearn.feature_selection import chi2
-from sklearn.feature_selection import f_classif
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.feature_selection import SelectKBest
+from scipy.stats import ranksums
+from skfeature.function.similarity_based import fisher_score
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
 
-from skfeature.utility.sparse_learning import feature_ranking
-from skfeature.function.sparse_learning_based import RFS
+from sklearn.feature_selection import chi2
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import mutual_info_classif
 
 from smac.configspace import ConfigurationSpace
 from ConfigSpace.conditions import InCondition
@@ -36,6 +35,280 @@ from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
 SEED = 0
+
+
+class FScoreSelection(base.BaseSelector):
+    """
+
+    """
+
+    NAME = 'FScoreSelection'
+
+    def __init__(
+        self,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.num_features = num_features
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the Fisher score hyperparameter configuration space."""
+
+        global SEED
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+
+        return check_X_y(X, y)
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+
+        def _fisher_score(X, y):
+
+            scores = fisher_score(X, y)
+            return np.argsort(scores, 0)[::-1]
+
+        try:
+            _support = _fisher_score(X, y)[:self.num_features]
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
+
+
+class WilcoxonSelection(base.BaseSelector):
+    """Perform feature selection by Wilcoxon rank sum test.
+
+    Args:
+        bf_correction (bool): Apply Bonferroni correction for
+            multiple testing correction.
+
+    """
+
+    NAME = 'WilcoxonSelection'
+
+    def __init__(
+        self,
+        thresh=0.05,
+        bf_correction=True,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.thresh = thresh
+        self.bf_correction = bf_correction
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the ReliefF hyperparameter configuration space."""
+
+        global SEED
+
+        thresh = UniformIntegerHyperparameter(
+            'thresh', lower=0, upper=1, default_value=0.05
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameter(thresh)
+
+        return config
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+
+        return check_X_y(X, y)
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+        try:
+            _support = self.wilcoxon_rank_sum(X, y)
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    def wilcoxon_rank_sum(self, X, y):
+        """The Wilcoxon rank sum test to determine if two measurements are
+        drawn from the same distribution.
+
+        Args:
+            X (array-like): Predictor matrix.
+            y (array-like): Target variable.
+
+        Returns:
+            (numpy.ndarray): Support indicators.
+
+        """
+        _, ncols = np.shape(X)
+
+        support = []
+        if self.bf_correction:
+            for num in range(ncols):
+                _, pval = ranksums(X[:, num], y)
+                if pval <= self.thresh / ncols:
+                    support.append(num)
+        else:
+            for num in range(ncols):
+                _, pval = ranksums(X[:, num], y)
+                if pval <= self.thresh:
+                    support.append(num)
+
+        return np.array(support, dtype=int)
+
+
+# NOTE:
+# * Cloned from: https://github.com/danielhomola/mifs
+# * Use conda to install bottleneck V1.2.1 and pip to install local mifs clone.
+class MRMRSelection(base.BaseSelector):
+    """Perform feature selection with the minimum redundancy maximum relevancy
+    algortihm.
+
+    Args:
+        k (int): Note that k > 0, but must be smaller than the smallest number
+            of observations for each individual class.
+        num_features (): If `auto`, the number of is determined based on the
+            amount of mutual information the previously selected features share
+            with the target classes.
+        error_handling (str, {`return_all`, `return_NaN`}):
+
+    """
+
+    NAME = 'MRMRSelection'
+
+    def __init__(
+        self,
+        num_neighbors=None,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.num_neighbors = num_neighbors
+        self.num_features = num_features
+
+        # NOTE: Attributes set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the ReliefF hyperparameter configuration space."""
+
+        global SEED
+
+        num_neighbors = UniformIntegerHyperparameter(
+            'num_neighbors', lower=10, upper=100, default_value=20
+        )
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters((num_neighbors, num_features))
+
+        return config
+
+    def fit(self, X, y=None, **kwargs):
+        """
+
+        """
+        # Ensures all elements of X > 0 for Chi2 test.
+        X, y = self._check_X_y(X, y)
+
+        self._check_params(X, y)
+        try:
+            # NOTE: Categorical refers to the target variable data type.
+            selector = mifs.MutualInformationFeatureSelector(
+                method='MRMR',
+                categorical=True,
+                k=self.num_neighbors,
+                n_features=self.num_features,
+            )
+            selector.fit(X, y)
+            # Check for all NaNs.
+            if np.all(np.isnan(selector.support_)):
+                _support = []
+            else:
+                _support = np.squeeze(np.where(selector.support_))
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    def _check_params(self, X, y):
+
+        # From MIFS source code: k > 0, but smaller than the
+        # smallest class.
+        min_class_count = np.min(np.bincount(y))
+        if self.num_neighbors > min_class_count:
+            self.num_neighbors = min_class_count
+        if self.num_neighbors < 1:
+            self.num_neighbors = 1
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        X, y = check_X_y(X, y)
+        X_nonegative = X + np.abs(np.min(X)) + 1
+
+        return X_nonegative, y
+
 
 
 # pip install ReliefF from https://github.com/gitter-badger/ReliefF
@@ -140,7 +413,6 @@ class ReliefFSelection(base.BaseSelector):
         except:
             warnings.warn('Failed to select support with {}'.format(self.NAME))
             _support = []
-
         self.support = self.check_support(_support, X)
 
         return self
@@ -230,7 +502,6 @@ class MutualInformationSelection(base.BaseSelector):
         except:
             warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
-
         self.support = self.check_support(_support, X)
 
         return self
@@ -249,6 +520,79 @@ class MutualInformationSelection(base.BaseSelector):
             self.num_neighbors = int(nrows - 1)
         else:
             self.num_neighbors = int(self.num_neighbors)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
+
+
+class Chi2Selection(base.BaseSelector):
+
+    NAME = 'Chi2Selection'
+
+    def __init__(
+        self,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.num_features = num_features
+
+        # NOTE: Attributes set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the MI hyperparameter configuration space."""
+
+        global SEED
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    def fit(self, X, y, **kwargs):
+        """
+
+        """
+        # Ensures all elements of X > 0 for Chi2 test.
+        X, y = self._check_X_y(X, y)
+        try:
+            selector = SelectKBest(chi2, k=self.num_features)
+            selector.fit(X, y)
+            _support = selector.get_support(indices=True)
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around sklearn formatter.
+
+        X, y = check_X_y(X, y)
+        X_nonegative = X + np.abs(np.min(X)) + 1
+
+        return X_nonegative, y
+
+    def _check_params(self, X):
 
         if self.num_features < 1:
             self.num_features = int(self.num_features)

@@ -47,45 +47,45 @@ class RFEstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
     @property
-    def hparam_space(self):
-        """Returns the PLS Regression hyperparameter space."""
+    def config_space(self):
+        """Returns the RF Regression hyperparameter space."""
 
-        # NOTE: This algorithm is stochastic and its performance varies
-        # across random states.
-        hparam_space = (
-            UniformIntegerHyperparameter(
-                '{}__random_state'.format(self.NAME), lower=0, upper=1000,
-            ),
-            UniformIntegerHyperparameter(
-                '{}__n_estimators'.format(self.NAME),
-                lower=10,
-                upper=3000,
-                default_value=100
-            ),
-            CategoricalHyperparameter(
-                '{}__criterion'.format(self.NAME),
-                ['gini', 'entropy'], default_value='gini'
-            ),
-            CategoricalHyperparameter(
-                '{}__max_depth'.format(self.NAME),
-                [3, 5, None], default_value=None
-            ),
-            CategoricalHyperparameter(
-                '{}__max_features'.format(self.NAME),
-                ['auto', 'sqrt', 'log2', None], default_value=None
-            ),
-            CategoricalHyperparameter(
-                '{}__bootstrap'.format(self.NAME),
-                [True, False], default_value=True
-            ),
-            UniformFloatHyperparameter(
-                '{}__min_samples_leaf'.format(self.NAME),
-                lower=1.5,
-                upper=50.5,
-                default_value=1.0
-            ),
+        random_states = UniformIntegerHyperparameter(
+            'random_state', lower=0, upper=1000,
         )
-        return hparam_space
+        n_estimators = UniformIntegerHyperparameter(
+            'n_estimators', lower=10, upper=3000, default_value=100
+        )
+        criterion = CategoricalHyperparameter(
+            'criterion', ['gini', 'entropy'], default_value='gini'
+        )
+        max_depth = CategoricalHyperparameter(
+            'max_depth', [3, 5, None], default_value=None
+        )
+        max_features = CategoricalHyperparameter(
+            'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
+        )
+        bootstrap = CategoricalHyperparameter(
+            'bootstrap', [True, False], default_value=True
+        )
+        min_samples_leaf = UniformFloatHyperparameter(
+            'min_samples_leaf', lower=1.5, upper=50.5,
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters(
+            (
+                random_states,
+                n_estimators,
+                criterion,
+                max_depth,
+                max_features,
+                bootstrap,
+                min_samples_leaf
+            )
+        )
+        return config
 
 
 class PLSREstimator(base.BaseEstimator):

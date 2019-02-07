@@ -98,6 +98,10 @@ if __name__ == '__main__':
 
     from algorithms.feature_selection import ReliefFSelection
     from algorithms.feature_selection import MutualInformationSelection
+    from algorithms.feature_selection import Chi2Selection
+    from algorithms.feature_selection import MRMRSelection
+    from algorithms.feature_selection import WilcoxonSelection
+    from algorithms.feature_selection import FScoreSelection
 
     from algorithms.classification import LogRegEstimator
     from algorithms.classification import PLSREstimator
@@ -107,6 +111,8 @@ if __name__ == '__main__':
     from algorithms.classification import KNNEstimator
 
     from sklearn.preprocessing import StandardScaler
+
+    # Mutual info is relatively slow.
 
     # Possible to define multiple experiments (e.g. all possible combos of a
     # clf and a FS).
@@ -160,6 +166,21 @@ if __name__ == '__main__':
     np.random.seed(0)
     random_states = np.random.randint(1000, size=5)
 
+    estimators = {
+        PLSREstimator.__name__: PLSREstimator(),
+        SVCEstimator.__name__: SVCEstimator(),
+        LogRegEstimator.__name__: LogRegEstimator(),
+        GNBEstimator.__name__: GNBEstimator(),
+        RFEstimator.__name__: RFEstimator(),
+        KNNEstimator.__name__: KNNEstimator()
+    }
+    #est = list(estimators.values())
+    #print(est[4].config_space)
+
+    selectors = {
+
+    }
+
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
 
@@ -167,7 +188,7 @@ if __name__ == '__main__':
     #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
     #path_to_results = './rfs_nofilter_dfs.csv'
     #path_to_results = './dgufs_nofilter_dfs.csv'
-
+    """
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -182,3 +203,4 @@ if __name__ == '__main__':
     )
     #res = pd.read_csv(path_to_results, index_col=0)
     #print(np.mean(res['test_score']))
+    """
