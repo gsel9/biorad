@@ -139,7 +139,7 @@ class WilcoxonSelection(base.BaseSelector):
 
         global SEED
 
-        thresh = UniformIntegerHyperparameter(
+        thresh = UniformFloatHyperparameter(
             'thresh', lower=0, upper=1, default_value=0.05
         )
         # Add hyperparameters to config space.
@@ -237,7 +237,7 @@ class MRMRSelection(base.BaseSelector):
 
     @property
     def config_space(self):
-        """Returns the ReliefF hyperparameter configuration space."""
+        """Returns the MRMR hyperparameter configuration space."""
 
         global SEED
 

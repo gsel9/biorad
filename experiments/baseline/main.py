@@ -183,7 +183,7 @@ if __name__ == '__main__':
         FScoreSelection.__name__: FScoreSelection()
     }
     sel = list(selectors.values())
-    print(sel[3].config_space)
+    print(sel[5], sel[5].config_space)
 
     #est = list(estimators.values())
     #print(est[4].config_space)
