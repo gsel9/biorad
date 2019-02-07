@@ -82,7 +82,7 @@ def nested_selection(
         if verbose > 0:
             print('Running experiment: {}'.format(random_state))
             start_time = datetime.now()
-    
+
         if selection_scheme == '.632+':
             results = nested_point632plus(
                 X=X, y=y,

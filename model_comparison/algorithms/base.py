@@ -201,11 +201,11 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
             # is not accepted by estimators.
             if params[key]:
                 # Translate SVC shrinking boolean.
-                if 'shrinking' in params:
-                    if params['shrinking'] == 'true':
-                        params['shrinking'] = True
-                    else:
-                        params['shrinking'] = False
+                #if 'shrinking' in params:
+                #    if params['shrinking'] == 'true':
+                #        params['shrinking'] = True
+                #    else:
+                #        params['shrinking'] = False
                 # Translate LogReg dual boolean.
                 #if 'dual' in params:
                 #    if params['dual'] == 'true':

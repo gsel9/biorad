@@ -12,6 +12,8 @@ __email__ = 'langberg91@gmail.com'
 from . import base
 
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
@@ -34,6 +36,7 @@ class RFEstimator(base.BaseEstimator):
             n_jobs=-1,
             verbose=False,
             oob_score=False,
+            min_samples_split=2,
             class_weight='balanced',
         )
     ):
@@ -68,9 +71,18 @@ class RFEstimator(base.BaseEstimator):
                 '{}__max_features'.format(self.NAME),
                 ['auto', 'sqrt', 'log2', None], default_value=None
             ),
+            CategoricalHyperparameter(
+                '{}__bootstrap'.format(self.NAME),
+                [True, False], default_value=True
+            ),
+            UniformFloatHyperparameter(
+                '{}__min_samples_leaf'.format(self.NAME),
+                lower=1.5,
+                upper=50.5,
+                default_value=1.0
+            ),
         )
         return hparam_space
-
 
 
 class PLSREstimator(base.BaseEstimator):
@@ -198,7 +210,8 @@ class SVCEstimator(base.BaseEstimator):
             ),
             CategoricalHyperparameter(
                 '{}__shrinking'.format(self.NAME),
-                ['true', 'false'], default_value='true'
+                [True, False], default_value=True
+                #['true', 'false'], default_value='true'
             ),
             # Hyperparameters specific to kernels.
             CategoricalHyperparameter(
@@ -248,127 +261,38 @@ class GNBEstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
 
+class KNNEstimator(base.BaseEstimator):
+
+    NAME = 'KNNEstimator'
+
+    def __init__(
+        self,
+        mode='classification',
+        model=KNeighborsClassifier(algorithm='auto')
+    ):
+
+        super().__init__(model=model, mode=mode)
+
+    hparam_space = (
+        UniformIntegerHyperparameter(
+            '{}__n_neighbors'.format(self.NAME), 3, 100, default_value=5
+        ),
+        UniformIntegerHyperparameter(
+            '{}__leaf_size'.format(self.NAME), 10, 100, default_value=30
+        ),
+        CategoricalHyperparameter(
+            '{}__metric'.format(self.NAME),
+            ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
+            default_value='minkowski'
+        ),
+        UniformIntegerHyperparameter(
+            '{}__p'.format(self.NAME), 1, 5, default_value=2
+        ),
+        # Activate hyperparameters according to choice of metric.
+        InCondition(child=p, parent=metric, values=['minkowski']),
+    )
+    return hparam_space
+
+
 if __name__ == '__main__':
     pass
-
-    """
-
-
-    AdaBoostClassifier.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                AdaBoostClassifier(base_estimator=LogisticRegression())
-            ))
-        ],
-        'params': hyperparams.adaboost_param_space(
-            estimator_name_func,
-            n_estimators=None,
-            learning_rate=None,
-            random_state=None
-        )
-    },
-
-    # Logistic Regression:
-
-    # REF: sklearn docs.
-    LogisticRegression.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-
-            ))
-        ],
-        'params': hyperparams.logreg_hparam_space(
-            estimator_name_func,
-            penalty=None,
-            C=None,
-            tol=None,
-            random_state=None,
-            fit_intercept=True,
-            intercept_scaling=None,
-        )
-    },
-    KNeighborsClassifier.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                KNeighborsClassifier(algorithm='auto')
-            ))
-        ],
-        'params': hyperparams.knn_param_space(
-            estimator_name_func,
-            n_neighbors=None,
-            weights=None,
-            leaf_size=None,
-            metric=None,
-            p=None,
-        )
-    },
-    DecisionTreeClassifier.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                DecisionTreeClassifier(class_weight='balanced',)
-            ))
-        ],
-        'params': hyperparams.decision_tree_param_space(
-            estimator_name_func,
-            criterion=None,
-            max_depth=None,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            max_features=None,
-            random_state=None,
-            max_leaf_nodes=None,
-        )
-    },
-    # Linear Support Vector Machines:
-    # * Must select kernel a priori because the hyperparamter space
-    #   generator function is not evaluated for each suggested
-    #   configuration. Thus, settings depending on the specified kernel
-    #   will not be updated according to the sampled kernel function.
-    LinearSVC.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(
-                LinearSVC(
-                    class_weight='balanced',
-                    verbose=False,
-                    max_iter=-1,
-                    multi_class='ovr'
-                )
-            ))
-        ],
-        'params': hyperparams.linear_svc_param_space(
-            estimator_name_func,
-            penalty=None,
-            loss=None,
-            dual=None,
-            tol=None,
-            C=None,
-            fit_intercept=True,
-            intercept_scaling=None,
-            random_state=None,
-        ),
-    },
-    # Random Forest Classifier:
-    RandomForestClassifier.__name__: {
-        'estimator': [
-            (CLF_LABEL, PipeEstimator(
-
-            ))
-        ],
-        'params': hyperparams.trees_param_space(
-            estimator_name_func,
-            n_estimators=None,
-            max_features=None,
-            criterion=None,
-            max_depth=None,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            bootstrap=None,
-            random_state=None,
-        )
-    },
-    """
