@@ -119,7 +119,6 @@ def nested_selection(
             raise ValueError('Invalid selection scheme {}'
                              ''.format(selection_scheme))
 
-        results = {}
         output.update(results)
         if path_tmp_results is not None:
             print('Writing results...')

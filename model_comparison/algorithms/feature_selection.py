@@ -199,11 +199,15 @@ class MutualInformationSelection(base.BaseSelector):
         num_neighbors = UniformIntegerHyperparameter(
             'num_neighbors', lower=10, upper=100, default_value=20
         )
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
-        config.add_hyperparameters((num_neighbors, num_features))
-
+        config.add_hyperparameters(
+            (random_states, num_neighbors, num_features)
+        )
         return config
 
     def fit(self, X, y, **kwargs):
