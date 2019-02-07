@@ -159,14 +159,14 @@ if __name__ == '__main__':
         #    (KNNEstimator.__name__, KNNEstimator())
         #),
     }
-    print(config_experiments(setup))
+    #print(config_experiments(setup))
     #print(KNNEstimator().hparam_space)
     #print(SVCEstimator().config_space)
 
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
     # TODO: Write prelim results!!!
-    """
+
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -181,4 +181,4 @@ if __name__ == '__main__':
     )
     res = pd.read_csv(path_to_results, index_col=0)
     print(np.mean(res['test_score']))
-    """
+    

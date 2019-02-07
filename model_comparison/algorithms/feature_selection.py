@@ -34,6 +34,9 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
+SEED = 0
+
+
 # pip install ReliefF from https://github.com/gitter-badger/ReliefF
 class ReliefFSelection(base.BaseSelector):
     """
@@ -91,26 +94,28 @@ class ReliefFSelection(base.BaseSelector):
         return self.NAME
 
     @property
-    def hparam_space(self):
-        """Return the ReliefF hyperparameter space."""
+    def config_space(self):
+        """Returns the ReliefF hyperparameter configuration space."""
 
-        # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator.
-        hparam_space = (
-            UniformIntegerHyperparameter(
-                '{}__num_neighbors'.format(self.NAME),
-                lower=10,
-                upper=100,
-                default_value=20
-            ),
-            UniformIntegerHyperparameter(
-                '{}__num_features'.format(self.NAME),
-                lower=2,
-                upper=50,
-                default_value=20
+        global SEED
+
+        num_neighbors = UniformIntegerHyperparameter(
+            'num_neighbors', lower=10, upper=100, default_value=20
+        ),
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters(
+            (
+                num_neighbors,
+                num_features
             )
         )
-        return hparam_space
+        return config
+
 
     def _check_X_y(self, X, y):
         # A wrapper around sklearn formatter.
