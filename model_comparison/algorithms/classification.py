@@ -194,57 +194,68 @@ class SVCEstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
     @property
-    def hparam_space(self):
-        """Returns the SVC hyperparameter space."""
+    def config_space(self):
+        """Returns the SVC hyperparameter configuration space."""
 
-        # NOTE: This algorithm is stochastic and its performance varies
-        # across random states.
-        hparam_space = (
-            # Hyperparameters shared by all kernels
-            UniformIntegerHyperparameter(
-                '{}__random_state'.format(self.NAME), lower=0, upper=1000,
-            ),
-            UniformFloatHyperparameter(
-                '{}__C'.format(self.NAME),
-                lower=0.001, upper=1000.0, default_value=1.0
-            ),
-            CategoricalHyperparameter(
-                '{}__shrinking'.format(self.NAME),
-                [True, False], default_value=True
-                #['true', 'false'], default_value='true'
-            ),
-            # Hyperparameters specific to kernels.
-            CategoricalHyperparameter(
-                '{}__kernel'.format(self.NAME),
-                ['linear', 'rbf', 'poly', 'sigmoid'],
-            ),
-            # - Poly kernel only:
-            UniformIntegerHyperparameter(
-                '{}__degree'.format(self.NAME), 1, 5, default_value=3
-            ),
-            # - Poly and sigmoid kernels:
-            UniformFloatHyperparameter
-                ('{}__coef0'.format(self.NAME), 0.0, 10.0, default_value=0.0
-            ),
-            # - RBF, poly and sigmoid kernels.
-            CategoricalHyperparameter(
-                '{}__gamma'.format(self.NAME),
-                ['auto', 'value'], default_value='auto'
-            ),
-            UniformFloatHyperparameter(
-                '{}__gamma_value'.format(self.NAME), 0.0001, 8, default_value=1
-            ),
-            # Activate hyperparameters according to choice of kernel.
-            InCondition(child=degree, parent=kernel, values=['poly']),
-            InCondition(child=gamma_value, parent=gamma, values=['value']),
-            InCondition(
-                child=gamma, parent=kernel, values=['rbf', 'poly', 'sigmoid']
-            ),
-            InCondition(
-                child=coef0, parent=kernel, values=['poly', 'sigmoid']
-            ),
+        random_states = UniformIntegerHyperparameter(
+            '{}__random_state'.format(self.NAME), lower=0, upper=1000,
         )
-        return hparam_space
+        C = UniformFloatHyperparameter(
+            '{}__C'.format(self.NAME),
+            lower=0.001, upper=1000.0, default_value=1.0
+        )
+        shrinking = CategoricalHyperparameter(
+            '{}__shrinking'.format(self.NAME),
+            [True, False], default_value=True
+            #['true', 'false'], default_value='true'
+        )
+        kernel = CategoricalHyperparameter(
+            '{}__kernel'.format(self.NAME),
+            ['linear', 'rbf', 'poly', 'sigmoid'],
+        )
+        gamma = CategoricalHyperparameter(
+            'gamma', ['auto', 'value'], default_value='auto'
+        )
+        gamma_value = UniformFloatHyperparameter(
+            'gamma_value', 0.0001, 8, default_value=1
+        )
+        degree = UniformIntegerHyperparameter(
+            '{}__degree'.format(self.NAME), 1, 5, default_value=3
+        )
+        coef0 = UniformFloatHyperparameter(
+            '{}__coef0'.format(self.NAME),
+            lower=0.0, upper=10.0, default_value=0.0
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.add_hyperparameters(
+            (
+                random_states,
+                C,
+                shrinking,
+                kernel,
+                degree,
+                coef0,
+                gamma,
+                gamma_value
+            )
+        )
+        # Conditionals on hyperparameters specific to kernels.
+        config.add_conditions(
+            (
+                InCondition(child=degree, parent=kernel, values=['poly']),
+                InCondition(child=gamma_value, parent=gamma, values=['value']),
+                InCondition(
+                    child=coef0, parent=kernel,
+                    values=['poly', 'sigmoid']
+                ),
+                InCondition(
+                    child=gamma, parent=kernel,
+                    values=['rbf', 'poly', 'sigmoid']
+                )
+            )
+        )
+        return config
 
 
 # NOTE: This algorithm does not associate hyperparameters.
@@ -273,25 +284,31 @@ class KNNEstimator(base.BaseEstimator):
 
         super().__init__(model=model, mode=mode)
 
-    hparam_space = (
-        UniformIntegerHyperparameter(
-            '{}__n_neighbors'.format(self.NAME), 3, 100, default_value=5
-        ),
-        UniformIntegerHyperparameter(
-            '{}__leaf_size'.format(self.NAME), 10, 100, default_value=30
-        ),
-        CategoricalHyperparameter(
-            '{}__metric'.format(self.NAME),
-            ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
-            default_value='minkowski'
-        ),
-        UniformIntegerHyperparameter(
-            '{}__p'.format(self.NAME), 1, 5, default_value=2
-        ),
-        # Activate hyperparameters according to choice of metric.
-        InCondition(child=p, parent=metric, values=['minkowski']),
-    )
-    return hparam_space
+    @property
+    def hparam_space(self):
+        """Returns the KNN hyperparameter space."""
+
+        # NOTE: This algorithm is not stochastic and its performance does not
+        # varying depending on a random number generator.
+        hparam_space = (
+            UniformIntegerHyperparameter(
+                '{}__n_neighbors'.format(self.NAME), 3, 100, default_value=5
+            ),
+            UniformIntegerHyperparameter(
+                '{}__leaf_size'.format(self.NAME), 10, 100, default_value=30
+            ),
+            CategoricalHyperparameter(
+                '{}__metric'.format(self.NAME),
+                ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
+                default_value='minkowski'
+            ),
+            UniformIntegerHyperparameter(
+                '{}__p'.format(self.NAME), 1, 5, default_value=2
+            ),
+            # Activate hyperparameters according to choice of metric.
+            #InCondition(child=p, parent=metric, values=['minkowski']),
+        )
+        return hparam_space
 
 
 if __name__ == '__main__':

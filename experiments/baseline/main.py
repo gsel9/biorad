@@ -58,18 +58,21 @@ def config_experiments(experiments):
 
     pipes_and_params = OrderedDict()
     for (experiment_id, setup) in experiments.items():
-        spaces = []
+        #spaces = []
+        config_space = ConfigurationSpace()
+        config_space.seed(SEED)
         for _, algorithm in setup:
             # Avoid transformers without hyperparameters.
             try:
-                spaces.extend(algorithm.hparam_space)
+                #spaces.extend(algorithm.hparam_space)
+                config_space.add_configuration_space(algorithm.config_space)
             except:
                 pass
-        config_space = ConfigurationSpace()
+        #config_space = ConfigurationSpace()
         # Set seed for config space random sampler.
-        config_space.seed(SEED)
+        #config_space.seed(SEED)
         # Merge algorithms config spaces.
-        config_space.add_hyperparameters(spaces)
+        #config_space.add_hyperparameters(spaces)
 
         pipes_and_params[experiment_id] = (Pipeline(setup), config_space)
 
@@ -102,6 +105,7 @@ if __name__ == '__main__':
     from algorithms.classification import SVCEstimator
     from algorithms.classification import GNBEstimator
     from algorithms.classification import RFEstimator
+    from algorithms.classification import KNNEstimator
 
     from sklearn.preprocessing import StandardScaler
 
@@ -146,12 +150,21 @@ if __name__ == '__main__':
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (GNBEstimator.__name__, GNBEstimator())
         #),
-        'relieff_rf': (
+        #'relieff_rf': (
+        #    (StandardScaler.__name__, StandardScaler()),
+        #    (ReliefFSelection.__name__, ReliefFSelection()),
+        #    (RFEstimator.__name__, RFEstimator())
+        #),
+        'relieff_knn': (
             (StandardScaler.__name__, StandardScaler()),
             (ReliefFSelection.__name__, ReliefFSelection()),
-            (RFEstimator.__name__, RFEstimator())
+            (KNNEstimator.__name__, KNNEstimator())
         ),
     }
+    #print(config_experiments(setup))
+    #print(KNNEstimator().hparam_space)
+    print(SVCEstimator().config_space)
+    """
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
     # TODO: Write prelim results!!!
@@ -169,3 +182,4 @@ if __name__ == '__main__':
     )
     res = pd.read_csv(path_to_results, index_col=0)
     print(np.mean(res['test_score']))
+    """

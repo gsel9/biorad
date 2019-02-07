@@ -206,12 +206,6 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
                 #        params['shrinking'] = True
                 #    else:
                 #        params['shrinking'] = False
-                # Translate LogReg dual boolean.
-                #if 'dual' in params:
-                #    if params['dual'] == 'true':
-                #        params['dual'] = True
-                #    else:
-                #        params['dual'] = False
                 # Set SVC gamma to a fixed value or to 'auto' if used.
                 if 'gamma' in params:
                     if params['gamma'] == 'value':
@@ -226,6 +220,7 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
 
     def _check_model(self, X, y=None):
 
+        # Adjust the number of components available.
         if 'n_components' in self.get_params():
             if self._model.n_components > X.shape[1]:
                 self._model.n_components = X.shape[1]
