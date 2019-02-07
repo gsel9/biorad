@@ -128,7 +128,12 @@ if __name__ == '__main__':
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (PLSREstimator.__name__, PLSREstimator())
         #),
-        'relieff_plsr': (
+        #'relieff_svc': (
+        #    (StandardScaler.__name__, StandardScaler()),
+        #    (ReliefFSelection.__name__, ReliefFSelection()),
+        #    (SVCEstimator.__name__, SVCEstimator())
+        #),
+        'relieff_svc': (
             (StandardScaler.__name__, StandardScaler()),
             (ReliefFSelection.__name__, ReliefFSelection()),
             (SVCEstimator.__name__, SVCEstimator())

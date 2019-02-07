@@ -12,6 +12,7 @@ __email__ = 'langberg91@gmail.com'
 from . import base
 
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
 
 from smac.configspace import ConfigurationSpace
@@ -56,6 +57,41 @@ class PLSREstimator(base.BaseEstimator):
         return hparam_space
 
 
+class LogRegstimator(base.BaseEstimator):
+
+    NAME = 'LogRegstimator'
+
+    def __init__(
+        self,
+        mode='classification',
+        model=LogisticRegression(
+            solver='liblinear',
+            max_iter=1000,
+            verbose=0,
+            n_jobs=1,
+            dual=False,
+            multi_class='ovr',
+            warm_start=False,
+            class_weight='balanced',
+        )
+    ):
+
+        super().__init__(model=model, mode=mode)
+
+    @property
+    def hparam_space(self):
+        """Returns the SVC hyperparameter space."""
+
+        # NOTE: This algorithm is not stochastic and its performance does not
+        # varying depending on a random number generator.
+        hparam_space = (
+            UniformIntegerHyperparameter(
+                '{}__random_state'.format(self.NAME), lower=0, upper=1000,
+            ),
+        )
+        return hparam_space
+
+
 class SVCEstimator(base.BaseEstimator):
 
     NAME = 'SVCEstimator'
@@ -78,32 +114,41 @@ class SVCEstimator(base.BaseEstimator):
     def hparam_space(self):
         """Returns the SVC hyperparameter space."""
 
-        # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator.
+        # NOTE: This algorithm is stochastic and its performance varies
+        # across random states.
         hparam_space = (
             # Hyperparameters shared by all kernels
+            UniformIntegerHyperparameter(
+                '{}__random_state'.format(self.NAME), lower=0, upper=1000,
+            ),
             UniformFloatHyperparameter(
-                'svc__C', 0.001, 1000.0, default_value=1.0
+                '{}__C'.format(self.NAME),
+                lower=0.001, upper=1000.0, default_value=1.0
             ),
             CategoricalHyperparameter(
-                'svc__shrinking', ['true', 'false'], default_value='true'
+                '{}__shrinking'.format(self.NAME),
+                ['true', 'false'], default_value='true'
             ),
             # Hyperparameters specific to kernels.
             CategoricalHyperparameter(
-                'svc__kernel', ['linear', 'rbf', 'poly', 'sigmoid'],
+                '{}__kernel'.format(self.NAME),
+                ['linear', 'rbf', 'poly', 'sigmoid'],
             ),
             # - Poly kernel only:
-            UniformIntegerHyperparameter('svc__degree', 1, 5, default_value=3),
+            UniformIntegerHyperparameter(
+                '{}__degree'.format(self.NAME), 1, 5, default_value=3
+            ),
             # - Poly and sigmoid kernels:
             UniformFloatHyperparameter
-                ('svc__coef0', 0.0, 10.0, default_value=0.0
+                ('{}__coef0'.format(self.NAME), 0.0, 10.0, default_value=0.0
             ),
             # - RBF, poly and sigmoid kernels.
             CategoricalHyperparameter(
-                'gamma', ['auto', 'value'], default_value='auto'
+                '{}__gamma'.format(self.NAME),
+                ['auto', 'value'], default_value='auto'
             ),
             UniformFloatHyperparameter(
-                'gamma_value', 0.0001, 8, default_value=1
+                '{}__gamma_value'.format(self.NAME), 0.0001, 8, default_value=1
             ),
             # Activate hyperparameters according to choice of kernel.
             InCondition(child=degree, parent=kernel, values=['poly']),
@@ -166,16 +211,7 @@ if __name__ == '__main__':
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
             (CLF_LABEL, PipeEstimator(
-                LogisticRegression(
-                    solver='liblinear',
-                    max_iter=1000,
-                    verbose=0,
-                    n_jobs=1,
-                    dual=False,
-                    multi_class='ovr',
-                    warm_start=False,
-                    class_weight='balanced',
-                )
+
             ))
         ],
         'params': hyperparams.logreg_hparam_space(

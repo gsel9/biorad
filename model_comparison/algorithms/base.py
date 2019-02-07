@@ -158,6 +158,7 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
             params (dict): Hyperparameter settings.
 
         """
+        params = self._check_config(params)
         self._model.set_params(**params)
 
         return self
@@ -172,8 +173,7 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
         """
 
         """
-        self._check_config(X)
-
+        self._check_model(X)
         self._model.fit(X, y, **kwargs)
 
         return self
@@ -191,8 +191,30 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
         else:
             raise ValueError('Invalid estimator mode: {}'.format(self._mode))
 
-    def _check_config(self, X, y=None, **kwargs):
+    @staticmethod
+    def _check_config(params):
         # Validate model configuration by updating hyperparameter settings.
+
+        _params = {}
+        for key in params:
+            # For deactivated parameters, the configuration stores None which
+            # is not accepted by estimators.
+            if params[key]:
+                # Translate booleans.
+                if 'shrinking' in params:
+                    params['shrinking'] = True
+                    if params['shrinking'] == 'true' else False
+                # Set SVC gamma to a fixed value or to 'auto' if used.
+                if 'gamma' in params:
+                    params['gamma'] = params['gamma_value']
+                    if params['gamma'] == 'value' else 'auto'
+                _params[key] = params[key]
+            else:
+                pass
+
+        return _params
+
+    def _check_model(self, X, y=None):
 
         if 'n_components' in self.get_params():
             if self._model.n_components > X.shape[1]:
