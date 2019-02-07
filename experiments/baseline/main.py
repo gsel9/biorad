@@ -97,9 +97,10 @@ if __name__ == '__main__':
 
     from algorithms.feature_selection import ReliefFSelection
     from algorithms.feature_selection import FeatureScreening
+    from algorithms.classification import LogRegEstimator
     from algorithms.classification import PLSREstimator
     from algorithms.classification import SVCEstimator
-    from algorithms.classification import SVCEstimator
+    from algorithms.classification import GNBEstimator
 
     from sklearn.preprocessing import StandardScaler
 
@@ -134,10 +135,15 @@ if __name__ == '__main__':
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (SVCEstimator.__name__, SVCEstimator())
         #),
-        'relieff_logreg': (
+        #'relieff_logreg': (
+        #    (StandardScaler.__name__, StandardScaler()),
+        #    (ReliefFSelection.__name__, ReliefFSelection()),
+        #    (LogRegEstimator.__name__, LogRegEstimator())
+        #),
+        'relieff_gnb': (
             (StandardScaler.__name__, StandardScaler()),
             (ReliefFSelection.__name__, ReliefFSelection()),
-            (SVCEstimator.__name__, SVCEstimator())
+            (GNBEstimator.__name__, GNBEstimator())
         ),
     }
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that

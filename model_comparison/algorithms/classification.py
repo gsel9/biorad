@@ -12,6 +12,7 @@ __email__ = 'langberg91@gmail.com'
 from . import base
 
 from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
 
@@ -57,9 +58,9 @@ class PLSREstimator(base.BaseEstimator):
         return hparam_space
 
 
-class LogRegstimator(base.BaseEstimator):
+class LogRegEstimator(base.BaseEstimator):
 
-    NAME = 'LogRegstimator'
+    NAME = 'LogRegEstimator'
 
     def __init__(
         self,
@@ -80,7 +81,7 @@ class LogRegstimator(base.BaseEstimator):
 
     @property
     def hparam_space(self):
-        """Returns the SVC hyperparameter space."""
+        """Returns the LR hyperparameter space."""
 
         # NOTE: This algorithm is not stochastic and its performance does not
         # varying depending on a random number generator.
@@ -171,6 +172,29 @@ class SVCEstimator(base.BaseEstimator):
         return hparam_space
 
 
+class GNBEstimator(base.BaseEstimator):
+
+    NAME = 'GNBEstimator'
+
+    def __init__(
+        self,
+        mode='classification',
+        model=GaussianNB()
+    ):
+
+        super().__init__(model=model, mode=mode)
+
+    @property
+    def hparam_space(self):
+        """Returns the LR hyperparameter space."""
+
+        # NOTE: This algorithm does not associate hyperparameters.
+        hparam_space = (
+            [],
+        )
+        return hparam_space
+
+
 if __name__ == '__main__':
     pass
 
@@ -179,7 +203,7 @@ if __name__ == '__main__':
     GaussianNB.__name__: {
         'estimator': [
             ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator(GaussianNB()))
+            (CLF_LABEL, PipeEstimator())
         ],
         'params': hyperparams.gnb_param_space(
             estimator_name_func, priors=None, var_smoothing=None
