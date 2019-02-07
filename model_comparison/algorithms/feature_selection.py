@@ -258,7 +258,7 @@ class MRMRSelection(base.BaseSelector):
         """
 
         """
-        # Ensures all elements of X > 0 for Chi2 test.
+        # Ensures all elements of X > 0.
         X, y = self._check_X_y(X, y)
 
         self._check_params(X, y)

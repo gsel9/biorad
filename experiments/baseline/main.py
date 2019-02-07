@@ -174,12 +174,19 @@ if __name__ == '__main__':
         RFEstimator.__name__: RFEstimator(),
         KNNEstimator.__name__: KNNEstimator()
     }
+    selectors = {
+        ReliefFSelection.__name__: ReliefFSelection(),
+        MutualInformationSelection.__name__: MutualInformationSelection(),
+        Chi2Selection.__name__: Chi2Selection(),
+        MRMRSelection.__name__: MRMRSelection(),
+        WilcoxonSelection.__name__: WilcoxonSelection(),
+        FScoreSelection.__name__: FScoreSelection()
+    }
+    sel = list(selectors.values())
+    print(sel[3].config_space)
+
     #est = list(estimators.values())
     #print(est[4].config_space)
-
-    selectors = {
-
-    }
 
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
