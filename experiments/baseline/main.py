@@ -98,6 +98,7 @@ if __name__ == '__main__':
     from algorithms.feature_selection import ReliefFSelection
     from algorithms.feature_selection import FeatureScreening
     from algorithms.classification import PLSREstimator
+    from algorithms.classification import SVCEstimator
 
     from sklearn.preprocessing import StandardScaler
 
@@ -112,6 +113,7 @@ if __name__ == '__main__':
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
 
+    path_to_results = './test.csv'
     #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
     #path_to_results = './rfs_nofilter_dfs.csv'
     #path_to_results = './dgufs_nofilter_dfs.csv'
@@ -119,18 +121,18 @@ if __name__ == '__main__':
     # Possible to define multiple experiments (e.g. all possible combos of a
     # clf and a FS).
     setup = {
-        'rfs_relieff_plsr': (
-            ('1_{}'.format(StandardScaler.__name__), StandardScaler()),
-            (FeatureScreening.__name__, FeatureScreening()),
-            ('2_{}'.format(StandardScaler.__name__), StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
-            (PLSREstimator.__name__, PLSREstimator())
-        ),
-        #'relieff_plsr': (
-        #    (StandardScaler.__name__, StandardScaler()),
+        #'rfs_relieff_plsr': (
+        #    ('1_{}'.format(StandardScaler.__name__), StandardScaler()),
+        #    (FeatureScreening.__name__, FeatureScreening()),
+        #    ('2_{}'.format(StandardScaler.__name__), StandardScaler()),
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (PLSREstimator.__name__, PLSREstimator())
         #),
+        'relieff_plsr': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (SVCEstimator.__name__, SVCEstimator())
+        ),
     }
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
@@ -143,7 +145,7 @@ if __name__ == '__main__':
         selection_scheme='k-fold',
         n_splits=5,
         max_evals=25,
-        output_dir='./rfs_nofilter_dfs',
+        output_dir='./test',
         random_states=random_states,
         path_final_results=path_to_results
     )

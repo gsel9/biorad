@@ -19,6 +19,7 @@ from ReliefF import ReliefF
 from scipy.stats import spearmanr
 from sklearn.feature_selection import chi2
 from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import VarianceThreshold
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
@@ -169,6 +170,7 @@ class FeatureScreening(base.BaseSelector):
         gamma=None,
         #corr_thresh=None,
         num_features=None,
+        var_thresh=None,
         #num_clusters=None,
         #alpha=None,
         #beta=None,
@@ -252,6 +254,10 @@ class FeatureScreening(base.BaseSelector):
         # Shifting all values of X > 0.
         X, y = self._check_X_y(X, y)
         try:
+            selector = VarianceThreshold(self.var_thresh)
+            selector.fit(X)
+            selector.get_support(indices=True)
+
             # ERROR: Breaks down at some point.
             #_, p_values = chi2(X, y)
             #_, p_values = f_classif(X, y)

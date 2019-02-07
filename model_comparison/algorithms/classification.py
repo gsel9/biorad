@@ -56,52 +56,66 @@ class PLSREstimator(base.BaseEstimator):
         return hparam_space
 
 
-def svc(_):
+class SVCEstimator(base.BaseEstimator):
 
-    # Construct hyperparameter configuration space.
-    hparam_space = ConfigurationSpace()
-    hparam_space.add_hyperparameters(
-        CategoricalHyperparameter(
-            'svc__kernel', ['linear', 'rbf', 'poly', 'sigmoid'],
-        ),
-        # Hyperparameters shared by all kernels
-        UniformFloatHyperparameter('svc__C', 0.001, 1000.0, default_value=1.0),
-        CategoricalHyperparameter(
-            'svc__shrinking', ['true', 'false'], default_value='true'
-        ),
-        # Hyperparameters specific to kernels.
-        # - Poly kernel only:
-        UniformIntegerHyperparameter('svc__degree', 1, 5, default_value=3),
-        # - Poly and sigmoid kernels:
-        UniformFloatHyperparameter('svc__coef0', 0.0, 10.0, default_value=0.0),
-        # - RBF, poly and sigmoid kernels.
-        CategoricalHyperparameter(
-            'gamma', ['auto', 'value'], default_value='auto'
-        ),
-        UniformFloatHyperparameter('gamma_value', 0.0001, 8, default_value=1),
+    NAME = 'SVCEstimator'
 
-        # Activate hyperparameters according to choice of kernel.
-        InCondition(child=degree, parent=kernel, values=['poly']),
-        InCondition(child=coef0, parent=kernel, values=['poly', 'sigmoid']),
-        InCondition(child=gamma_value, parent=gamma, values=['value']),
-        InCondition(
-            child=gamma, parent=kernel, values=['rbf', 'poly', 'sigmoid']
-        ),
-    )
-    # Wrapped estimator handles configuration adjustments.
-    estimator = PipeEstimator(
-        SVC(
+    def __init__(
+        self,
+        mode='classification',
+        model=SVC(
             class_weight='balanced',
             verbose=False,
             cache_size=500,
             max_iter=-1,
             decision_function_shape='ovr',
         )
-    )
-    return {
-        'hparams': hparam_space,
-        'estimator': ('plsr', estimator),
-    }
+    ):
+
+        super().__init__(model=model, mode=mode)
+
+    @property
+    def hparam_space(self):
+        """Returns the SVC hyperparameter space."""
+
+        # NOTE: This algorithm is not stochastic and its performance does not
+        # varying depending on a random number generator.
+        hparam_space = (
+            # Hyperparameters shared by all kernels
+            UniformFloatHyperparameter(
+                'svc__C', 0.001, 1000.0, default_value=1.0
+            ),
+            CategoricalHyperparameter(
+                'svc__shrinking', ['true', 'false'], default_value='true'
+            ),
+            # Hyperparameters specific to kernels.
+            CategoricalHyperparameter(
+                'svc__kernel', ['linear', 'rbf', 'poly', 'sigmoid'],
+            ),
+            # - Poly kernel only:
+            UniformIntegerHyperparameter('svc__degree', 1, 5, default_value=3),
+            # - Poly and sigmoid kernels:
+            UniformFloatHyperparameter
+                ('svc__coef0', 0.0, 10.0, default_value=0.0
+            ),
+            # - RBF, poly and sigmoid kernels.
+            CategoricalHyperparameter(
+                'gamma', ['auto', 'value'], default_value='auto'
+            ),
+            UniformFloatHyperparameter(
+                'gamma_value', 0.0001, 8, default_value=1
+            ),
+            # Activate hyperparameters according to choice of kernel.
+            InCondition(child=degree, parent=kernel, values=['poly']),
+            InCondition(child=gamma_value, parent=gamma, values=['value']),
+            InCondition(
+                child=gamma, parent=kernel, values=['rbf', 'poly', 'sigmoid']
+            ),
+            InCondition(
+                child=coef0, parent=kernel, values=['poly', 'sigmoid']
+            ),
+        )
+        return hparam_space
 
 
 if __name__ == '__main__':
