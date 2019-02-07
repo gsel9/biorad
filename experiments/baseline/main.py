@@ -153,8 +153,8 @@ if __name__ == '__main__':
     }
     selectors = {
         #ReliefFSelection.__name__: ReliefFSelection(),
-        MutualInformationSelection.__name__: MutualInformationSelection(),
-        #Chi2Selection.__name__: Chi2Selection(),
+        #MutualInformationSelection.__name__: MutualInformationSelection(),
+        Chi2Selection.__name__: Chi2Selection(),
         #MRMRSelection.__name__: MRMRSelection(),
         #WilcoxonSelection.__name__: WilcoxonSelection(),
         #FScoreSelection.__name__: FScoreSelection()
