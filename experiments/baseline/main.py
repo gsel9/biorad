@@ -112,10 +112,7 @@ if __name__ == '__main__':
 
     from sklearn.preprocessing import StandardScaler
 
-    # Mutual info is relatively slow.
-
-    # Possible to define multiple experiments (e.g. all possible combos of a
-    # clf and a FS).
+    """
     setup = {
         'rfs_relieff_plsr': (
             (StandardScaler.__name__, StandardScaler()),
@@ -134,34 +131,12 @@ if __name__ == '__main__':
             #(ReliefFSelection.__name__, ReliefFSelection()),
             (MutualInformationSelection.__name__, MutualInformationSelection()),
             (LogRegEstimator.__name__, LogRegEstimator())
-        ),
-        'relieff_gnb': (
-            (StandardScaler.__name__, StandardScaler()),
-            #(ReliefFSelection.__name__, ReliefFSelection()),
-            (MutualInformationSelection.__name__, MutualInformationSelection()),
-            (GNBEstimator.__name__, GNBEstimator())
-        ),
-        'relieff_rf': (
-            (StandardScaler.__name__, StandardScaler()),
-            #(ReliefFSelection.__name__, ReliefFSelection()),
-            (MutualInformationSelection.__name__, MutualInformationSelection()),
-            (RFEstimator.__name__, RFEstimator())
-        ),
-        'relieff_knn': (
-            (StandardScaler.__name__, StandardScaler()),
-            #(ReliefFSelection.__name__, ReliefFSelection()),
-            (MutualInformationSelection.__name__, MutualInformationSelection()),
-            (KNNEstimator.__name__, KNNEstimator())
-        ),
+        )
     }
-
-    #print(config_experiments(setup))
-    #print(PLSREstimator().config_space)
-    #print(SVCEstimator().config_space)
+    """
 
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
-    # TODO: Write prelim results!!!
 
     np.random.seed(0)
     random_states = np.random.randint(1000, size=5)
@@ -182,20 +157,12 @@ if __name__ == '__main__':
         WilcoxonSelection.__name__: WilcoxonSelection(),
         FScoreSelection.__name__: FScoreSelection()
     }
-    sel = list(selectors.values())
-    print(sel[5], sel[5].config_space)
-
-    #est = list(estimators.values())
-    #print(est[4].config_space)
 
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
 
-    path_to_results = './test.csv'
-    #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
-    #path_to_results = './rfs_nofilter_dfs.csv'
-    #path_to_results = './dgufs_nofilter_dfs.csv'
-    """
+    path_to_results = './baseline_nofilter_dfs.csv'
+
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -203,11 +170,9 @@ if __name__ == '__main__':
         score_func=balanced_roc_auc,
         selection_scheme='k-fold',
         n_splits=5,
+        write_prelim=True,
         max_evals=10,
-        output_dir='./test',
+        output_dir='./parameter_search',
         random_states=random_states,
         path_final_results=path_to_results
     )
-    #res = pd.read_csv(path_to_results, index_col=0)
-    #print(np.mean(res['test_score']))
-    """
