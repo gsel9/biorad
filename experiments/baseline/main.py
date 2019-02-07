@@ -157,12 +157,22 @@ if __name__ == '__main__':
         WilcoxonSelection.__name__: WilcoxonSelection(),
         FScoreSelection.__name__: FScoreSelection()
     }
-
-    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
-    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
+    # Wrap up estimators and selectors in experiment.
+    setup = {}
+    for estimator_id, estimator in estimators.items():
+        for selector_id, selector in selectors.items():
+            label = '{}_{}'.format(selector_id, estimator_id)
+            setup[label] = (
+                (StandardScaler.__name__, StandardScaler()),
+                (selector_id, selector),
+                (estimator_id, estimator)
+            )
 
     path_to_results = './baseline_nofilter_dfs.csv'
+    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
+    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
 
+    """
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -176,3 +186,4 @@ if __name__ == '__main__':
         random_states=random_states,
         path_final_results=path_to_results
     )
+    """
