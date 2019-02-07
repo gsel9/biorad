@@ -174,6 +174,7 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
 
         """
         self._check_model(X)
+
         self._model.fit(X, y, **kwargs)
 
         return self
@@ -225,6 +226,6 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
         # Adjust the number of components available.
         if 'n_components' in self.get_params():
             if self._model.n_components > X.shape[1]:
-                self._model.n_components = X.shape[1]
+                self._model.n_components = X.shape[1] - 1
 
         return self

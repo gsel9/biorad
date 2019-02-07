@@ -95,6 +95,7 @@ if __name__ == '__main__':
     import pandas as pd
 
     from algorithms.feature_selection import MutualInformationSelection
+    from algorithms.feature_selection import ANOVAFvalueSelection
     from algorithms.feature_selection import WilcoxonSelection
     from algorithms.feature_selection import ReliefFSelection
     from algorithms.feature_selection import FScoreSelection
@@ -151,13 +152,16 @@ if __name__ == '__main__':
         RFEstimator.__name__: RFEstimator(),
         KNNEstimator.__name__: KNNEstimator()
     }
+
     selectors = {
-        #ReliefFSelection.__name__: ReliefFSelection(),
-        #MutualInformationSelection.__name__: MutualInformationSelection(),
+        ReliefFSelection.__name__: ReliefFSelection(),
+        MutualInformationSelection.__name__: MutualInformationSelection(),
+        FScoreSelection.__name__: FScoreSelection(),
+        WilcoxonSelection.__name__: WilcoxonSelection(),
+        ANOVAFvalueSelection.__name__: ANOVAFvalueSelection(),
         Chi2Selection.__name__: Chi2Selection(),
+        # NOTE: MRMR is really slow!
         #MRMRSelection.__name__: MRMRSelection(),
-        #WilcoxonSelection.__name__: WilcoxonSelection(),
-        #FScoreSelection.__name__: FScoreSelection()
     }
     # Wrap up estimators and selectors in experiment.
     setup = {}

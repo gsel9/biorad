@@ -303,6 +303,7 @@ class SMACSearch:
         deterministic=True,
         output_dir=None,
         verbose=0,
+        abort_first_run=False,
         early_stopping=30
     ):
         self.model = model
@@ -311,6 +312,7 @@ class SMACSearch:
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.verbose = verbose
+        self.abort_first_run = abort_first_run
         self.performance_scheme = performance_scheme
         # Optimization objective (quality or runtime).
         self.run_objective = run_objective
@@ -370,7 +372,9 @@ class SMACSearch:
                 'runcount-limit': self.max_evals,
                 'cs': self.hparam_space,
                 'deterministic': self.deterministic,
-                'output_dir': self.output_dir
+                'output_dir': self.output_dir,
+                # See: https://github.com/automl/auto-sklearn/issues/345
+                'abort_on_first_run_crash': self.abort_first_run
              }
         )
         smac = SMAC(

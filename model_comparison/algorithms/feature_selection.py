@@ -18,12 +18,13 @@ from . import base
 
 from ReliefF import ReliefF
 from scipy.stats import ranksums
-from skfeature.function.similarity_based import fisher_score
+from skfeature.function.similarity_based.fisher_score import fisher_score
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
 
 from sklearn.feature_selection import chi2
+from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import mutual_info_classif
 
@@ -35,6 +36,83 @@ from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
 SEED = 0
+
+
+class ANOVAFvalueSelection(base.BaseSelector):
+    """
+
+    """
+
+    NAME = 'ANOVAFvalueSelection'
+
+    def __init__(
+        self,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.num_features = num_features
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the ANOVA F-value hyperparameter configuration space."""
+
+        global SEED
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+
+        return check_X_y(X, y)
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+
+        self._check_params(X, y)
+        try:
+            selector = SelectKBest(f_classif, k=self.num_features)
+            selector.fit(X, y)
+            _support = selector.get_support(indices=True)
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
 
 
 class FScoreSelection(base.BaseSelector):
@@ -89,16 +167,31 @@ class FScoreSelection(base.BaseSelector):
 
         def _fisher_score(X, y):
 
-            scores = fisher_score(X, y)
+            #scores = fisher_score(X, y)
+            scores = np.arange(X.shape[1])
             return np.argsort(scores, 0)[::-1]
 
-        #try:
-        _support = _fisher_score(X, y)[:self.num_features]
-        #except:
-        #    warnings.warn('Failed support with {}.'.format(self.__name__))
-        #    _support = []
+        self._check_params(X, y)
+        try:
+            _support = _fisher_score(X, y)[:self.num_features]
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
 
         self.support = self.check_support(_support, X)
+
+        return self
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
+        else:
+            self.num_features = int(self.num_features)
 
         return self
 
@@ -117,7 +210,7 @@ class WilcoxonSelection(base.BaseSelector):
     def __init__(
         self,
         thresh=0.05,
-        bf_correction=True,
+        bf_correction=False,
         error_handling='all'
     ):
 
@@ -140,7 +233,7 @@ class WilcoxonSelection(base.BaseSelector):
         global SEED
 
         thresh = UniformFloatHyperparameter(
-            'thresh', lower=0, upper=1, default_value=0.05
+            'thresh', lower=1e-6, upper=1, default_value=0.05
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -158,11 +251,11 @@ class WilcoxonSelection(base.BaseSelector):
     def fit(self, X, y=None, **kwargs):
 
         X, y = self._check_X_y(X, y)
-        #try:
-        _support = self.wilcoxon_rank_sum(X, y)
-        #except:
-        #    warnings.warn('Failed support with {}.'.format(self.__name__))
-        #    _support = []
+        try:
+            _support = self.wilcoxon_rank_sum(X, y)
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -181,7 +274,6 @@ class WilcoxonSelection(base.BaseSelector):
 
         """
         _, ncols = np.shape(X)
-
         support = []
         if self.bf_correction:
             for num in range(ncols):
@@ -293,8 +385,12 @@ class MRMRSelection(base.BaseSelector):
         if self.num_neighbors < 1:
             self.num_neighbors = 1
 
+        _, ncols = np.shape(X)
+
         if self.num_features < 1:
             self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
         else:
             self.num_features = int(self.num_features)
 
@@ -402,7 +498,7 @@ class ReliefFSelection(base.BaseSelector):
         # NOTE: Includes scaling to [0, 1] range.
         X, y = self._check_X_y(X, y)
 
-        self._check_params(X)
+        self._check_params(X, y)
         #try:
         selector = ReliefF(
             n_neighbors=self.num_neighbors,
@@ -417,10 +513,10 @@ class ReliefFSelection(base.BaseSelector):
 
         return self
 
-    def _check_params(self, X):
+    def _check_params(self, X, y):
 
         # Satisfying check in sklearn KDTree (binary tree).
-        nrows, _ = np.shape(X)
+        nrows, ncols = np.shape(X)
         if self.num_neighbors > nrows:
             self.num_neighbors = int(nrows - 1)
         else:
@@ -428,6 +524,8 @@ class ReliefFSelection(base.BaseSelector):
 
         if self.num_features < 1:
             self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
         else:
             self.num_features = int(self.num_features)
 
@@ -495,13 +593,15 @@ class MutualInformationSelection(base.BaseSelector):
                 n_neighbors=self.num_neighbors,
                 random_state=self.random_state
             )
-        #try:
-        selector = SelectKBest(_mutual_info_classif, k=self.num_features)
-        selector.fit(X, y)
-        _support = selector.get_support(indices=True)
-        #except:
-        #    warnings.warn('Failed support with {}.'.format(self.__name__))
-        #    _support = []
+
+        self._check_params(X, y)
+        try:
+            selector = SelectKBest(_mutual_info_classif, k=self.num_features)
+            selector.fit(X, y)
+            _support = selector.get_support(indices=True)
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
+            _support = []
         self.support = self.check_support(_support, X)
 
         return self
@@ -512,10 +612,10 @@ class MutualInformationSelection(base.BaseSelector):
 
         return check_X_y(X, y)
 
-    def _check_params(self, X):
+    def _check_params(self, X, y):
 
         # Satisfying check in sklearn KDTree (binary tree).
-        nrows, _ = np.shape(X)
+        nrows, ncols = np.shape(X)
         if self.num_neighbors > nrows:
             self.num_neighbors = int(nrows - 1)
         else:
@@ -523,6 +623,8 @@ class MutualInformationSelection(base.BaseSelector):
 
         if self.num_features < 1:
             self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
         else:
             self.num_features = int(self.num_features)
 
@@ -572,6 +674,8 @@ class Chi2Selection(base.BaseSelector):
         """
         # Ensures all elements of X > 0 for Chi2 test.
         X, y = self._check_X_y(X, y)
+
+        self._check_params(X, y)
         try:
             selector = SelectKBest(chi2, k=self.num_features)
             selector.fit(X, y)
@@ -592,10 +696,14 @@ class Chi2Selection(base.BaseSelector):
 
         return X_nonegative, y
 
-    def _check_params(self, X):
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
 
         if self.num_features < 1:
             self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
         else:
             self.num_features = int(self.num_features)
 
