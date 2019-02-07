@@ -20,6 +20,7 @@ from scipy.stats import spearmanr
 from sklearn.feature_selection import chi2
 from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import VarianceThreshold
+from sklearn.feature_selection import SelectKBest
 
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
@@ -161,155 +162,65 @@ class ReliefFSelection(base.BaseSelector):
         return self
 
 
-class FeatureScreening(base.BaseSelector):
+class MutualInformationSelection(base.BaseSelector):
 
-    NAME = 'FeatureScreening'
+    NAME = 'MutualInformationSelection'
 
     def __init__(
         self,
-        gamma=None,
-        #corr_thresh=None,
+        num_neighbors=None,
         num_features=None,
-        var_thresh=None,
-        #num_clusters=None,
-        #alpha=None,
-        #beta=None,
-        tol=1e-6,
+        random_state=None,
         error_handling='all'
     ):
 
         super().__init__(error_handling)
 
-        self.gamma = gamma
-        #self.corr_thresh = corr_thresh
         self.num_features = num_features
-        #self.num_clusters = num_clusters
-        #self.alpha = alpha
-        #self.beta = beta
-        self.tol = tol
+        self.num_neighbors = num_neighbors
+        self.random_state = random_state
 
         # NOTE: Attributes set with instance.
         self.support = None
-        self.scaler = None
-        self.generator = None
-        self.discriminator = None
 
     def __name__(self):
 
         return self.NAME
 
     @property
-    def hparam_space(self):
-        """Return the feature screening protocol hyperparameter space."""
+    def config_space(self):
+        """Returns the MI hyperparameter configuration space."""
 
-        # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator.
-        hparam_space = (
-            #UniformIntegerHyperparameter(
-            #    '{}__num_clusters'.format(self.NAME),
-            #    lower=2,
-            #    upper=50,
-            #    default_value=5
-            #),
-            UniformIntegerHyperparameter(
-                '{}__num_features'.format(self.NAME),
-                lower=2,
-                upper=50,
-                default_value=20
-            ),
-            #UniformFloatHyperparameter(
-            #    '{}__beta'.format(self.NAME),
-            #    lower=self.tol,
-            #    upper=1 - self.tol,
-            #    default_value=0.9
-            #),
-            #UniformFloatHyperparameter(
-            #    '{}__alpha'.format(self.NAME),
-            #    lower=self.tol,
-            #    upper=1000.0,
-            #    default_value=0.5
-            #)
-            #UniformFloatHyperparameter(
-            #    '{}__corr_thresh'.format(self.NAME),
-            #    lower=self.tol,
-            #    upper=1 - self.tol,
-            #    default_value=0.9
-            #),
-            UniformFloatHyperparameter(
-                '{}__gamma'.format(self.NAME),
-                lower=0,
-                upper=1000.0,
-                default_value=1.0
-            ),
+        global SEED
+
+        random_states = UniformIntegerHyperparameter(
+            'random_state', lower=0, upper=1000,
         )
-        return hparam_space
+        num_neighbors = UniformIntegerHyperparameter(
+            'num_neighbors', lower=10, upper=100, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters((num_neighbors, num_features))
 
-    # TODO:
-    # * Include Ficher score (https://github.com/jundongl/scikit-feature)
-    #   Do Fisher score selection prior to Chi2 since this fails in some occasions.
-    # * Checkout "Efficient and Robust Feature Selection via Joint`2,1-Norms Minimization"
-    #   Redo implementation with decreased nunmber of iters to speed up algorithm if works very well.
-    #   See https://github.com/jundongl/scikit-feature/tree/master/skfeature/function/sparse_learning_based
-    def fit(self, X, y):
-        # Shifting all values of X > 0.
-        X, y = self._check_X_y(X, y)
-        try:
-            selector = VarianceThreshold(self.var_thresh)
-            selector.fit(X)
-            selector.get_support(indices=True)
-
-            # ERROR: Breaks down at some point.
-            #_, p_values = chi2(X, y)
-            #_, p_values = f_classif(X, y)
-            #_support = np.squeeze(np.where(p_values >= self.corr_thresh))
-
-            weighting = RFS.rfs(X, y, gamma=self.gamma)
-            # sort the feature scores in an ascending order according to the feature scores
-            ranking = feature_ranking(weighting)
-            _support = ranking[:self.num_features]
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
-        print(_support)
-        self.support = self.check_support(_support, X)
-
-        return self
-
-    @staticmethod
-    def _check_X_y(X, y):
-        # A wrapper around sklearn formatter.
-
-        X, y = check_X_y(X, y)
-        if np.ndim(y) < 2:
-            y = y[:, np.newaxis]
-
-        return X, y
-
-
-class MutualInformationSelection(base.BaseSelector):
-
-    NAME = 'MutualInformationSelection'
-
-    def __init__(self, num_features=None, error_handling='all'):
-
-        super().__init__(error_handling)
-
-        self.num_features = num_features
-
-        # NOTE: Attribute set with instance.
-        self.support = None
-
-    def __name__(self):
-
-        return self.NAME
+        return config
 
     def fit(self, X, y, **kwargs):
+        """
 
+        """
         X, y = self._check_X_y(X, y)
-        try:
-            selector = SelectKBest(
-                score_func=mutual_info_classif, k=self.num_features
+
+        def _mutual_info_classif(X, y):
+
+            return mutual_info_classif(
+                X, y,
+                n_neighbors=self.num_neighbors,
+                random_state=self.random_state
             )
+        try:
+            selector = SelectKBest(_mutual_info_classif, k=self.num_features)
             selector.fit(X, y)
             _support = selector.get_support(indices=True)
         except:
@@ -325,3 +236,19 @@ class MutualInformationSelection(base.BaseSelector):
         # A wrapper around sklearn formatter.
 
         return check_X_y(X, y)
+
+    def _check_params(self, X):
+
+        # Satisfying check in sklearn KDTree (binary tree).
+        nrows, _ = np.shape(X)
+        if self.num_neighbors > nrows:
+            self.num_neighbors = int(nrows - 1)
+        else:
+            self.num_neighbors = int(self.num_neighbors)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
