@@ -1,0 +1,1 @@
+{"cpu_time": 0, "total_cpu_time": null, "wallclock_time": 0.00013518333435058594, "evaluations": 0, "cost": 2147483648, "incumbent": [":SVCEstimator__C='1.0'", ":SVCEstimator__kernel=''linear''", ":SVCEstimator__random_state='500'", ":SVCEstimator__shrinking='True'"], "origin": "Default"}

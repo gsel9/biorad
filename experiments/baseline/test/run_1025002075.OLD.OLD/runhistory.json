@@ -1,0 +1,30 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.03899717330932617,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default"
+  },
+  "configs": {
+    "1": {
+      "SVCEstimator:SVCEstimator__C": 1.0,
+      "SVCEstimator:SVCEstimator__kernel": "linear",
+      "SVCEstimator:SVCEstimator__random_state": 500,
+      "SVCEstimator:SVCEstimator__shrinking": true
+    }
+  }
+}

@@ -25,6 +25,9 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
+SEED = 0
+
+
 class RFEstimator(base.BaseEstimator):
 
     NAME = 'RFEstimator'
@@ -197,37 +200,36 @@ class SVCEstimator(base.BaseEstimator):
     def config_space(self):
         """Returns the SVC hyperparameter configuration space."""
 
+        global SEED
+
         random_states = UniformIntegerHyperparameter(
-            '{}__random_state'.format(self.NAME), lower=0, upper=1000,
+            'random_state', lower=0, upper=1000,
         )
         C = UniformFloatHyperparameter(
-            '{}__C'.format(self.NAME),
-            lower=0.001, upper=1000.0, default_value=1.0
+            'C', lower=0.001, upper=1000.0, default_value=1.0
         )
         shrinking = CategoricalHyperparameter(
-            '{}__shrinking'.format(self.NAME),
-            [True, False], default_value=True
+            'shrinking', [True, False], default_value=True
             #['true', 'false'], default_value='true'
         )
         kernel = CategoricalHyperparameter(
-            '{}__kernel'.format(self.NAME),
-            ['linear', 'rbf', 'poly', 'sigmoid'],
+            'kernel', ['linear', 'rbf', 'poly', 'sigmoid'],
         )
         gamma = CategoricalHyperparameter(
             'gamma', ['auto', 'value'], default_value='auto'
         )
         gamma_value = UniformFloatHyperparameter(
-            'gamma_value', 0.0001, 8, default_value=1
+            'gamma_value', lower=0.0001, upper=8, default_value=1
         )
         degree = UniformIntegerHyperparameter(
-            '{}__degree'.format(self.NAME), 1, 5, default_value=3
+            'degree', lower=1, upper=5, default_value=3
         )
         coef0 = UniformFloatHyperparameter(
-            '{}__coef0'.format(self.NAME),
-            lower=0.0, upper=10.0, default_value=0.0
+            'coef0', lower=0.0, upper=10.0, default_value=0.0
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
+        config.seed(SEED)
         config.add_hyperparameters(
             (
                 random_states,

@@ -1,0 +1,113 @@
+{
+  "hyperparameters": [
+    {
+      "name": ":SVCEstimator__C",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.001,
+      "upper": 1000.0,
+      "default": 1.0
+    },
+    {
+      "name": ":SVCEstimator__kernel",
+      "type": "categorical",
+      "choices": [
+        "linear",
+        "rbf",
+        "poly",
+        "sigmoid"
+      ],
+      "default": "linear"
+    },
+    {
+      "name": ":SVCEstimator__random_state",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 0,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": ":SVCEstimator__shrinking",
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default": true
+    },
+    {
+      "name": ":SVCEstimator__coef0",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.0,
+      "upper": 10.0,
+      "default": 0.0
+    },
+    {
+      "name": ":SVCEstimator__degree",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 5,
+      "default": 3
+    },
+    {
+      "name": ":gamma",
+      "type": "categorical",
+      "choices": [
+        "auto",
+        "value"
+      ],
+      "default": "auto"
+    },
+    {
+      "name": ":gamma_value",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.0001,
+      "upper": 8.0,
+      "default": 1.0
+    }
+  ],
+  "conditions": [
+    {
+      "child": ":SVCEstimator__coef0",
+      "parent": ":SVCEstimator__kernel",
+      "type": "IN",
+      "values": [
+        "poly",
+        "sigmoid"
+      ]
+    },
+    {
+      "child": ":SVCEstimator__degree",
+      "parent": ":SVCEstimator__kernel",
+      "type": "IN",
+      "values": [
+        "poly"
+      ]
+    },
+    {
+      "child": ":gamma",
+      "parent": ":SVCEstimator__kernel",
+      "type": "IN",
+      "values": [
+        "rbf",
+        "poly",
+        "sigmoid"
+      ]
+    },
+    {
+      "child": ":gamma_value",
+      "parent": ":gamma",
+      "type": "IN",
+      "values": [
+        "value"
+      ]
+    }
+  ],
+  "forbiddens": [],
+  "python_module_version": "0.4.7",
+  "json_format_version": 0.1
+}

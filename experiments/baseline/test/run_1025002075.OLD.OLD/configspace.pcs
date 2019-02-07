@@ -1,0 +1,13 @@
+SVCEstimator:SVCEstimator__C real [0.001, 1000.0] [1.0]
+SVCEstimator:SVCEstimator__kernel categorical {linear, rbf, poly, sigmoid} [linear]
+SVCEstimator:SVCEstimator__random_state integer [0, 1000] [500]
+SVCEstimator:SVCEstimator__shrinking categorical {True, False} [True]
+SVCEstimator:SVCEstimator__coef0 real [0.0, 10.0] [0.0]
+SVCEstimator:SVCEstimator__degree integer [1, 5] [3]
+SVCEstimator:gamma categorical {auto, value} [auto]
+SVCEstimator:gamma_value real [0.0001, 8.0] [1.0]
+
+SVCEstimator:SVCEstimator__coef0 | SVCEstimator:SVCEstimator__kernel in {poly, sigmoid}
+SVCEstimator:SVCEstimator__degree | SVCEstimator:SVCEstimator__kernel in {poly}
+SVCEstimator:gamma | SVCEstimator:SVCEstimator__kernel in {rbf, poly, sigmoid}
+SVCEstimator:gamma_value | SVCEstimator:gamma in {value}
