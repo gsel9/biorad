@@ -157,25 +157,31 @@ class LogRegEstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
     @property
-    def hparam_space(self):
-        """Returns the LR hyperparameter space."""
+    def config_space(self):
+        """Returns the LR hyperparameter configuration space."""
 
-        # NOTE: This algorithm is stochastic and its performance varies
-        # across random states.
-        hparam_space = (
-            UniformIntegerHyperparameter(
-                '{}__random_state'.format(self.NAME), lower=0, upper=1000,
-            ),
-            UniformFloatHyperparameter(
-                '{}__C'.format(self.NAME),
-                lower=0.001, upper=1000.0, default_value=1.0
-            ),
-            CategoricalHyperparameter(
-                '{}__penalty'.format(self.NAME),
-                ['l1', 'l2'], default_value='l2'
-            ),
+        global SEED
+
+        random_state = UniformIntegerHyperparameter(
+            'random_state', lower=0, upper=1000,
         )
-        return hparam_space
+        C = UniformFloatHyperparameter(
+            'C', lower=0.001, upper=1000.0, default_value=1.0
+        )
+        penalty = CategoricalHyperparameter(
+            'penalty', ['l1', 'l2'], default_value='l2'
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters(
+            (
+                random_states,
+                C,
+                penalty
+            )
+        )
+        return config
 
 
 class SVCEstimator(base.BaseEstimator):
@@ -293,8 +299,8 @@ class KNNEstimator(base.BaseEstimator):
         global SEED
 
         n_neighbors = UniformIntegerHyperparameter(
-                'n_neighbors', 3, 100, default_value=5
-            )
+            'n_neighbors', 3, 100, default_value=5
+        )
         leaf_size = UniformIntegerHyperparameter(
             'leaf_size', 10, 100, default_value=30
         )
@@ -302,16 +308,19 @@ class KNNEstimator(base.BaseEstimator):
             'metric',
             ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
             default_value='minkowski'
-        ),
+        )
         p = UniformIntegerHyperparameter('p', 1, 5, default_value=2)
 
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
-        config.add_hyperparameters(
-            (n_neighbors, leaf_size, metric, p)
+        config.add_hyperparameters((n_neighbors, leaf_size, metric, p))
+
+        # Conditionals on hyperparameters specific to kernels.
+        config.add_condition(
+            InCondition(child=p, parent=metric, values=['minkowski'])
         )
-        return hparam_space
+        return config
 
 
 if __name__ == '__main__':
