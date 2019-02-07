@@ -126,23 +126,23 @@ if __name__ == '__main__':
     # Possible to define multiple experiments (e.g. all possible combos of a
     # clf and a FS).
     setup = {
-        #'rfs_relieff_plsr': (
-        #    ('1_{}'.format(StandardScaler.__name__), StandardScaler()),
+        'rfs_relieff_plsr': (
+            ('1_{}'.format(StandardScaler.__name__), StandardScaler()),
         #    (FeatureScreening.__name__, FeatureScreening()),
         #    ('2_{}'.format(StandardScaler.__name__), StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (PLSREstimator.__name__, PLSREstimator())
-        #),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (PLSREstimator.__name__, PLSREstimator())
+        ),
         #'relieff_svc': (
         #    (StandardScaler.__name__, StandardScaler()),
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (SVCEstimator.__name__, SVCEstimator())
         #),
-        'relieff_logreg': (
-            (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
-            (LogRegEstimator.__name__, LogRegEstimator())
-        ),
+        #'relieff_logreg': (
+        #    (StandardScaler.__name__, StandardScaler()),
+        #    (ReliefFSelection.__name__, ReliefFSelection()),
+        #    (LogRegEstimator.__name__, LogRegEstimator())
+        #),
         #'relieff_gnb': (
         #    (StandardScaler.__name__, StandardScaler()),
         #    (ReliefFSelection.__name__, ReliefFSelection()),
@@ -160,13 +160,13 @@ if __name__ == '__main__':
         #),
     }
     print(config_experiments(setup))
-    #print(LogRegEstimator().config_space)
+    #print(PLSREstimator().config_space)
     #print(SVCEstimator().config_space)
 
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
     # TODO: Write prelim results!!!
-    """
+
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -181,4 +181,3 @@ if __name__ == '__main__':
     )
     res = pd.read_csv(path_to_results, index_col=0)
     print(np.mean(res['test_score']))
-    """
