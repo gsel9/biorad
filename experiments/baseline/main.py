@@ -107,22 +107,6 @@ if __name__ == '__main__':
 
     from sklearn.preprocessing import StandardScaler
 
-
-    # TODO:
-    # * Setup Fisher score and Chi2 feature screening experiments.
-
-
-    np.random.seed(0)
-    random_states = np.random.randint(1000, size=30)
-
-    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
-    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
-
-    path_to_results = './test.csv'
-    #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
-    #path_to_results = './rfs_nofilter_dfs.csv'
-    #path_to_results = './dgufs_nofilter_dfs.csv'
-
     # Possible to define multiple experiments (e.g. all possible combos of a
     # clf and a FS).
     setup = {
@@ -133,39 +117,51 @@ if __name__ == '__main__':
             (ReliefFSelection.__name__, ReliefFSelection()),
             (PLSREstimator.__name__, PLSREstimator())
         ),
-        #'relieff_svc': (
-        #    (StandardScaler.__name__, StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (SVCEstimator.__name__, SVCEstimator())
-        #),
-        #'relieff_logreg': (
-        #    (StandardScaler.__name__, StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (LogRegEstimator.__name__, LogRegEstimator())
-        #),
-        #'relieff_gnb': (
-        #    (StandardScaler.__name__, StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (GNBEstimator.__name__, GNBEstimator())
-        #),
-        #'relieff_rf': (
-        #    (StandardScaler.__name__, StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (RFEstimator.__name__, RFEstimator())
-        #),
-        #'relieff_knn': (
-        #    (StandardScaler.__name__, StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (KNNEstimator.__name__, KNNEstimator())
-        #),
+        'relieff_svc': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (SVCEstimator.__name__, SVCEstimator())
+        ),
+        'relieff_logreg': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (LogRegEstimator.__name__, LogRegEstimator())
+        ),
+        'relieff_gnb': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (GNBEstimator.__name__, GNBEstimator())
+        ),
+        'relieff_rf': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (RFEstimator.__name__, RFEstimator())
+        ),
+        'relieff_knn': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (KNNEstimator.__name__, KNNEstimator())
+        ),
     }
-    print(config_experiments(setup))
+
+    #print(config_experiments(setup))
     #print(PLSREstimator().config_space)
     #print(SVCEstimator().config_space)
 
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
     # TODO: Write prelim results!!!
+
+    np.random.seed(0)
+    random_states = np.random.randint(1000, size=5)
+
+    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
+    y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
+
+    path_to_results = './test.csv'
+    #path_to_results = './baseline_nofilter_dfs.csv' # 0.5091642924976257
+    #path_to_results = './rfs_nofilter_dfs.csv'
+    #path_to_results = './dgufs_nofilter_dfs.csv'
 
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
@@ -174,10 +170,10 @@ if __name__ == '__main__':
         score_func=balanced_roc_auc,
         selection_scheme='k-fold',
         n_splits=5,
-        max_evals=25,
+        max_evals=10,
         output_dir='./test',
         random_states=random_states,
         path_final_results=path_to_results
     )
-    res = pd.read_csv(path_to_results, index_col=0)
-    print(np.mean(res['test_score']))
+    #res = pd.read_csv(path_to_results, index_col=0)
+    #print(np.mean(res['test_score']))
