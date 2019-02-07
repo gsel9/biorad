@@ -23,6 +23,56 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
+class RFEstimator(base.BaseEstimator):
+
+    NAME = 'RFEstimator'
+
+    def __init__(
+        self,
+        mode='classification',
+        model=RandomForestClassifier(
+            n_jobs=-1,
+            verbose=False,
+            oob_score=False,
+            class_weight='balanced',
+        )
+    ):
+
+        super().__init__(model=model, mode=mode)
+
+    @property
+    def hparam_space(self):
+        """Returns the PLS Regression hyperparameter space."""
+
+        # NOTE: This algorithm is stochastic and its performance varies
+        # across random states.
+        hparam_space = (
+            UniformIntegerHyperparameter(
+                '{}__random_state'.format(self.NAME), lower=0, upper=1000,
+            ),
+            UniformIntegerHyperparameter(
+                '{}__n_estimators'.format(self.NAME),
+                lower=10,
+                upper=3000,
+                default_value=100
+            ),
+            CategoricalHyperparameter(
+                '{}__criterion'.format(self.NAME),
+                ['gini', 'entropy'], default_value='gini'
+            ),
+            CategoricalHyperparameter(
+                '{}__max_depth'.format(self.NAME),
+                [3, 5, None], default_value=None
+            ),
+            CategoricalHyperparameter(
+                '{}__max_features'.format(self.NAME),
+                ['auto', 'sqrt', 'log2', None], default_value=None
+            ),
+        )
+        return hparam_space
+
+
+
 class PLSREstimator(base.BaseEstimator):
 
     NAME = 'PLSREstimator'
@@ -53,11 +103,23 @@ class PLSREstimator(base.BaseEstimator):
                 lower=1,
                 upper=40,
                 default_value=27
-            )
+            ),
         )
         return hparam_space
 
 
+# * The n_jobs > 1 does not have any effect when solver
+#   is set to 'liblinear'.
+# * Should explicitly specify penalty since this param depends
+#   on the selected solver. Using L1 enables dim reduction in high
+#   dim classification problems.
+# * The `liblinear` solver allows for binary classification with L1 and L2
+#   regularization, is robust to unscaled data sets, penalize the intercept
+#   term, but is not faster for larger data sets.
+# * Dual formulation is only implemented for l2 penalty with liblinear
+#   solver. Thus, enabling to select from l1 or l2 requires Dual=False.
+# * Set multi class to `ovr` for binary problems.
+# * The max_iter is not usefull with `liblinear` solver.
 class LogRegEstimator(base.BaseEstimator):
 
     NAME = 'LogRegEstimator'
@@ -83,8 +145,8 @@ class LogRegEstimator(base.BaseEstimator):
     def hparam_space(self):
         """Returns the LR hyperparameter space."""
 
-        # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator.
+        # NOTE: This algorithm is stochastic and its performance varies
+        # across random states.
         hparam_space = (
             UniformIntegerHyperparameter(
                 '{}__random_state'.format(self.NAME), lower=0, upper=1000,
@@ -172,6 +234,7 @@ class SVCEstimator(base.BaseEstimator):
         return hparam_space
 
 
+# NOTE: This algorithm does not associate hyperparameters.
 class GNBEstimator(base.BaseEstimator):
 
     NAME = 'GNBEstimator'
@@ -184,31 +247,12 @@ class GNBEstimator(base.BaseEstimator):
 
         super().__init__(model=model, mode=mode)
 
-    @property
-    def hparam_space(self):
-        """Returns the LR hyperparameter space."""
-
-        # NOTE: This algorithm does not associate hyperparameters.
-        hparam_space = (
-            [],
-        )
-        return hparam_space
-
 
 if __name__ == '__main__':
     pass
 
     """
-    # Gaussian Naive Bayes:
-    GaussianNB.__name__: {
-        'estimator': [
-            ('{}_scaler'.format(CLF_LABEL), StandardScaler()),
-            (CLF_LABEL, PipeEstimator())
-        ],
-        'params': hyperparams.gnb_param_space(
-            estimator_name_func, priors=None, var_smoothing=None
-        )
-    },
+
 
     AdaBoostClassifier.__name__: {
         'estimator': [
@@ -226,18 +270,7 @@ if __name__ == '__main__':
     },
 
     # Logistic Regression:
-    # * The n_jobs > 1 does not have any effect when solver
-    #   is set to 'liblinear'.
-    # * Should explicitly specify penalty since this param depends
-    #   on the selected solver. Using L1 enables dim reduction in high
-    #   dim classification problems.
-    # * The `liblinear` solver allows for binary classification with L1 and L2
-    #   regularization, is robust to unscaled data sets, penalize the intercept
-    #   term, but is not faster for larger data sets.
-    # * Dual formulation is only implemented for l2 penalty with liblinear
-    #   solver. Thus, enabling to select from l1 or l2 requires Dual=False.
-    # * Set multi class to `ovr` for binary problems.
-    # * The max_iter is not usefull with `liblinear` solver.
+
     # REF: sklearn docs.
     LogisticRegression.__name__: {
         'estimator': [
@@ -323,12 +356,7 @@ if __name__ == '__main__':
     RandomForestClassifier.__name__: {
         'estimator': [
             (CLF_LABEL, PipeEstimator(
-                RandomForestClassifier(
-                    n_jobs=-1,
-                    verbose=False,
-                    oob_score=False,
-                    class_weight='balanced',
-                )
+
             ))
         ],
         'params': hyperparams.trees_param_space(
