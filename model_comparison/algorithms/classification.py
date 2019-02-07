@@ -287,28 +287,29 @@ class KNNEstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
     @property
-    def hparam_space(self):
-        """Returns the KNN hyperparameter space."""
+    def config_space(self):
+        """Returns the KNN hyperparameter configuration space."""
 
-        # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator.
-        hparam_space = (
-            UniformIntegerHyperparameter(
-                '{}__n_neighbors'.format(self.NAME), 3, 100, default_value=5
-            ),
-            UniformIntegerHyperparameter(
-                '{}__leaf_size'.format(self.NAME), 10, 100, default_value=30
-            ),
-            CategoricalHyperparameter(
-                '{}__metric'.format(self.NAME),
-                ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
-                default_value='minkowski'
-            ),
-            UniformIntegerHyperparameter(
-                '{}__p'.format(self.NAME), 1, 5, default_value=2
-            ),
-            # Activate hyperparameters according to choice of metric.
-            #InCondition(child=p, parent=metric, values=['minkowski']),
+        global SEED
+
+        n_neighbors = UniformIntegerHyperparameter(
+                'n_neighbors', 3, 100, default_value=5
+            )
+        leaf_size = UniformIntegerHyperparameter(
+            'leaf_size', 10, 100, default_value=30
+        )
+        metric = CategoricalHyperparameter(
+            'metric',
+            ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
+            default_value='minkowski'
+        ),
+        p = UniformIntegerHyperparameter('p', 1, 5, default_value=2)
+
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters(
+            (n_neighbors, leaf_size, metric, p)
         )
         return hparam_space
 

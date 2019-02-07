@@ -181,4 +181,3 @@ if __name__ == '__main__':
     )
     res = pd.read_csv(path_to_results, index_col=0)
     print(np.mean(res['test_score']))
-    

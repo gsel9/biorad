@@ -196,10 +196,11 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
         # Validate model configuration by updating hyperparameter settings.
 
         _params = {}
+        # Copy valid hyperparameter settings.
         for key in params:
             # For deactivated parameters, the configuration stores None which
             # is not accepted by estimators.
-            if params[key]:
+            if params[key] is not None:
                 # Translate SVC shrinking boolean.
                 #if 'shrinking' in params:
                 #    if params['shrinking'] == 'true':
@@ -209,10 +210,11 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
                 # Set SVC gamma to a fixed value or to 'auto' if used.
                 if 'gamma' in params:
                     if params['gamma'] == 'value':
-                        params['gamma'] = params['gamma_value']
+                        _params['gamma'] = params['gamma_value']
                     else:
-                        params['gamma'] = 'auto'
-                _params[key] = params[key]
+                        _params['gamma'] = 'auto'
+                else:
+                    _params[key] = params[key]
             else:
                 pass
 
