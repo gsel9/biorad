@@ -88,6 +88,14 @@ class LogRegstimator(base.BaseEstimator):
             UniformIntegerHyperparameter(
                 '{}__random_state'.format(self.NAME), lower=0, upper=1000,
             ),
+            UniformFloatHyperparameter(
+                '{}__C'.format(self.NAME),
+                lower=0.001, upper=1000.0, default_value=1.0
+            ),
+            CategoricalHyperparameter(
+                '{}__penalty'.format(self.NAME),
+                ['l1', 'l2'], default_value='l2'
+            ),
         )
         return hparam_space
 

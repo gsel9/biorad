@@ -200,14 +200,24 @@ class BaseEstimator(BaseEstimator, MetaEstimatorMixin):
             # For deactivated parameters, the configuration stores None which
             # is not accepted by estimators.
             if params[key]:
-                # Translate booleans.
+                # Translate SVC shrinking boolean.
                 if 'shrinking' in params:
-                    params['shrinking'] = True
-                    if params['shrinking'] == 'true' else False
+                    if params['shrinking'] == 'true':
+                        params['shrinking'] = True
+                    else:
+                        params['shrinking'] = False
+                # Translate LogReg dual boolean.
+                #if 'dual' in params:
+                #    if params['dual'] == 'true':
+                #        params['dual'] = True
+                #    else:
+                #        params['dual'] = False
                 # Set SVC gamma to a fixed value or to 'auto' if used.
                 if 'gamma' in params:
-                    params['gamma'] = params['gamma_value']
-                    if params['gamma'] == 'value' else 'auto'
+                    if params['gamma'] == 'value':
+                        params['gamma'] = params['gamma_value']
+                    else:
+                        params['gamma'] = 'auto'
                 _params[key] = params[key]
             else:
                 pass

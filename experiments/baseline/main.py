@@ -99,6 +99,7 @@ if __name__ == '__main__':
     from algorithms.feature_selection import FeatureScreening
     from algorithms.classification import PLSREstimator
     from algorithms.classification import SVCEstimator
+    from algorithms.classification import SVCEstimator
 
     from sklearn.preprocessing import StandardScaler
 
@@ -133,7 +134,7 @@ if __name__ == '__main__':
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (SVCEstimator.__name__, SVCEstimator())
         #),
-        'relieff_svc': (
+        'relieff_logreg': (
             (StandardScaler.__name__, StandardScaler()),
             (ReliefFSelection.__name__, ReliefFSelection()),
             (SVCEstimator.__name__, SVCEstimator())
