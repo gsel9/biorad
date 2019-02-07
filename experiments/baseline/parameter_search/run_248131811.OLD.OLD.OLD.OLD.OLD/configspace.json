@@ -1,0 +1,87 @@
+{
+  "hyperparameters": [
+    {
+      "name": "RFEstimator__bootstrap",
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default": true
+    },
+    {
+      "name": "RFEstimator__criterion",
+      "type": "categorical",
+      "choices": [
+        "gini",
+        "entropy"
+      ],
+      "default": "gini"
+    },
+    {
+      "name": "RFEstimator__max_depth",
+      "type": "categorical",
+      "choices": [
+        3,
+        5,
+        null
+      ],
+      "default": 3
+    },
+    {
+      "name": "RFEstimator__max_features",
+      "type": "categorical",
+      "choices": [
+        "auto",
+        "sqrt",
+        "log2",
+        null
+      ],
+      "default": "auto"
+    },
+    {
+      "name": "RFEstimator__min_samples_leaf",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 1e-06,
+      "upper": 0.5,
+      "default": 0.2500005
+    },
+    {
+      "name": "RFEstimator__n_estimators",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 3000,
+      "default": 100
+    },
+    {
+      "name": "RFEstimator__random_state",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 0,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "ReliefFSelection__num_features",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 2,
+      "upper": 50,
+      "default": 20
+    },
+    {
+      "name": "ReliefFSelection__num_neighbors",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 100,
+      "default": 20
+    }
+  ],
+  "conditions": [],
+  "forbiddens": [],
+  "python_module_version": "0.4.7",
+  "json_format_version": 0.1
+}

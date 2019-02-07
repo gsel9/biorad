@@ -69,7 +69,7 @@ class RFEstimator(base.BaseEstimator):
             'bootstrap', [True, False], default_value=True
         )
         min_samples_leaf = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1.5, upper=50.5,
+            'min_samples_leaf', lower=1e-6, upper=0.5,
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()

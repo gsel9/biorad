@@ -1,0 +1,49 @@
+{
+  "hyperparameters": [
+    {
+      "name": "LogRegEstimator__C",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.001,
+      "upper": 1000.0,
+      "default": 1.0
+    },
+    {
+      "name": "LogRegEstimator__penalty",
+      "type": "categorical",
+      "choices": [
+        "l1",
+        "l2"
+      ],
+      "default": "l2"
+    },
+    {
+      "name": "LogRegEstimator__random_state",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 0,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "ReliefFSelection__num_features",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 2,
+      "upper": 50,
+      "default": 20
+    },
+    {
+      "name": "ReliefFSelection__num_neighbors",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 100,
+      "default": 20
+    }
+  ],
+  "conditions": [],
+  "forbiddens": [],
+  "python_module_version": "0.4.7",
+  "json_format_version": 0.1
+}

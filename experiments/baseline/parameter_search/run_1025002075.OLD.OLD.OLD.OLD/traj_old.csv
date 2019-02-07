@@ -1,0 +1,3 @@
+"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
+0.000000, 2147483648.000000, 0.000262, 1, 0.000262, ReliefFSelection__num_features='20', ReliefFSelection__num_neighbors='20'
+0.238497, 0.472715, 0.264178, 1, 0.025681, ReliefFSelection__num_features='20', ReliefFSelection__num_neighbors='20'

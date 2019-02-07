@@ -1,0 +1,68 @@
+{
+  "hyperparameters": [
+    {
+      "name": "KNNEstimator__leaf_size",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 100,
+      "default": 30
+    },
+    {
+      "name": "KNNEstimator__metric",
+      "type": "categorical",
+      "choices": [
+        "euclidean",
+        "manhattan",
+        "chebyshev",
+        "minkowski"
+      ],
+      "default": "minkowski"
+    },
+    {
+      "name": "KNNEstimator__n_neighbors",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 3,
+      "upper": 100,
+      "default": 5
+    },
+    {
+      "name": "ReliefFSelection__num_features",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 2,
+      "upper": 50,
+      "default": 20
+    },
+    {
+      "name": "ReliefFSelection__num_neighbors",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 100,
+      "default": 20
+    },
+    {
+      "name": "KNNEstimator__p",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 5,
+      "default": 2
+    }
+  ],
+  "conditions": [
+    {
+      "child": "KNNEstimator__p",
+      "parent": "KNNEstimator__metric",
+      "type": "IN",
+      "values": [
+        "minkowski"
+      ]
+    }
+  ],
+  "forbiddens": [],
+  "python_module_version": "0.4.7",
+  "json_format_version": 0.1
+}

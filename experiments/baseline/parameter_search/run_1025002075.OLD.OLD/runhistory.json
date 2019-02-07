@@ -1,0 +1,82 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        0.441347947761194,
+        0.1852121353149414,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        2,
+        null,
+        0
+      ],
+      [
+        0.43598414179104483,
+        0.15717315673828125,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        3,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.03204917907714844,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default",
+    "2": "Random Search",
+    "3": "Random Search (sorted)"
+  },
+  "configs": {
+    "1": {
+      "ReliefFSelection__num_features": 20,
+      "ReliefFSelection__num_neighbors": 20,
+      "SVCEstimator__C": 1.0,
+      "SVCEstimator__kernel": "linear",
+      "SVCEstimator__random_state": 500,
+      "SVCEstimator__shrinking": true
+    },
+    "2": {
+      "ReliefFSelection__num_features": 10,
+      "ReliefFSelection__num_neighbors": 10,
+      "SVCEstimator__C": 399.88154350973406,
+      "SVCEstimator__kernel": "linear",
+      "SVCEstimator__random_state": 638,
+      "SVCEstimator__shrinking": true
+    },
+    "3": {
+      "ReliefFSelection__num_features": 26,
+      "ReliefFSelection__num_neighbors": 96,
+      "SVCEstimator__C": 61.3656065219803,
+      "SVCEstimator__kernel": "rbf",
+      "SVCEstimator__random_state": 396,
+      "SVCEstimator__shrinking": true,
+      "SVCEstimator__gamma": "value",
+      "SVCEstimator__gamma_value": 0.4019955961568076
+    }
+  }
+}

@@ -152,12 +152,12 @@ if __name__ == '__main__':
         KNNEstimator.__name__: KNNEstimator()
     }
     selectors = {
-        ReliefFSelection.__name__: ReliefFSelection(),
+        #ReliefFSelection.__name__: ReliefFSelection(),
         MutualInformationSelection.__name__: MutualInformationSelection(),
-        Chi2Selection.__name__: Chi2Selection(),
-        MRMRSelection.__name__: MRMRSelection(),
-        WilcoxonSelection.__name__: WilcoxonSelection(),
-        FScoreSelection.__name__: FScoreSelection()
+        #Chi2Selection.__name__: Chi2Selection(),
+        #MRMRSelection.__name__: MRMRSelection(),
+        #WilcoxonSelection.__name__: WilcoxonSelection(),
+        #FScoreSelection.__name__: FScoreSelection()
     }
     # Wrap up estimators and selectors in experiment.
     setup = {}

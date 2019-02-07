@@ -1,0 +1,74 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        0.47959421641791045,
+        0.23023200035095215,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        2,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.020364999771118164,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        3,
+        null,
+        0
+      ],
+      [
+        0.4673507462686567,
+        0.16159582138061523,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default",
+    "2": "Random Search (sorted)",
+    "3": "Random Search"
+  },
+  "configs": {
+    "1": {
+      "PLSREstimator__n_components": 27,
+      "PLSREstimator__tol": 1e-07,
+      "ReliefFSelection__num_features": 20,
+      "ReliefFSelection__num_neighbors": 20
+    },
+    "2": {
+      "PLSREstimator__n_components": 26,
+      "PLSREstimator__tol": 0.000843908339844568,
+      "ReliefFSelection__num_features": 31,
+      "ReliefFSelection__num_neighbors": 76
+    },
+    "3": {
+      "PLSREstimator__n_components": 21,
+      "PLSREstimator__tol": 0.00011916851200842917,
+      "ReliefFSelection__num_features": 46,
+      "ReliefFSelection__num_neighbors": 28
+    }
+  }
+}

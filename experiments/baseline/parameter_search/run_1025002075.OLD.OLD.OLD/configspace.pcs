@@ -1,0 +1,5 @@
+LogRegEstimator__C real [0.001, 1000.0] [1.0]
+LogRegEstimator__penalty categorical {l1, l2} [l2]
+LogRegEstimator__random_state integer [0, 1000] [500]
+ReliefFSelection__num_features integer [2, 50] [20]
+ReliefFSelection__num_neighbors integer [10, 100] [20]

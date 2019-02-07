@@ -1,0 +1,89 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        0.46187033582089554,
+        0.7728152275085449,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        2,
+        null,
+        0
+      ],
+      [
+        0.5,
+        6.272793292999268,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        3,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.01942610740661621,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default",
+    "2": "Random Search (sorted)",
+    "3": "Random Search"
+  },
+  "configs": {
+    "1": {
+      "RFEstimator__bootstrap": true,
+      "RFEstimator__criterion": "gini",
+      "RFEstimator__max_depth": 3,
+      "RFEstimator__max_features": "auto",
+      "RFEstimator__min_samples_leaf": 0.2500005,
+      "RFEstimator__n_estimators": 100,
+      "RFEstimator__random_state": 500,
+      "ReliefFSelection__num_features": 20,
+      "ReliefFSelection__num_neighbors": 20
+    },
+    "2": {
+      "RFEstimator__bootstrap": false,
+      "RFEstimator__criterion": "gini",
+      "RFEstimator__max_depth": null,
+      "RFEstimator__max_features": "log2",
+      "RFEstimator__min_samples_leaf": 0.1285236785149606,
+      "RFEstimator__n_estimators": 1235,
+      "RFEstimator__random_state": 606,
+      "ReliefFSelection__num_features": 2,
+      "ReliefFSelection__num_neighbors": 33
+    },
+    "3": {
+      "RFEstimator__bootstrap": true,
+      "RFEstimator__criterion": "gini",
+      "RFEstimator__max_depth": 3,
+      "RFEstimator__max_features": "sqrt",
+      "RFEstimator__min_samples_leaf": 0.035592287581299786,
+      "RFEstimator__n_estimators": 2357,
+      "RFEstimator__random_state": 473,
+      "ReliefFSelection__num_features": 35,
+      "ReliefFSelection__num_neighbors": 58
+    }
+  }
+}

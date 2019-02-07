@@ -92,11 +92,11 @@ class FScoreSelection(base.BaseSelector):
             scores = fisher_score(X, y)
             return np.argsort(scores, 0)[::-1]
 
-        try:
-            _support = _fisher_score(X, y)[:self.num_features]
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        _support = _fisher_score(X, y)[:self.num_features]
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -158,11 +158,11 @@ class WilcoxonSelection(base.BaseSelector):
     def fit(self, X, y=None, **kwargs):
 
         X, y = self._check_X_y(X, y)
-        try:
-            _support = self.wilcoxon_rank_sum(X, y)
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        _support = self.wilcoxon_rank_sum(X, y)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -262,23 +262,23 @@ class MRMRSelection(base.BaseSelector):
         X, y = self._check_X_y(X, y)
 
         self._check_params(X, y)
-        try:
-            # NOTE: Categorical refers to the target variable data type.
-            selector = mifs.MutualInformationFeatureSelector(
-                method='MRMR',
-                categorical=True,
-                k=self.num_neighbors,
-                n_features=self.num_features,
-            )
-            selector.fit(X, y)
-            # Check for all NaNs.
-            if np.all(np.isnan(selector.support_)):
-                _support = []
-            else:
-                _support = np.squeeze(np.where(selector.support_))
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
+        #try:
+        # NOTE: Categorical refers to the target variable data type.
+        selector = mifs.MutualInformationFeatureSelector(
+            method='MRMR',
+            categorical=True,
+            k=self.num_neighbors,
+            n_features=self.num_features,
+        )
+        selector.fit(X, y)
+        # Check for all NaNs.
+        if np.all(np.isnan(selector.support_)):
             _support = []
+        else:
+            _support = np.squeeze(np.where(selector.support_))
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self
@@ -289,7 +289,7 @@ class MRMRSelection(base.BaseSelector):
         # smallest class.
         min_class_count = np.min(np.bincount(y))
         if self.num_neighbors > min_class_count:
-            self.num_neighbors = min_class_count
+            self.num_neighbors = int(min_class_count)
         if self.num_neighbors < 1:
             self.num_neighbors = 1
 
@@ -403,16 +403,16 @@ class ReliefFSelection(base.BaseSelector):
         X, y = self._check_X_y(X, y)
 
         self._check_params(X)
-        try:
-            selector = ReliefF(
-                n_neighbors=self.num_neighbors,
-                n_features_to_keep=self.num_features
-            )
-            selector.fit(X, y)
-            _support = selector.top_features[:self.num_features]
-        except:
-            warnings.warn('Failed to select support with {}'.format(self.NAME))
-            _support = []
+        #try:
+        selector = ReliefF(
+            n_neighbors=self.num_neighbors,
+            n_features_to_keep=self.num_features
+        )
+        selector.fit(X, y)
+        _support = selector.top_features[:self.num_features]
+        #except:
+        #    warnings.warn('Failed to select support with {}'.format(self.NAME))
+        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self
@@ -495,13 +495,13 @@ class MutualInformationSelection(base.BaseSelector):
                 n_neighbors=self.num_neighbors,
                 random_state=self.random_state
             )
-        try:
-            selector = SelectKBest(_mutual_info_classif, k=self.num_features)
-            selector.fit(X, y)
-            _support = selector.get_support(indices=True)
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        selector = SelectKBest(_mutual_info_classif, k=self.num_features)
+        selector.fit(X, y)
+        _support = selector.get_support(indices=True)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self
