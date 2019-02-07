@@ -97,7 +97,8 @@ if __name__ == '__main__':
     import pandas as pd
 
     from algorithms.feature_selection import ReliefFSelection
-    from algorithms.feature_selection import FeatureScreening
+    from algorithms.feature_selection import MutualInformationSelection
+
     from algorithms.classification import LogRegEstimator
     from algorithms.classification import PLSREstimator
     from algorithms.classification import SVCEstimator
@@ -111,35 +112,39 @@ if __name__ == '__main__':
     # clf and a FS).
     setup = {
         'rfs_relieff_plsr': (
-            ('1_{}'.format(StandardScaler.__name__), StandardScaler()),
-        #    (FeatureScreening.__name__, FeatureScreening()),
-        #    ('2_{}'.format(StandardScaler.__name__), StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
+            (StandardScaler.__name__, StandardScaler()),
+            #(ReliefFSelection.__name__, ReliefFSelection()),
+            (MutualInformationSelection.__name__, MutualInformationSelection()),
             (PLSREstimator.__name__, PLSREstimator())
         ),
         'relieff_svc': (
             (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
+            #(ReliefFSelection.__name__, ReliefFSelection()),
+            (MutualInformationSelection.__name__, MutualInformationSelection()),
             (SVCEstimator.__name__, SVCEstimator())
         ),
         'relieff_logreg': (
             (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
+            #(ReliefFSelection.__name__, ReliefFSelection()),
+            (MutualInformationSelection.__name__, MutualInformationSelection()),
             (LogRegEstimator.__name__, LogRegEstimator())
         ),
         'relieff_gnb': (
             (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
+            #(ReliefFSelection.__name__, ReliefFSelection()),
+            (MutualInformationSelection.__name__, MutualInformationSelection()),
             (GNBEstimator.__name__, GNBEstimator())
         ),
         'relieff_rf': (
             (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
+            #(ReliefFSelection.__name__, ReliefFSelection()),
+            (MutualInformationSelection.__name__, MutualInformationSelection()),
             (RFEstimator.__name__, RFEstimator())
         ),
         'relieff_knn': (
             (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
+            #(ReliefFSelection.__name__, ReliefFSelection()),
+            (MutualInformationSelection.__name__, MutualInformationSelection()),
             (KNNEstimator.__name__, KNNEstimator())
         ),
     }
