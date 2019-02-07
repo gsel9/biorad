@@ -138,11 +138,11 @@ if __name__ == '__main__':
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (SVCEstimator.__name__, SVCEstimator())
         #),
-        #'relieff_logreg': (
-        #    (StandardScaler.__name__, StandardScaler()),
-        #    (ReliefFSelection.__name__, ReliefFSelection()),
-        #    (LogRegEstimator.__name__, LogRegEstimator())
-        #),
+        'relieff_logreg': (
+            (StandardScaler.__name__, StandardScaler()),
+            (ReliefFSelection.__name__, ReliefFSelection()),
+            (LogRegEstimator.__name__, LogRegEstimator())
+        ),
         #'relieff_gnb': (
         #    (StandardScaler.__name__, StandardScaler()),
         #    (ReliefFSelection.__name__, ReliefFSelection()),
@@ -153,14 +153,14 @@ if __name__ == '__main__':
         #    (ReliefFSelection.__name__, ReliefFSelection()),
         #    (RFEstimator.__name__, RFEstimator())
         #),
-        'relieff_knn': (
-            (StandardScaler.__name__, StandardScaler()),
-            (ReliefFSelection.__name__, ReliefFSelection()),
-            (KNNEstimator.__name__, KNNEstimator())
-        ),
+        #'relieff_knn': (
+        #    (StandardScaler.__name__, StandardScaler()),
+        #    (ReliefFSelection.__name__, ReliefFSelection()),
+        #    (KNNEstimator.__name__, KNNEstimator())
+        #),
     }
-    #print(config_experiments(setup))
-    #print(KNNEstimator().config_space)
+    print(config_experiments(setup))
+    #print(LogRegEstimator().config_space)
     #print(SVCEstimator().config_space)
 
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that

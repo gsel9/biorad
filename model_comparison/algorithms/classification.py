@@ -101,26 +101,23 @@ class PLSREstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
     @property
-    def hparam_space(self):
-        """Returns the PLS Regression hyperparameter space."""
+    def config_space(self):
+        """Returns the PLS regression hyperparameter configuration space."""
 
-        # NOTE: This algorithm is not stochastic and its performance does not
-        # varying depending on a random number generator.
-        hparam_space = (
-            UniformFloatHyperparameter(
-                '{}__tol'.format(self.NAME),
-                lower=1e-9,
-                upper=1e-3,
-                default_value=1e-7
-            ),
-            UniformIntegerHyperparameter(
-                '{}__n_components'.format(self.NAME),
-                lower=1,
-                upper=40,
-                default_value=27
-            ),
+        global SEED
+
+        tol = UniformFloatHyperparameter(
+            'tol', lower=1e-9, upper=1e-3, default_value=1e-7
         )
-        return hparam_space
+        n_components = UniformIntegerHyperparameter(
+            'n_components', lower=1, upper=40, default_value=27
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters((tol, n_components))
+
+        return config
 
 
 # * The n_jobs > 1 does not have any effect when solver
@@ -162,7 +159,7 @@ class LogRegEstimator(base.BaseEstimator):
 
         global SEED
 
-        random_state = UniformIntegerHyperparameter(
+        random_states = UniformIntegerHyperparameter(
             'random_state', lower=0, upper=1000,
         )
         C = UniformFloatHyperparameter(
@@ -174,13 +171,8 @@ class LogRegEstimator(base.BaseEstimator):
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
-        config.add_hyperparameters(
-            (
-                random_states,
-                C,
-                penalty
-            )
-        )
+        config.add_hyperparameters((random_states, C, penalty))
+
         return config
 
 
