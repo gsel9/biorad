@@ -110,6 +110,7 @@ if __name__ == '__main__':
     from algorithms.classification import KNNEstimator
 
     from sklearn.preprocessing import StandardScaler
+    from sklearn.feature_selection import VarianceThreshold
 
     """
     setup = {
@@ -137,12 +138,25 @@ if __name__ == '__main__':
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
 
+    """
+    Vanilla experiment:
+    * 5-fold CV with 30 evals and 20 reps.
+
+    TODO!
+    Spicy experiment:
+    * Analyse ZCA-cor transformed feature matrix.
+    * Run 10/5-fold CV for 60 evals with 200 reps of BBC-CV and 10 experiments.
+    * Return median test score from CV objective and mean from BBC-CV.
+
+    """
+
     np.random.seed(0)
-    random_states = np.random.randint(1000, size=2)
+    random_states = np.random.randint(1000, size=20)
 
     path_to_results = './baseline_nofilter_dfs.csv'
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
+    #X = load_predictors('./../../../data_source/to_analysis/no_filter_concat_zca_cor.csv')
 
     estimators = {
         PLSREstimator.__name__: PLSREstimator(),
@@ -152,7 +166,6 @@ if __name__ == '__main__':
         RFEstimator.__name__: RFEstimator(),
         KNNEstimator.__name__: KNNEstimator()
     }
-
     selectors = {
         ReliefFSelection.__name__: ReliefFSelection(),
         MutualInformationSelection.__name__: MutualInformationSelection(),
@@ -163,13 +176,17 @@ if __name__ == '__main__':
         # NOTE: MRMR is really slow!
         #MRMRSelection.__name__: MRMRSelection(),
     }
-    # Wrap up estimators and selectors in experiment.
+    
+    # NOTE: Univaraite feature selection reported constant features in some
+    # folds. Remove features constant in folds consulting a variance threshold
+    # of zero variance.
     setup = {}
     for estimator_id, estimator in estimators.items():
         for selector_id, selector in selectors.items():
             label = '{}_{}'.format(selector_id, estimator_id)
             setup[label] = (
                 (StandardScaler.__name__, StandardScaler()),
+                (VarianceThreshold.__name__, VarianceThreshold())
                 (selector_id, selector),
                 (estimator_id, estimator)
             )
@@ -180,9 +197,9 @@ if __name__ == '__main__':
         experiments=config_experiments(setup),
         score_func=balanced_roc_auc,
         selection_scheme='k-fold',
-        n_splits=2,
+        n_splits=5,
         write_prelim=True,
-        max_evals=3,
+        max_evals=30,
         output_dir='./parameter_search',
         random_states=random_states,
         path_final_results=path_to_results
