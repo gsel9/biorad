@@ -186,11 +186,11 @@ if __name__ == '__main__':
             label = '{}_{}'.format(selector_id, estimator_id)
             setup[label] = (
                 (StandardScaler.__name__, StandardScaler()),
-                (VarianceThreshold.__name__, VarianceThreshold())
+                (VarianceThreshold.__name__, VarianceThreshold()),
                 (selector_id, selector),
                 (estimator_id, estimator)
             )
-    """
+
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -204,4 +204,3 @@ if __name__ == '__main__':
         random_states=random_states,
         path_final_results=path_to_results
     )
-    """
