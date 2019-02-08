@@ -89,13 +89,13 @@ class ANOVAFvalueSelection(base.BaseSelector):
         X, y = self._check_X_y(X, y)
 
         self._check_params(X, y)
-        try:
-            selector = SelectKBest(f_classif, k=self.num_features)
-            selector.fit(X, y)
-            _support = selector.get_support(indices=True)
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        selector = SelectKBest(f_classif, k=self.num_features)
+        selector.fit(X, y)
+        _support = selector.get_support(indices=True)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -167,16 +167,15 @@ class FScoreSelection(base.BaseSelector):
 
         def _fisher_score(X, y):
 
-            #scores = fisher_score(X, y)
-            scores = np.arange(X.shape[1])
+            scores = fisher_score(X, y)
             return np.argsort(scores, 0)[::-1]
 
         self._check_params(X, y)
-        try:
-            _support = _fisher_score(X, y)[:self.num_features]
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        _support = _fisher_score(X, y)[:self.num_features]
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -209,15 +208,13 @@ class WilcoxonSelection(base.BaseSelector):
 
     def __init__(
         self,
-        thresh=0.05,
-        bf_correction=False,
+        num_features,
         error_handling='all'
     ):
 
         super().__init__(error_handling)
 
-        self.thresh = thresh
-        self.bf_correction = bf_correction
+        self.num_features = num_features
 
         # NOTE: Attribute set with instance.
         self.support = None
@@ -228,17 +225,18 @@ class WilcoxonSelection(base.BaseSelector):
 
     @property
     def config_space(self):
-        """Returns the ReliefF hyperparameter configuration space."""
+        """Returns the Wilcoxon selection hyperparameter configuration space.
+        """
 
         global SEED
 
-        thresh = UniformFloatHyperparameter(
-            'thresh', lower=1e-6, upper=1, default_value=0.05
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
-        config.add_hyperparameter(thresh)
+        config.add_hyperparameter(num_features)
 
         return config
 
@@ -251,11 +249,12 @@ class WilcoxonSelection(base.BaseSelector):
     def fit(self, X, y=None, **kwargs):
 
         X, y = self._check_X_y(X, y)
-        try:
-            _support = self.wilcoxon_rank_sum(X, y)
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        p_values = self.wilcoxon_rank_sum(X, y)
+        _support = np.argsort(p_values)[:self.num_features]
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
 
         self.support = self.check_support(_support, X)
 
@@ -274,19 +273,13 @@ class WilcoxonSelection(base.BaseSelector):
 
         """
         _, ncols = np.shape(X)
-        support = []
-        if self.bf_correction:
-            for num in range(ncols):
-                _, pval = ranksums(X[:, num], y)
-                if pval <= self.thresh / ncols:
-                    support.append(num)
-        else:
-            for num in range(ncols):
-                _, pval = ranksums(X[:, num], y)
-                if pval <= self.thresh:
-                    support.append(num)
 
-        return np.array(support, dtype=int)
+        p_values = []
+        for num in range(ncols):
+            _, p_value = ranksums(X[:, num], y)
+            p_values.append(num)
+
+        return np.array(p_values, dtype=float)
 
 
 # NOTE:
@@ -595,13 +588,13 @@ class MutualInformationSelection(base.BaseSelector):
             )
 
         self._check_params(X, y)
-        try:
-            selector = SelectKBest(_mutual_info_classif, k=self.num_features)
-            selector.fit(X, y)
-            _support = selector.get_support(indices=True)
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        selector = SelectKBest(_mutual_info_classif, k=self.num_features)
+        selector.fit(X, y)
+        _support = selector.get_support(indices=True)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self
@@ -676,13 +669,13 @@ class Chi2Selection(base.BaseSelector):
         X, y = self._check_X_y(X, y)
 
         self._check_params(X, y)
-        try:
-            selector = SelectKBest(chi2, k=self.num_features)
-            selector.fit(X, y)
-            _support = selector.get_support(indices=True)
-        except:
-            warnings.warn('Failed support with {}.'.format(self.__name__))
-            _support = []
+        #try:
+        selector = SelectKBest(chi2, k=self.num_features)
+        selector.fit(X, y)
+        _support = selector.get_support(indices=True)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self

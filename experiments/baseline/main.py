@@ -151,12 +151,12 @@ if __name__ == '__main__':
     """
 
     np.random.seed(0)
-    random_states = np.random.randint(1000, size=20)
+    random_states = np.random.randint(1000, size=10)
 
     path_to_results = './baseline_nofilter_dfs.csv'
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
-    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
-    #X = load_predictors('./../../../data_source/to_analysis/no_filter_concat_zca_cor.csv')
+    #X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
+    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat_zca_cor.csv')
 
     estimators = {
         PLSREstimator.__name__: PLSREstimator(),
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         # NOTE: MRMR is really slow!
         #MRMRSelection.__name__: MRMRSelection(),
     }
-    
+
     # NOTE: Univaraite feature selection reported constant features in some
     # folds. Remove features constant in folds consulting a variance threshold
     # of zero variance.
@@ -190,7 +190,7 @@ if __name__ == '__main__':
                 (selector_id, selector),
                 (estimator_id, estimator)
             )
-
+    """
     comparison.model_comparison(
         comparison_scheme=model_selection.nested_selection,
         X=X, y=y,
@@ -204,3 +204,4 @@ if __name__ == '__main__':
         random_states=random_states,
         path_final_results=path_to_results
     )
+    """

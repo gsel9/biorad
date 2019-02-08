@@ -38,6 +38,94 @@ from smac.scenario.scenario import Scenario
 from smac.tae.execute_func import ExecuteTAFuncDict
 
 
+def bbc_cv_selection(
+    X, y,
+    experiment_id,
+    model,
+    hparam_space,
+    score_func,
+    n_splits,
+    selection_scheme,
+    output_dir,
+    max_evals,
+    verbose=1,
+    shuffle=True,
+    random_state=None,
+    path_tmp_results=None,
+    error_score='all',
+):
+    """
+    Work function for parallelizable model selection experiments.
+
+    Args:
+
+        cv (int): The number of folds in stratified k-fold cross-validation.
+        oob (int): The number of samples in out-of-bag bootstrap re-sampling.
+        max_evals (int): The number of iterations in hyperparameter search.
+
+    """
+    # Determine if storing preliminary results.
+    if path_tmp_results is not None:
+        path_case_file = os.path.join(
+            path_tmp_results, 'experiment_{}_{}'.format(
+                random_state, experiment_id
+            )
+        )
+    else:
+        path_case_file = ''
+    # Determine if results already exists.
+    if os.path.isfile(path_case_file):
+        output = utils.ioutil.read_prelim_result(path_case_file)
+        print('Reloading results from: {}'.format(path_case_file))
+    else:
+        output = {'exp_id': random_state, 'model_id': experiment_id}
+        if verbose > 0:
+            print('Running experiment: {}'.format(random_state))
+            start_time = datetime.now()
+
+        optimizer = SMACSearch(
+            model=model,
+            hparam_space=hparam_space,
+            performance_scheme='k-fold',
+            score_func=score_func,
+            n_splits=n_splits,
+            shuffle=shuffle,
+            verbose=verbose,
+            max_evals=max_evals,
+            random_state=random_state,
+            output_dir=output_dir,
+            store_predictions=True
+        )
+        optimizer.fit(X, y)
+
+        # Evaluate model performance with BBC-CV method.
+        bbc_cv = BootstrapBiasCorrectedCV(
+            random_state=random_state,
+            score_func=score_func,
+            alpha=alpha,
+            oob=oob,
+        )
+        # Add results from parameter search to output. Particularily usefull in
+        # assessing if sufficient number of objective function evaluations.
+        output.update(bbc_cv.evaluate(*optimizer.oos_pairs))
+        output.update(optimizer.test_loss)
+        output.update(optimizer.train_loss)
+        output.update(optimizer.test_loss_var)
+        output.update(optimizer.train_loss_var)
+        output.update(optimizer.best_config)
+
+        if path_tmp_results is not None:
+            print('Writing results...')
+            utils.ioutil.write_prelim_results(path_case_file, output)
+
+        if verbose > 0:
+            durat = datetime.now() - start_time
+            print('Experiment {} completed in {}'.format(random_state, durat))
+            output['exp_duration'] = durat
+
+    return output
+
+
 def nested_selection(
     X, y,
     experiment_id,
@@ -304,7 +392,8 @@ class SMACSearch:
         output_dir=None,
         verbose=0,
         abort_first_run=False,
-        early_stopping=30
+        early_stopping=30,
+        store_predictions=False
     ):
         self.model = model
         self.hparam_space = hparam_space
@@ -323,6 +412,7 @@ class SMACSearch:
         self.output_dir = output_dir
         self.random_state = random_state
         self.early_stopping = early_stopping
+        self.store_predictions = store_predictions
         if deterministic:
             self.deterministic = 'true'
         else:
@@ -332,6 +422,7 @@ class SMACSearch:
         self._best_config = None
         self._current_min = None
         self._objective_func = None
+        self._predictions = None
 
     @property
     def best_config(self):
@@ -356,7 +447,7 @@ class SMACSearch:
 
         if self._current_min is None:
             self._current_min = float(np.inf)
-        # Setup objective function.
+
         if self.performance_scheme == '632+':
             self._objective_func = self.point632plus_objective
         elif self.performance_scheme == 'k-fold':
@@ -365,7 +456,11 @@ class SMACSearch:
             raise ValueError('Invalid performance scheme {}'
                              ''.format(self.performance_scheme))
 
-        # Setup scenario object and opimitze.
+        if self.store_predictions:
+            self._predictions = PredictionPairsCV(self.cv, self.X, self.y)
+
+        # NOTE: see https://github.com/automl/auto-sklearn/issues/345 for
+        # info on `abort_on_first_run_crash`.
         scenario = Scenario(
             {
                 'run_obj': self.run_objective,
@@ -373,7 +468,6 @@ class SMACSearch:
                 'cs': self.hparam_space,
                 'deterministic': self.deterministic,
                 'output_dir': self.output_dir,
-                # See: https://github.com/automl/auto-sklearn/issues/345
                 'abort_on_first_run_crash': self.abort_first_run
              }
         )
@@ -436,6 +530,11 @@ class SMACSearch:
 
             y_train_pred = _model.predict(X_train)
             y_test_pred = _model.predict(X_test)
+
+            if self.store_predictions:
+                self._predictions.accumulate_predictions(y_test, y_test_pred)
+
+
             train_score = self.score_func(y_train, y_train_pred)
             test_score = self.score_func(y_test, y_test_pred)
             test_scores.append(
@@ -449,6 +548,9 @@ class SMACSearch:
             self.early_stopping = self.early_stopping - 1
         else:
             self._current_min = loss
+
+        if self.store_predictions:
+            self._predictions.update(loss)
 
         return loss
 
@@ -497,53 +599,84 @@ class OOBGenerator:
             yield train_idx, test_idx
 
 
-def point632plus_score(y_true, y_pred, train_score, test_score):
-    """Compute .632+ score for binary classification.
+class BootstrapBiasCorrectedCV:
 
-    Args:
-        y_true (array-like): Ground truths.
-        y_pred (array-like): Predictions.
-        train_score (float): Resubstitution score.
-        test_score (float): True score.
-
-    Returns:
-        (float): The .632+ score value.
-
-    """
-
-    @vectorize([float64(float64, float64, float64)])
-    def _relative_overfit_rate(train_score, test_score, gamma):
-        # Relative Overfiting Rate as described in ....
-        if test_score > train_score and gamma > train_score:
-            return (test_score - train_score) / (gamma - train_score)
-        else:
-            return 0
-
-    @jit
-    def _no_info_rate_binary(y_true, y_pred):
-        # The No Information Rate as described in ...
-
-        # NB: Only applicable to a dichotomous classification problem.
-        p_one = sum(y_true) / len(y_true)
-        q_one = sum(y_pred) / len(y_pred)
-
-        return p_one * (1 - q_one) + (1 - p_one) * q_one
+    def __init__(
+        self,
+        algo,
+        model,
+        space,
+        score_func,
+        cv=5,
+        cv=10,
+        verbose=0,
+        max_evals=10,
+        max_evals=100,
+        shuffle=True,
+        random_state=None,
+        error_score=np.nan,
+    ):
+    pass
 
 
-    @vectorize([float64(float64, float64, float64, float64)])
-    def _point632plus(train_score, test_score, r_marked, test_score_marked):
-        #
-        point632 = 0.368 * train_score + 0.632 * test_score
-        frac = (0.368 * 0.632 * r_marked) / (1 - 0.368 * r_marked)
+class PredictionPairsCV:
 
-        return point632 + (test_score_marked - train_score) * frac
+    def __init__(self):
 
-    gamma = _no_info_rate_binary(y_true, y_pred)
-    # Calculate adjusted parameters as described in Efron & Tibshiranir paper.
-    test_score_marked = min(test_score, gamma)
-    r_marked = _relative_overfit_rate(train_score, test_score, gamma)
+        # Ground truths and predictions for BBC-CV procedure.
+        self.Y_pred = None
+        self.Y_test = None
 
-    return _point632plus(train_score, test_score, r_marked, test_score_marked)
+    def accumulate_predictions(self, y_test, y_test_pred):
+        pass
+
+    @property
+    def oos_pairs(self):
+        """Returns a tuple with ground truths and corresponding out-of-sample
+        predictions."""
+
+        preds = np.transpose(
+            [items['y_pred'] for items in self.trials.results]
+        )
+        trues = np.transpose(
+            [items['y_true'] for items in self.trials.results]
+        )
+        return preds, trues
+
+    def _setup_pred_containers(self):
+
+        nrows, _ = np.shape(self.X)
+        # With scikit-learn CV:
+        # * The first n_samples % n_splits folds have size
+        #   n_samples // n_splits + 1, other folds have size
+        #   n_samples // n_splits, where n_samples is the number of samples.
+        # If stratified CV:
+        # * Train and test sizes may be different in each fold,
+        #   with a difference of at most n_classes
+        # Adjust the sample limit with be the number of target classes to
+        # ensure all predictions have equal size when storing outputs for
+        # BBC-CV procedure.
+        self._sample_lim = nrows // self.cv - len(set(self.y))
+
+        # Setup containers from predictions and corresponding ground truths to
+        # be used with BBC-CV procedure. The containers must hold the set of
+        # predictinos for each suggested hyperparamter configuration as the
+        # optimal. That is, predictions must be stored each time the objective
+        # function is called by the optimization algorithm.
+        self.Y_pred = np.zeros((self._sample_lim, self.max_evals), dtype=int)
+        self.Y_test = np.zeros((self._sample_lim, self.max_evals), dtype=int)
+
+        return self
+
+    def update_predictions(self):
+
+        Y_pred.append(pred_y_test[:self._sample_lim])
+        Y_test.append(y_test[:self._sample_lim])
+
+        ('y_true', np.hstack(Y_test,)),
+        ('y_pred', np.hstack(Y_pred,)),
+
+        return self
 
 
 class TPESearchCV:
@@ -749,3 +882,52 @@ class TPESearchCV:
     def _check_X_y(X, y):
         # Wrapping the sklearn formatter function.
         return check_X_y(X, y)
+
+
+def point632plus_score(y_true, y_pred, train_score, test_score):
+    """Compute .632+ score for binary classification.
+
+    Args:
+        y_true (array-like): Ground truths.
+        y_pred (array-like): Predictions.
+        train_score (float): Resubstitution score.
+        test_score (float): True score.
+
+    Returns:
+        (float): The .632+ score value.
+
+    """
+
+    @vectorize([float64(float64, float64, float64)])
+    def _relative_overfit_rate(train_score, test_score, gamma):
+        # Relative Overfiting Rate as described in ....
+        if test_score > train_score and gamma > train_score:
+            return (test_score - train_score) / (gamma - train_score)
+        else:
+            return 0
+
+    @jit
+    def _no_info_rate_binary(y_true, y_pred):
+        # The No Information Rate as described in ...
+
+        # NB: Only applicable to a dichotomous classification problem.
+        p_one = sum(y_true) / len(y_true)
+        q_one = sum(y_pred) / len(y_pred)
+
+        return p_one * (1 - q_one) + (1 - p_one) * q_one
+
+
+    @vectorize([float64(float64, float64, float64, float64)])
+    def _point632plus(train_score, test_score, r_marked, test_score_marked):
+        #
+        point632 = 0.368 * train_score + 0.632 * test_score
+        frac = (0.368 * 0.632 * r_marked) / (1 - 0.368 * r_marked)
+
+        return point632 + (test_score_marked - train_score) * frac
+
+    gamma = _no_info_rate_binary(y_true, y_pred)
+    # Calculate adjusted parameters as described in Efron & Tibshiranir paper.
+    test_score_marked = min(test_score, gamma)
+    r_marked = _relative_overfit_rate(train_score, test_score, gamma)
+
+    return _point632plus(train_score, test_score, r_marked, test_score_marked)
