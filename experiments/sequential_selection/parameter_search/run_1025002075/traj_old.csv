@@ -1,4 +1,0 @@
-"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
-0.000000, 2147483648.000000, 0.000157, 1, 0.000157, SVCEstimator__C='1.0', SVCEstimator__kernel=''linear'', SVCEstimator__shrinking='True', SequentialSelection__num_features='20', WilcoxonSelection__num_features='20'
-4.226699, 0.371296, 4.239509, 1, 0.012810, SVCEstimator__C='1.0', SVCEstimator__kernel=''linear'', SVCEstimator__shrinking='True', SequentialSelection__num_features='20', WilcoxonSelection__num_features='20'
-1062.184434, 0.360470, 1073.898481, 2, 11.714047, SVCEstimator__C='866.9537637010227', SVCEstimator__kernel=''poly'', SVCEstimator__shrinking='False', SequentialSelection__num_features='19', WilcoxonSelection__num_features='13', SVCEstimator__coef0='0.027998539274788348', SVCEstimator__degree='1', SVCEstimator__gamma=''auto''

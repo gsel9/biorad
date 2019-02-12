@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
 
     np.random.seed(0)
-    random_states = np.random.randint(1000, size=10)
+    random_states = np.random.randint(1000, size=2)
 
     path_to_results = './baseline_meta_nofilter_dfs.csv'
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         score_func=balanced_roc_auc,
         cv=5,
         write_prelim=True,
-        max_evals=60,
+        max_evals=9,
         output_dir='./parameter_search',
         random_states=random_states,
         path_final_results=path_to_results
