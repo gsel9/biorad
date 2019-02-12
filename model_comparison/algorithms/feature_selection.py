@@ -16,10 +16,10 @@ import numpy as np
 
 from . import base
 from copy import deepcopy
+from datetime import datetime
 
 from ReliefF import ReliefF
 from scipy.stats import ranksums
-from skfeature.function.similarity_based.fisher_score import fisher_score
 
 from sklearn.svm import SVC
 from sklearn.utils import check_X_y
@@ -37,6 +37,7 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 from mlxtend.feature_selection import SequentialFeatureSelector
+from skfeature.function.similarity_based.fisher_score import fisher_score
 
 
 SEED = 0
@@ -58,6 +59,7 @@ class SequentialSelection(base.BaseSelector):
         cv=0,
         forward=True,
         floating=False,
+        verbose=0,
         error_handling='all'
     ):
 
@@ -70,6 +72,7 @@ class SequentialSelection(base.BaseSelector):
         self.cv = cv
         self.forward = forward
         self.floating = floating
+        self.verbose = verbose
 
         # NOTE: Attribute set with instance.
         self.support = None
@@ -141,9 +144,12 @@ class SequentialSelection(base.BaseSelector):
         self._check_params(X, y)
 
         #try:
+        if self.verbose > 0:
+            start_time = datetime.now()
+            print('Initializing sequential feature selection!')
         selector = SequentialFeatureSelector(
             estimator=self.model,
-            k_features=self.num_features,
+            k_features=10,#self.num_features,
             forward=self.forward,
             floating=self.floating,
             scoring=self.scoring,
@@ -151,6 +157,11 @@ class SequentialSelection(base.BaseSelector):
         )
         selector.fit(X, y)
         _support = selector.k_feature_idx_
+
+        if self.verbose > 0:
+            run_time = datetime.now() - start_time
+            print('Completed sequential feature selection in {}'
+                  ''.format(run_time))
         #except:
         #    warnings.warn('Failed support with {}.'.format(self.__name__))
         #    _support = []

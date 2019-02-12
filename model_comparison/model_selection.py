@@ -97,7 +97,7 @@ def model_selection(
             store_predictions=True
         )
         optimizer.fit(X, y)
-
+        print(**optimizer.best_config)
         _workflow = deepcopy(workflow)
         _workflow.set_params(**optimizer.best_config)
 
@@ -105,7 +105,9 @@ def model_selection(
         results = cross_val_score(
             X, y, cv, shuffle, random_state, _workflow, score_func
         )
+        print(results)
         output.update(results)
+        print(output)
         if path_tmp_results is not None:
             print('Writing results...')
             utils.ioutil.write_prelim_results(path_case_file, output)
@@ -159,7 +161,7 @@ class SMACSearchCV:
         deterministic=True,
         output_dir=None,
         verbose=0,
-        abort_first_run=False,
+        abort_first_run=True,
         early_stopping=50,
         store_predictions=False
     ):
