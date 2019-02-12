@@ -1,3 +1,0 @@
-"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
-0.000000, 2147483648.000000, 0.000158, 1, 0.000158, clf__n_components='10', clf__tol='0.000500005'
-0.357307, 0.400714, 0.379944, 1, 0.022637, clf__n_components='10', clf__tol='0.000500005'

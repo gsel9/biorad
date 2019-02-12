@@ -28,7 +28,7 @@ from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 SEED = 0
 
 
-class RFEstimator(base.BaseEstimator):
+class RFEstimator(base.BaseClassifier):
 
     NAME = 'RFEstimator'
 
@@ -50,9 +50,6 @@ class RFEstimator(base.BaseEstimator):
     def config_space(self):
         """Returns the RF Regression hyperparameter space."""
 
-        random_states = UniformIntegerHyperparameter(
-            'random_state', lower=0, upper=1000,
-        )
         n_estimators = UniformIntegerHyperparameter(
             'n_estimators', lower=10, upper=3000, default_value=100
         )
@@ -76,7 +73,6 @@ class RFEstimator(base.BaseEstimator):
         config.seed(SEED)
         config.add_hyperparameters(
             (
-                random_states,
                 n_estimators,
                 criterion,
                 max_depth,
@@ -88,7 +84,7 @@ class RFEstimator(base.BaseEstimator):
         return config
 
 
-class PLSREstimator(base.BaseEstimator):
+class PLSREstimator(base.BaseClassifier):
 
     NAME = 'PLSREstimator'
 
@@ -132,7 +128,7 @@ class PLSREstimator(base.BaseEstimator):
 #   solver. Thus, enabling to select from l1 or l2 requires Dual=False.
 # * Set multi class to `ovr` for binary problems.
 # * The max_iter is not usefull with `liblinear` solver.
-class LogRegEstimator(base.BaseEstimator):
+class LogRegEstimator(base.BaseClassifier):
 
     NAME = 'LogRegEstimator'
 
@@ -159,9 +155,6 @@ class LogRegEstimator(base.BaseEstimator):
 
         global SEED
 
-        random_states = UniformIntegerHyperparameter(
-            'random_state', lower=0, upper=1000,
-        )
         C = UniformFloatHyperparameter(
             'C', lower=0.001, upper=1000.0, default_value=1.0
         )
@@ -171,12 +164,12 @@ class LogRegEstimator(base.BaseEstimator):
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
-        config.add_hyperparameters((random_states, C, penalty))
+        config.add_hyperparameters((C, penalty))
 
         return config
 
 
-class SVCEstimator(base.BaseEstimator):
+class SVCEstimator(base.BaseClassifier):
 
     NAME = 'SVCEstimator'
 
@@ -200,9 +193,6 @@ class SVCEstimator(base.BaseEstimator):
 
         global SEED
 
-        random_states = UniformIntegerHyperparameter(
-            'random_state', lower=0, upper=1000,
-        )
         C = UniformFloatHyperparameter(
             'C', lower=0.001, upper=1000.0, default_value=1.0
         )
@@ -230,7 +220,6 @@ class SVCEstimator(base.BaseEstimator):
         config.seed(SEED)
         config.add_hyperparameters(
             (
-                random_states,
                 C,
                 shrinking,
                 kernel,
@@ -259,7 +248,7 @@ class SVCEstimator(base.BaseEstimator):
 
 
 # NOTE: This algorithm does not associate hyperparameters.
-class GNBEstimator(base.BaseEstimator):
+class GNBEstimator(base.BaseClassifier):
 
     NAME = 'GNBEstimator'
 
@@ -272,7 +261,7 @@ class GNBEstimator(base.BaseEstimator):
         super().__init__(model=model, mode=mode)
 
 
-class KNNEstimator(base.BaseEstimator):
+class KNNEstimator(base.BaseClassifier):
 
     NAME = 'KNNEstimator'
 

@@ -1,0 +1,866 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.14748215675354004,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        2,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.08333206176757812,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        3,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09952187538146973,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        4,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.08563089370727539,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        5,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09575915336608887,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        6,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09252119064331055,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        7,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07750701904296875,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        8,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09310507774353027,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        9,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07659173011779785,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        10,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.10783886909484863,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        11,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07290816307067871,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        12,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.08675003051757812,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        13,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07960700988769531,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        14,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07809591293334961,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        15,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.08273673057556152,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        16,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07993316650390625,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        17,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.10521912574768066,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        18,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07019209861755371,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        19,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07451200485229492,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        20,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.06876325607299805,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        21,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07226800918579102,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        22,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.10164785385131836,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        23,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.1147618293762207,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        24,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.20083832740783691,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        25,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.13159775733947754,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        26,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.08749890327453613,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        27,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.13521933555603027,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        28,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.11752200126647949,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        29,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09343624114990234,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        30,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.08413290977478027,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        31,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.10924434661865234,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        32,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.07783198356628418,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        33,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.10710906982421875,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        34,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.10430717468261719,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        35,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.11823582649230957,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        36,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09984612464904785,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        37,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.09253978729248047,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        38,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.1446080207824707,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        39,
+        null,
+        0
+      ],
+      [
+        2147483647.0,
+        0.125532865524292,
+        {
+          "__enum__": "StatusType.CRASHED"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default",
+    "2": "Random Search (sorted)",
+    "3": "Random Search (sorted)",
+    "4": "Random Search",
+    "5": "Random Search",
+    "6": "Random Search",
+    "7": "Random Search (sorted)",
+    "8": "Random Search (sorted)",
+    "9": "Random Search (sorted)",
+    "10": "Random Search",
+    "11": "Random Search (sorted)",
+    "12": "Random Search (sorted)",
+    "13": "Random Search",
+    "14": "Random Search",
+    "15": "Random Search",
+    "16": "Random Search",
+    "17": "Random Search (sorted)",
+    "18": "Random Search",
+    "19": "Random Search",
+    "20": "Random Search (sorted)",
+    "21": "Random Search",
+    "22": "Random Search",
+    "23": "Random Search",
+    "24": "Random Search",
+    "25": "Random Search (sorted)",
+    "26": "Random Search",
+    "27": "Random Search (sorted)",
+    "28": "Random Search (sorted)",
+    "29": "Random Search",
+    "30": "Random Search (sorted)",
+    "31": "Random Search",
+    "32": "Random Search",
+    "33": "Random Search (sorted)",
+    "34": "Random Search (sorted)",
+    "35": "Random Search (sorted)",
+    "36": "Random Search",
+    "37": "Random Search",
+    "38": "Random Search (sorted)",
+    "39": "Random Search"
+  },
+  "configs": {
+    "1": {
+      "alpha": 0.5,
+      "beta": 0.9,
+      "num_clusters": 2,
+      "num_features": 2
+    },
+    "2": {
+      "alpha": 0.9471075931029599,
+      "beta": 15.227387186008094,
+      "num_clusters": 166,
+      "num_features": 372
+    },
+    "3": {
+      "alpha": 0.2713936422229052,
+      "beta": 12.291853836746414,
+      "num_clusters": 539,
+      "num_features": 579
+    },
+    "4": {
+      "alpha": 0.2664153839572457,
+      "beta": 0.11707212010688992,
+      "num_clusters": 480,
+      "num_features": 375
+    },
+    "5": {
+      "alpha": 0.7887319523671785,
+      "beta": 1.9459110032883622,
+      "num_clusters": 533,
+      "num_features": 152
+    },
+    "6": {
+      "alpha": 0.41179829160730136,
+      "beta": 16.15573974231747,
+      "num_clusters": 481,
+      "num_features": 142
+    },
+    "7": {
+      "alpha": 0.47906837418992904,
+      "beta": 16.844188836085873,
+      "num_clusters": 38,
+      "num_features": 213
+    },
+    "8": {
+      "alpha": 0.018317607640044135,
+      "beta": 16.684769321281458,
+      "num_clusters": 41,
+      "num_features": 569
+    },
+    "9": {
+      "alpha": 0.5556167547021469,
+      "beta": 0.30583357916059245,
+      "num_clusters": 181,
+      "num_features": 286
+    },
+    "10": {
+      "alpha": 0.2875669330975361,
+      "beta": 16.71775508495361,
+      "num_clusters": 141,
+      "num_features": 67
+    },
+    "11": {
+      "alpha": 0.124737415761549,
+      "beta": 19.821827285874917,
+      "num_clusters": 228,
+      "num_features": 549
+    },
+    "12": {
+      "alpha": 0.07134870627178887,
+      "beta": 15.034347051137608,
+      "num_clusters": 507,
+      "num_features": 434
+    },
+    "13": {
+      "alpha": 0.9791999280669292,
+      "beta": 12.45899599711412,
+      "num_clusters": 54,
+      "num_features": 351
+    },
+    "14": {
+      "alpha": 0.41865999874763554,
+      "beta": 14.020266815806075,
+      "num_clusters": 251,
+      "num_features": 434
+    },
+    "15": {
+      "alpha": 0.8984310675055922,
+      "beta": 8.341772298077144,
+      "num_clusters": 460,
+      "num_features": 184
+    },
+    "16": {
+      "alpha": 0.6848321188918951,
+      "beta": 9.951313288628064,
+      "num_clusters": 481,
+      "num_features": 59
+    },
+    "17": {
+      "alpha": 0.300099536832984,
+      "beta": 16.738022087819434,
+      "num_clusters": 480,
+      "num_features": 208
+    },
+    "18": {
+      "alpha": 0.0356293296853044,
+      "beta": 10.655538598603908,
+      "num_clusters": 310,
+      "num_features": 171
+    },
+    "19": {
+      "alpha": 0.48704198048298364,
+      "beta": 18.443672658802253,
+      "num_clusters": 159,
+      "num_features": 122
+    },
+    "20": {
+      "alpha": 0.07646707287499094,
+      "beta": 8.72921477002873,
+      "num_clusters": 10,
+      "num_features": 354
+    },
+    "21": {
+      "alpha": 0.2814961406730415,
+      "beta": 17.192487939425387,
+      "num_clusters": 166,
+      "num_features": 509
+    },
+    "22": {
+      "alpha": 0.06591958298989205,
+      "beta": 16.78547865510155,
+      "num_clusters": 320,
+      "num_features": 198
+    },
+    "23": {
+      "alpha": 0.10553635083566977,
+      "beta": 1.7361004630528658,
+      "num_clusters": 73,
+      "num_features": 372
+    },
+    "24": {
+      "alpha": 0.1546251726427526,
+      "beta": 8.999447512507366,
+      "num_clusters": 443,
+      "num_features": 313
+    },
+    "25": {
+      "alpha": 0.47777289637708215,
+      "beta": 16.260044111611304,
+      "num_clusters": 380,
+      "num_features": 443
+    },
+    "26": {
+      "alpha": 0.014857840573018175,
+      "beta": 17.95524577432061,
+      "num_clusters": 213,
+      "num_features": 368
+    },
+    "27": {
+      "alpha": 0.5394111928368697,
+      "beta": 10.086141423791581,
+      "num_clusters": 130,
+      "num_features": 335
+    },
+    "28": {
+      "alpha": 0.0478982708228206,
+      "beta": 4.029835610155341,
+      "num_clusters": 136,
+      "num_features": 332
+    },
+    "29": {
+      "alpha": 0.904990783507399,
+      "beta": 17.024292516135965,
+      "num_clusters": 305,
+      "num_features": 238
+    },
+    "30": {
+      "alpha": 0.5726098620254663,
+      "beta": 15.110000086293592,
+      "num_clusters": 496,
+      "num_features": 22
+    },
+    "31": {
+      "alpha": 0.21330524096383585,
+      "beta": 3.144032244323912,
+      "num_clusters": 78,
+      "num_features": 208
+    },
+    "32": {
+      "alpha": 0.0757123969641196,
+      "beta": 14.667190514971187,
+      "num_clusters": 186,
+      "num_features": 267
+    },
+    "33": {
+      "alpha": 0.055598382573545976,
+      "beta": 18.039430806830985,
+      "num_clusters": 151,
+      "num_features": 332
+    },
+    "34": {
+      "alpha": 0.15954828696503462,
+      "beta": 9.431086864092428,
+      "num_clusters": 437,
+      "num_features": 395
+    },
+    "35": {
+      "alpha": 0.3952633922038115,
+      "beta": 0.9999095854631989,
+      "num_clusters": 335,
+      "num_features": 480
+    },
+    "36": {
+      "alpha": 0.9700366491627813,
+      "beta": 13.14694985302727,
+      "num_clusters": 516,
+      "num_features": 585
+    },
+    "37": {
+      "alpha": 0.8454386082146625,
+      "beta": 14.671306087767572,
+      "num_clusters": 204,
+      "num_features": 184
+    },
+    "38": {
+      "alpha": 0.4768998066216231,
+      "beta": 11.589132529445328,
+      "num_clusters": 16,
+      "num_features": 335
+    },
+    "39": {
+      "alpha": 0.02015135510550845,
+      "beta": 18.235929600734988,
+      "num_clusters": 189,
+      "num_features": 353
+    }
+  }
+}

@@ -34,8 +34,94 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
+#from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+
 
 SEED = 0
+
+
+"""
+class ForwardFloatingSelection(base.BaseSelector):
+
+    NAME = 'ForwardFloatingSelection'
+
+    def __init__(
+        self,
+        model=None,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        # NOTE: Requires an untrained model to select features.
+        self.model = model
+        self.score_func = score_func
+        self.num_features = num_features
+        self.verbose = verbose
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        #Returns the ANOVA F-value hyperparameter configuration space.
+
+        global SEED
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+
+        return check_X_y(X, y)
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+
+        self._check_params(X, y)
+        selector = SFS(
+            self.model,
+            k_features=self.num_features,
+            forward=True,
+            floating=True,
+            verbose=self.verbose,
+            scoring=self.score_func,
+            cv=0
+        )
+        selector.fit(X, y)
+
+        self.support = self.check_support(k_feature_idx_, X)
+
+        return self
+"""
 
 
 class ANOVAFvalueSelection(base.BaseSelector):
@@ -148,7 +234,6 @@ class FScoreSelection(base.BaseSelector):
         num_features = UniformIntegerHyperparameter(
             'num_features', lower=2, upper=50, default_value=20
         )
-        # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
         config.add_hyperparameter(num_features)
@@ -208,7 +293,7 @@ class WilcoxonSelection(base.BaseSelector):
 
     def __init__(
         self,
-        num_features,
+        num_features=None,
         error_handling='all'
     ):
 
@@ -233,7 +318,6 @@ class WilcoxonSelection(base.BaseSelector):
         num_features = UniformIntegerHyperparameter(
             'num_features', lower=2, upper=50, default_value=20
         )
-        # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
         config.add_hyperparameter(num_features)
@@ -556,21 +640,16 @@ class MutualInformationSelection(base.BaseSelector):
 
         global SEED
 
-        random_states = UniformIntegerHyperparameter(
-            'random_state', lower=0, upper=1000,
-        )
         num_neighbors = UniformIntegerHyperparameter(
             'num_neighbors', lower=10, upper=100, default_value=20
         )
         num_features = UniformIntegerHyperparameter(
             'num_features', lower=2, upper=50, default_value=20
         )
-        # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
-        config.add_hyperparameters(
-            (random_states, num_neighbors, num_features)
-        )
+        config.add_hyperparameters((num_neighbors, num_features))
+
         return config
 
     def fit(self, X, y, **kwargs):
@@ -654,7 +733,6 @@ class Chi2Selection(base.BaseSelector):
         num_features = UniformIntegerHyperparameter(
             'num_features', lower=2, upper=50, default_value=20
         )
-        # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
         config.add_hyperparameter(num_features)

@@ -14,13 +14,17 @@ import numpy as np
 import pandas as pd
 
 from utils import ioutil
+from collections import OrderedDict
 
 from sklearn.externals import joblib
-from multiprocessing import cpu_count
+from sklearn.pipeline import Pipeline
 
 from joblib import Memory
 from shutil import rmtree
 from tempfile import mkdtemp
+from multiprocessing import cpu_count
+
+from smac.configspace import ConfigurationSpace
 
 
 # Name of directory to store temporary results.
@@ -32,13 +36,12 @@ def model_comparison(
     X, y,
     experiments,
     score_func,
-    n_splits,
-    selection_scheme,
+    cv,
+    oob,
     max_evals,
     shuffle=True,
     verbose=0,
     random_states=None,
-    balancing=False,
     output_dir=None,
     write_prelim=False,
     error_score='nan',
@@ -78,18 +81,19 @@ def model_comparison(
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else cpu_count()
 
     results = []
-    for experiment_id, (pipe, hparam_space) in experiments.items():
+    for experiment_id, setup in experiments.items():
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
                     X=X, y=y,
                     experiment_id=experiment_id,
-                    model=pipe,
+                    pipe_and_params=config_experiment(
+                        experiment_id, setup, random_state
+                    ),
+                    cv=cv,
+                    oob=oob,
                     output_dir=output_dir,
-                    selection_scheme=selection_scheme,
-                    hparam_space=hparam_space,
                     score_func=score_func,
-                    n_splits=n_splits,
                     max_evals=max_evals,
                     verbose=verbose,
                     random_state=random_state,
@@ -99,6 +103,7 @@ def model_comparison(
                 for random_state in random_states
             )
         )
+
     # Tear down temporary dirs after saving final results to disk.
     if write_prelim:
         _cleanup_prelim(path_tmp_results)
@@ -106,6 +111,52 @@ def model_comparison(
     _write_results(path_final_results, results)
 
     return None
+
+
+def config_experiment(experiment_id, setup, random_state):
+    """
+
+    """
+    config_space = ConfigurationSpace()
+    config_space.seed(random_state)
+
+    pipe_and_params = OrderedDict()
+    for name, algorithm in setup:
+        if hasattr(algorithm, 'config_space'):
+            config_space.add_configuration_space(
+                prefix=name,
+                configuration_space=algorithm.config_space,
+                delimiter='__'
+            )
+        if hasattr(algorithm, 'random_state'):
+            algorithm.random_state = random_state
+
+    pipe_and_params[experiment_id] = (Pipeline(setup), config_space)
+
+    return pipe_and_params
+
+
+def config_experiments(experiments, random_state):
+    """
+
+    """
+    pipes_and_params = OrderedDict()
+    for (experiment_id, setup) in experiments.items():
+
+        config_space = ConfigurationSpace()
+        config_space.seed(random_state)
+        for name, algorithm in setup:
+            if hasattr(algorithm, 'config_space'):
+                config_space.add_configuration_space(
+                    prefix=name,
+                    configuration_space=algorithm.config_space,
+                    delimiter='__'
+                )
+            if hasattr(algorithm, 'random_state'):
+                algorithm.random_state = random_state
+        pipes_and_params[experiment_id] = (Pipeline(setup), config_space)
+
+    return pipes_and_params
 
 
 def _write_results(path_final_results, results):

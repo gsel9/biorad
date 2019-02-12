@@ -12,16 +12,7 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
-from collections import OrderedDict
-from sklearn.pipeline import Pipeline
-
 from sklearn.metrics import roc_auc_score
-
-from smac.configspace import ConfigurationSpace
-
-
-# Globals.
-SEED = 0
 
 
 # TODO: To utils!
@@ -49,35 +40,24 @@ def load_predictors(path_to_data, index_col=0, regex=None):
         return np.array(data.loc[:, target_features].values, dtype=np.float32)
 
 
-# TODO: To utils!
-def config_experiments(experiments):
-    """
+def build_setup(estimators, selectors):
 
-    """
-    global SEED
-
-    pipes_and_params = OrderedDict()
-    for (experiment_id, setup) in experiments.items():
-        config_space = ConfigurationSpace()
-        config_space.seed(SEED)
-        for name, algorithm in setup:
-            # Avoid transformers without hyperparameters.
-            try:
-                config_space.add_configuration_space(
-                    prefix=name,
-                    configuration_space=algorithm.config_space,
-                    delimiter='__'
-                )
-            except:
-                pass
-        pipes_and_params[experiment_id] = (Pipeline(setup), config_space)
-
-    return pipes_and_params
-
-
-def balanced_roc_auc(y_true, y_pred):
-
-    return roc_auc_score(y_true, y_pred, average='weighted')
+    setup = {}
+    for estimator_id, estimator in estimators.items():
+        for selector_id, selector in selectors.items():
+            label = '{}_{}'.format(selector_id, estimator_id)
+            setup[label] = (
+                # NOTE: Univaraite feature selection reported constant features
+                # in some folds. Remove features constant in folds consulting a
+                # variance threshold of zero variance.
+                # NB: Variance threshold before scaling to unit feature
+                # variances.
+                (VarianceThreshold.__name__, VarianceThreshold()),
+                (StandardScaler.__name__, StandardScaler()),
+                (selector_id, selector),
+                (estimator_id, estimator)
+            )
+    return setup
 
 
 if __name__ == '__main__':
@@ -137,25 +117,52 @@ if __name__ == '__main__':
 
     # On F-beta score: https://stats.stackexchange.com/questions/221997/why-f-beta-score-define-beta-like-that
     # On AUC vs precision/recall: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba
+    def balanced_roc_auc(y_true, y_pred):
+        # Wrapper for weighted ROC AUC score function.
+        return roc_auc_score(y_true, y_pred, average='weighted')
+
 
     """
-    Vanilla experiment:
-    * 5-fold CV with 30 evals and 20 reps.
+    Temp experiment:
+    -------------
+    * ZCA-cor transformed feature matrix.
+    * Nested 5-fold CV.
+    * 60 objective evals
 
-    TODO!
-    Spicy experiment:
-    * Analyse ZCA-cor transformed feature matrix.
-    * Run 10/5-fold CV for 60 evals with 200 reps of BBC-CV and 10 experiments.
-    * Return median test score from CV objective and mean from BBC-CV.
+    Final experiment:
+    -------------
+    * ZCA-cor transformed feature matrix.
+    * Nested 10-fold CV.
+    * 60 objective evals
+    * Most used radiomics models and feature selectors (see summary paper)
+
+    Follow up:
+    -------------
+    * Multiple ways to construct data analysis pipelines, but not sure
+      hypothesized information is readily available in the images. Use
+      general approximators (NN, but Tsetlin Machines may be more promising
+      considering small amounts of data.
 
     """
 
     np.random.seed(0)
     random_states = np.random.randint(1000, size=10)
 
-    path_to_results = './baseline_nofilter_dfs.csv'
+    # TODO:
+    # * Create a heat map/cluster map (Seaborn) of feature matrix highlighting outliers.
+    # * Include a test for normality just to verify whether or not any assumption of
+    #   normality breaks or holds.
+
+    #path_to_results = './baseline_nofilter_dfs.csv'
+    path_to_results = './baseline_nofilter_zca_cor_dfs.csv'
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
     #X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
+    # TODO: Verify data satisfies distribution assumptions of co-variance
+    # estimator (data is Z-score transformed in befonre co-variance estimated
+    # in whitening procedure).
+    # Checkout:
+    # * https://mathoverflow.net/questions/290490/how-to-measure-distribution-of-high-dimensional-data
+    # * https://www.cs.umd.edu/~hjs/mkbook/chapter4.pdf
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat_zca_cor.csv')
 
     estimators = {
@@ -164,7 +171,7 @@ if __name__ == '__main__':
         LogRegEstimator.__name__: LogRegEstimator(),
         GNBEstimator.__name__: GNBEstimator(),
         RFEstimator.__name__: RFEstimator(),
-        KNNEstimator.__name__: KNNEstimator()
+        #KNNEstimator.__name__: KNNEstimator()
     }
     selectors = {
         ReliefFSelection.__name__: ReliefFSelection(),
@@ -173,34 +180,21 @@ if __name__ == '__main__':
         WilcoxonSelection.__name__: WilcoxonSelection(),
         ANOVAFvalueSelection.__name__: ANOVAFvalueSelection(),
         Chi2Selection.__name__: Chi2Selection(),
-        # NOTE: MRMR is really slow!
         #MRMRSelection.__name__: MRMRSelection(),
     }
 
-    # NOTE: Univaraite feature selection reported constant features in some
-    # folds. Remove features constant in folds consulting a variance threshold
-    # of zero variance.
-    setup = {}
-    for estimator_id, estimator in estimators.items():
-        for selector_id, selector in selectors.items():
-            label = '{}_{}'.format(selector_id, estimator_id)
-            setup[label] = (
-                (StandardScaler.__name__, StandardScaler()),
-                (VarianceThreshold.__name__, VarianceThreshold()),
-                (selector_id, selector),
-                (estimator_id, estimator)
-            )
+    setup = build_setup(estimators, selectors)
 
     comparison.model_comparison(
-        comparison_scheme=model_selection.nested_selection,
+        comparison_scheme=model_selection.model_selection,
         X=X, y=y,
-        experiments=config_experiments(setup),
+        experiments=setup,
         score_func=balanced_roc_auc,
-        selection_scheme='k-fold',
-        n_splits=5,
+        cv=5,
+        oob=None,
         write_prelim=True,
-        max_evals=30,
-        output_dir='./parameter_search',
+        max_evals=60,
+        output_dir='./parameter_search_zca',
         random_states=random_states,
         path_final_results=path_to_results
     )

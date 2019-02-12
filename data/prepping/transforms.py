@@ -23,7 +23,9 @@ import numpy as np
 
 from scipy import linalg
 
+from sklearn.covariance import OAS
 from sklearn.covariance import LedoitWolf
+from sklearn.covariance import MinCovDet
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import TransformerMixin, BaseEstimator
 
@@ -80,12 +82,12 @@ class Whitening(TransformerMixin, BaseEstimator):
         the feature matrix.
 
         """
-        nrows, ncols = np.shape(X)
-        if nrows > ncols:
-            Sigma = np.dot(np.transpose(X), X) / X.shape[0]
-        else:
-            estimator = LedoitWolf()
-            Sigma = estimator.fit(X).covariance_
+        #nrows, ncols = np.shape(X)
+        #if nrows < ncols:
+        #    Sigma = np.dot(np.transpose(X), X) / (X.shape[0] - 1)
+        #else:
+        estimator = LedoitWolf()
+        Sigma = estimator.fit(X).covariance_
 
         return Sigma
 

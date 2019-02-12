@@ -1,0 +1,4 @@
+alpha real [1e-06, 0.999999] [0.5]
+beta real [1e-06, 20.0] [0.9]
+num_clusters integer [2, 600] [2]
+num_features integer [1, 600] [2]
