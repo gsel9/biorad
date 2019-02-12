@@ -1,3 +1,0 @@
-"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
-0.000000, 2147483648.000000, 0.000525, 1, 0.000525, alpha='0.5', beta='0.9', num_clusters='2', num_features='2'
-0.147482, 2147483647.000000, 0.151732, 1, 0.004250, alpha='0.5', beta='0.9', num_clusters='2', num_features='2'
