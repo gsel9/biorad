@@ -42,12 +42,18 @@ class Whitening(TransformerMixin, BaseEstimator):
         corr (bool): Determine to calculate ZCA or ZCA-cor matrix.
     """
 
+    NAME = 'Whitening'
+
     def __init__(self, eps=1e-12, method='zca-cor'):
 
         self.eps = eps
         self.method = method
 
         self.W = None
+
+    def __name__(self):
+
+        return self.NAME
 
     def fit(self, X, y=None, rowvar=False, **kwargs):
         """
