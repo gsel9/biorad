@@ -34,7 +34,6 @@ class RFEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        mode='classification',
         model=RandomForestClassifier(
             n_jobs=-1,
             verbose=False,
@@ -44,7 +43,7 @@ class RFEstimator(base.BaseClassifier):
         )
     ):
 
-        super().__init__(model=model, mode=mode)
+        super().__init__(model=model)
 
     @property
     def config_space(self):
@@ -90,11 +89,10 @@ class PLSREstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        mode='classification',
         model=PLSRegression(scale=False, copy=True, max_iter=-1)
     ):
 
-        super().__init__(model=model, mode=mode)
+        super().__init__(model=model)
 
     @property
     def config_space(self):
@@ -134,7 +132,6 @@ class LogRegEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        mode='classification',
         model=LogisticRegression(
             solver='liblinear',
             max_iter=1000,
@@ -147,7 +144,7 @@ class LogRegEstimator(base.BaseClassifier):
         )
     ):
 
-        super().__init__(model=model, mode=mode)
+        super().__init__(model=model)
 
     @property
     def config_space(self):
@@ -175,7 +172,6 @@ class SVCEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        mode='classification',
         model=SVC(
             class_weight='balanced',
             verbose=False,
@@ -185,7 +181,7 @@ class SVCEstimator(base.BaseClassifier):
         )
     ):
 
-        super().__init__(model=model, mode=mode)
+        super().__init__(model=model)
 
     @property
     def config_space(self):
@@ -254,11 +250,10 @@ class GNBEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        mode='classification',
         model=GaussianNB()
     ):
 
-        super().__init__(model=model, mode=mode)
+        super().__init__(model=model)
 
 
 class KNNEstimator(base.BaseClassifier):
@@ -267,11 +262,10 @@ class KNNEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        mode='classification',
         model=KNeighborsClassifier(algorithm='auto')
     ):
 
-        super().__init__(model=model, mode=mode)
+        super().__init__(model=model)
 
     @property
     def config_space(self):
