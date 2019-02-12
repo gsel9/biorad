@@ -20,6 +20,7 @@ import numpy as np
 #from .feature_selection import ForwardFloatingSelection
 
 from sklearn.base import BaseEstimator
+from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
 from sklearn.base import MetaEstimatorMixin
 
@@ -131,7 +132,7 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             return self.check_subset(X[:, self.support])
 
 
-class BaseClassifier(BaseEstimator, MetaEstimatorMixin):
+class BaseClassifier(BaseEstimator, ClassifierMixin):
     """A wrapper for scikit-learn estimators. Enables intermediate
     configuration of the wrapped classifier model between pipeline steps.
 
@@ -182,14 +183,13 @@ class BaseClassifier(BaseEstimator, MetaEstimatorMixin):
 
         return np.array(y_pred, dtype=int)
 
-    @staticmethod
-    def _check_config(params):
+    def _check_config(self, params):
         # Validate model configuration by updating hyperparameter settings.
 
         _params = {}
-        for key in params:
+        for key in params.keys():
             if params[key] is not None:
-                if 'gamma' in params:
+                if 'gamma' in key:
                     if params['gamma'] == 'value':
                         _params['gamma'] = params['gamma_value']
                     else:
