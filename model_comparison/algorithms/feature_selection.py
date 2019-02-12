@@ -36,6 +36,8 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
+from mlxtend.feature_selection import SequentialFeatureSelector
+
 
 SEED = 0
 
