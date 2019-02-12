@@ -1,0 +1,14 @@
+SVCEstimator__C real [0.001, 1000.0] [1.0]
+SVCEstimator__kernel categorical {linear, rbf, poly, sigmoid} [linear]
+SVCEstimator__shrinking categorical {True, False} [True]
+SequentialSelection__num_features integer [2, 50] [20]
+WilcoxonSelection__num_features integer [2, 50] [20]
+SVCEstimator__coef0 real [0.0, 10.0] [0.0]
+SVCEstimator__degree integer [1, 5] [3]
+SVCEstimator__gamma categorical {auto, value} [auto]
+SVCEstimator__gamma_value real [0.0001, 8.0] [1.0]
+
+SVCEstimator__coef0 | SVCEstimator__kernel in {poly, sigmoid}
+SVCEstimator__degree | SVCEstimator__kernel in {poly}
+SVCEstimator__gamma | SVCEstimator__kernel in {rbf, poly, sigmoid}
+SVCEstimator__gamma_value | SVCEstimator__gamma in {value}
