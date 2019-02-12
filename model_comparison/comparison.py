@@ -85,8 +85,7 @@ def model_comparison(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
                     X=X, y=y,
-                    experiment_id=experiment_id,
-                    pipe_and_params=config_experiment(
+                    workflow=config_experiment(
                         experiment_id, setup, random_state
                     ),
                     cv=cv,
@@ -115,46 +114,67 @@ def config_experiment(experiment_id, setup, random_state):
     """
 
     """
+
     config_space = ConfigurationSpace()
     config_space.seed(random_state)
-
-    pipe_and_params = OrderedDict()
     for name, algorithm in setup:
+        # Join hyperparameter spaces.
         if hasattr(algorithm, 'config_space'):
             config_space.add_configuration_space(
                 prefix=name,
                 configuration_space=algorithm.config_space,
                 delimiter='__'
             )
+        # Set seed for random generator of stochastic algorithms.
         if hasattr(algorithm, 'random_state'):
             algorithm.random_state = random_state
 
-    pipe_and_params[experiment_id] = (Pipeline(setup), config_space)
+    workflow = WorkFlow(
+        name=experiment_id, flow=Pipeline(setup), hparams=config_space
+    )
+    return workflow
 
-    return pipe_and_params
 
+class WorkFlow:
+    """Worflow representation for model comparison experiments.
 
-def config_experiments(experiments, random_state):
     """
 
-    """
-    pipes_and_params = OrderedDict()
-    for (experiment_id, setup) in experiments.items():
+    def __init__(self, name, flow, hparams):
 
-        config_space = ConfigurationSpace()
-        config_space.seed(random_state)
-        for name, algorithm in setup:
-            if hasattr(algorithm, 'config_space'):
-                config_space.add_configuration_space(
-                    prefix=name,
-                    configuration_space=algorithm.config_space,
-                    delimiter='__'
-                )
-            if hasattr(algorithm, 'random_state'):
-                algorithm.random_state = random_state
-        pipes_and_params[experiment_id] = (Pipeline(setup), config_space)
+        self.name = name
+        self.flow = flow
+        self.hparams = hparams
 
-    return pipes_and_params
+    def set_params(self, **kwargs):
+
+        self.flow.set_params(**kwargs)
+        # Handles hyperparameters of the sequential feature selection step.
+        if 'SequentialSelection' in self.flow.get_params():
+            self.set_sequential_selection_params()
+
+        return self
+
+    def set_sequential_selection_params(self):
+
+        # Assumes estimator is final step in pipeline.
+        _, estimator = self.flow.steps[-1]
+        # Assumes sequential feature selector is next to last step in pipeline.
+        _, selector = self.flow.steps[-2]
+        # Updates hyperparamters of the wrapped estimator.
+        selector.set_model_params(**estimator.get_params())
+
+        return self
+
+    def fit(self, X, y=None, **kwargs):
+
+        self.flow.fit(X, y, **kwargs)
+
+        return self
+
+    def predict(self, X, **kwargs):
+
+        return self.flow.predict(X, **kwargs)
 
 
 def _write_results(path_final_results, results):
