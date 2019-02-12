@@ -37,7 +37,6 @@ def model_comparison(
     experiments,
     score_func,
     cv,
-    oob,
     max_evals,
     shuffle=True,
     verbose=0,
@@ -91,7 +90,6 @@ def model_comparison(
                         experiment_id, setup, random_state
                     ),
                     cv=cv,
-                    oob=oob,
                     output_dir=output_dir,
                     score_func=score_func,
                     max_evals=max_evals,
