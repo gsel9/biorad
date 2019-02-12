@@ -15,11 +15,13 @@ import warnings
 import numpy as np
 
 from . import base
+from copy import deepcopy
 
 from ReliefF import ReliefF
 from scipy.stats import ranksums
 from skfeature.function.similarity_based.fisher_score import fisher_score
 
+from sklearn.svm import SVC
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
 
@@ -34,31 +36,38 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
-#from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-
 
 SEED = 0
 
 
-"""
-class ForwardFloatingSelection(base.BaseSelector):
+class SequentialSelection(base.BaseSelector):
+    """
 
-    NAME = 'ForwardFloatingSelection'
+    """
+
+    NAME = 'SequentialSelection'
 
     def __init__(
         self,
         model=None,
+        model_name=None,
         num_features=None,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
         error_handling='all'
     ):
 
         super().__init__(error_handling)
 
-        # NOTE: Requires an untrained model to select features.
         self.model = model
-        self.score_func = score_func
+        self.model_name = model_name
         self.num_features = num_features
-        self.verbose = verbose
+        self.scoring = scoring
+        self.cv = cv
+        self.forward = forward
+        self.floating = floating
 
         # NOTE: Attribute set with instance.
         self.support = None
@@ -69,7 +78,6 @@ class ForwardFloatingSelection(base.BaseSelector):
 
     @property
     def config_space(self):
-        #Returns the ANOVA F-value hyperparameter configuration space.
 
         global SEED
 
@@ -83,16 +91,75 @@ class ForwardFloatingSelection(base.BaseSelector):
 
         return config
 
+    def set_params(self, **params):
+        """Update estimator hyperparamter configuration.
+
+        Kwargs:
+            params (dict): Hyperparameter settings.
+
+        """
+
+        self.num_features = params['num_features']
+
+        return self
+
+    def set_model_params(self, **params):
+        params = self._check_config(params)
+        self.model.set_params(**params)
+
+        return self
+
+    def _check_config(self, params):
+        # Validate model configuration by updating hyperparameter settings.
+
+        _params = {}
+        for key in params.keys():
+            if params[key] is not None:
+                if 'gamma' in key:
+                    if params['gamma'] == 'value':
+                        _params['gamma'] = params['gamma_value']
+                    else:
+                        _params['gamma'] = 'auto'
+                else:
+                    _params[key] = params[key]
+            else:
+                pass
+
+        return _params
+
     @staticmethod
     def _check_X_y(X, y):
         # A wrapper around the sklearn formatter function.
 
         return check_X_y(X, y)
 
+    def fit(self, X, y=None, **kwargs):
+        X, y = self._check_X_y(X, y)
+
+        self._check_params(X, y)
+
+        #try:
+        selector = SequentialFeatureSelector(
+            estimator=self.model,
+            k_features=self.num_features,
+            forward=self.forward,
+            floating=self.floating,
+            scoring=self.scoring,
+            cv=self.cv
+        )
+        selector.fit(X, y)
+        _support = selector.k_feature_idx_
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
+
     def _check_params(self, X, y):
 
         _, ncols = np.shape(X)
-
         if self.num_features < 1:
             self.num_features = int(self.num_features)
         elif self.num_features > ncols:
@@ -101,27 +168,6 @@ class ForwardFloatingSelection(base.BaseSelector):
             self.num_features = int(self.num_features)
 
         return self
-
-    def fit(self, X, y=None, **kwargs):
-
-        X, y = self._check_X_y(X, y)
-
-        self._check_params(X, y)
-        selector = SFS(
-            self.model,
-            k_features=self.num_features,
-            forward=True,
-            floating=True,
-            verbose=self.verbose,
-            scoring=self.score_func,
-            cv=0
-        )
-        selector.fit(X, y)
-
-        self.support = self.check_support(k_feature_idx_, X)
-
-        return self
-"""
 
 
 class ANOVAFvalueSelection(base.BaseSelector):
