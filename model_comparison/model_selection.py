@@ -45,7 +45,6 @@ def model_selection(
         pipe_and_params,
         score_func,
         cv=5,
-        oob=None,
         output_dir=None,
         max_evals=None,
         verbose=1,
@@ -104,15 +103,10 @@ def model_selection(
         # Estimate average model performace.
         _model = deepcopy(model)
         _model.set_params(**optimizer.best_config)
-        if oob is None:
-            results = cross_val_score(
-                X, y, cv, shuffle, random_state, _model, score_func
-            )
-        else:
-            # TODO:
-            #results = bbc_cv_score(X, y, oob, random_state, model)
-            pass
 
+        results = cross_val_score(
+            X, y, cv, shuffle, random_state, _model, score_func
+        )
         output.update(results)
         if path_tmp_results is not None:
             print('Writing results...')
