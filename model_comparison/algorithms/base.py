@@ -135,22 +135,15 @@ class BaseClassifier(BaseEstimator, MetaEstimatorMixin):
     """A wrapper for scikit-learn estimators. Enables intermediate
     configuration of the wrapped classifier model between pipeline steps.
 
-    In particular, configrations are necessary with respect to:
-    - Adjusting the number of components to keep in decomposition methods
-      should the previous pipeline transformer reduce the feature set resulting
-      in an expected number of cmoponents exceed the number of available
-      features.
-
     Args:
         model ():
 
     """
 
-    def __init__(self, mode=None, model=None):
+    def __init__(self, model=None):
 
         super().__init__()
 
-        self._mode = mode
         self._model = model
 
     def set_params(self, **params):
@@ -187,30 +180,15 @@ class BaseClassifier(BaseEstimator, MetaEstimatorMixin):
         """
         y_pred = np.squeeze(self._model.predict(X))
 
-        if self._mode == 'classification':
-            return np.array(y_pred, dtype=int)
-        elif self._mode == 'regression':
-            return np.array(y_pred, dtype=float)
-        else:
-            raise ValueError('Invalid estimator mode: {}'.format(self._mode))
+        return np.array(y_pred, dtype=int)
 
     @staticmethod
     def _check_config(params):
         # Validate model configuration by updating hyperparameter settings.
 
         _params = {}
-        # Copy valid hyperparameter settings.
         for key in params:
-            # For deactivated parameters, the configuration stores None which
-            # is not accepted by estimators.
             if params[key] is not None:
-                # Translate SVC shrinking boolean.
-                #if 'shrinking' in params:
-                #    if params['shrinking'] == 'true':
-                #        params['shrinking'] = True
-                #    else:
-                #        params['shrinking'] = False
-                # Set SVC gamma to a fixed value or to 'auto' if used.
                 if 'gamma' in params:
                     if params['gamma'] == 'value':
                         _params['gamma'] = params['gamma_value']
@@ -225,88 +203,8 @@ class BaseClassifier(BaseEstimator, MetaEstimatorMixin):
 
     def _check_model(self, X, y=None):
 
-        # Adjust the number of components available.
         if 'n_components' in self.get_params():
             if self._model.n_components > X.shape[1]:
                 self._model.n_components = X.shape[1] - 1
 
         return self
-
-
-"""
-class MetaClassifier(BaseEstimator, MetaEstimatorMixin, BaseSelector):
-    #ombines a classification algorithm with sequential forward floating
-    #feature selection.
-
-    def __init__(self, mode=None, model=None):
-
-        super().__init__(mode=mode, model=model)
-
-        # NOTE: Attributes set with instance.
-        self.num_features = None
-        self.support = None
-
-    def fit(self, X, y=None, **kwargs):
-
-        # Model hyperparameters are set before passing model to SFS.
-        self._check_model(X)
-        # Run SFS with specific model config.
-        self.support = self.check_support(self._sfselection(X, y), X)
-
-        self._model.fit(X[:, self.support], y, **kwargs)
-
-        return self
-
-    def set_params(self, **params):
-
-        params = self._check_config(params)
-        self._model.set_params(**params)
-
-        return self
-
-    @staticmethod
-    def _check_config(params):
-        # Validate model configuration by updating hyperparameter settings.
-        _params = {}
-        for key in params:
-            if params[key] is not None:
-                if 'gamma' in params:
-                    if params['gamma'] == 'value':
-                        _params['gamma'] = params['gamma_value']
-                    else:
-                        _params['gamma'] = 'auto'
-                else:
-                    _params[key] = params[key]
-                # Set number of features to select.
-                if num_features in params:
-                    self.num_features = int(params['num_features'])
-            else:
-                pass
-
-        return _params
-
-    def _sfselection(self, X, y):
-
-        if self.num_features is None:
-            raise RuntimeError('Must specify number of features to select!')
-
-        selector = ForwardFloatingSelection(
-            model=self._model,
-            num_features=self.num_features,
-        )
-        selector.fit(X, y)
-
-        return selector.k_feature_idx_
-
-    def predict(self, X):
-        if self.support is None:
-            raise RuntimeError('Must specify feature support!')
-
-        y_pred = np.squeeze(self._model.predict(X[:, self.support]))
-        if self._mode == 'classification':
-            return np.array(y_pred, dtype=int)
-        elif self._mode == 'regression':
-            return np.array(y_pred, dtype=float)
-        else:
-            raise ValueError('Invalid estimator mode: {}'.format(self._mode))
-"""
