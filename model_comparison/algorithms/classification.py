@@ -43,10 +43,6 @@ class DTreeEstimator(base.BaseClassifier):
 
         super().__init__(model=model)
 
-        min_weight_fraction_leaf=0.0,
-        max_leaf_nodes=None, min_impurity_decrease=0.0,
-        min_impurity_split=None,
-
     @property
     def config_space(self):
         """Returns the RF Regression hyperparameter space."""
