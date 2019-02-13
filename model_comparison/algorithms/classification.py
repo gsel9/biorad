@@ -178,10 +178,24 @@ class SVCEstimator(base.BaseClassifier):
             cache_size=500,
             max_iter=-1,
             decision_function_shape='ovr',
-        )
+        ),
+        with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
+        with_selection=False
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
@@ -225,6 +239,11 @@ class SVCEstimator(base.BaseClassifier):
                 gamma_value
             )
         )
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
         # Conditionals on hyperparameters specific to kernels.
         config.add_conditions(
             (

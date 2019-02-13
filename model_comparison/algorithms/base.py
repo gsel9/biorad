@@ -141,11 +141,27 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
     """
 
-    def __init__(self, model=None):
+    def __init__(
+        self,
+        model=None,
+        with_selection=None,
+        scoring=None,
+        cv=None,
+        forward=None,
+        floating=None,
+    ):
 
         super().__init__()
 
-        self._model = model
+        self.model = model
+        self.with_selection = with_selection
+        self.scoring = scoring
+        self.cv = cv
+        self.forward = forward
+        self.floating = floating
+
+        # NOTE: Attribute set with instance.
+        self.support = None
 
     def set_params(self, **params):
         """Update estimator hyperparamter configuration.
@@ -155,7 +171,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         """
         params = self._check_config(params)
-        self._model.set_params(**params)
+        self.model.set_params(**params)
 
         return self
 
@@ -163,7 +179,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         """Returns hyperparameter configurations.
 
         """
-        return self._model.get_params(deep=deep)
+        return self.model.get_params(deep=deep)
 
     def fit(self, X, y=None, **kwargs):
         """
@@ -171,7 +187,19 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         """
         self._check_model(X)
 
-        self._model.fit(X, y, **kwargs)
+        if self.with_selection:
+            selector = SequentialFeatureSelector(
+                estimator=self.model,
+                k_features=self.num_features,
+                forward=self.forward,
+                floating=self.floating,
+                scoring=self.scoring,
+                cv=self.cv
+            )
+            self.support = np.array(selector.k_feature_idx_, dtype=int)
+            self.model.fit(X[:, self.support], y, **kwargs)
+        else:
+            self.model.fit(X, y, **kwargs)
 
         return self
 
@@ -179,7 +207,10 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         """
 
         """
-        y_pred = np.squeeze(self._model.predict(X))
+        if self.with_selection:
+            y_pred = np.squeeze(self._model.predict(X[:, self.support]))
+        else:
+            y_pred = np.squeeze(self._model.predict(X))
 
         return np.array(y_pred, dtype=int)
 
@@ -206,5 +237,17 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         if 'n_components' in self.get_params():
             if self._model.n_components > X.shape[1]:
                 self._model.n_components = X.shape[1] - 1
+
+        return self
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
+        else:
+            self.num_features = int(self.num_features)
 
         return self
