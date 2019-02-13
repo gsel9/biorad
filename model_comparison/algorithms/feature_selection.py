@@ -21,6 +21,7 @@ from datetime import datetime
 
 from ReliefF import ReliefF
 from scipy.stats import ranksums
+from scipy.stats import ttest_ind
 
 from sklearn.svm import SVC
 from sklearn.utils import check_X_y
@@ -44,6 +45,175 @@ from skfeature.function.similarity_based.fisher_score import fisher_score
 
 
 SEED = 0
+
+
+class GiniIndexSelection(base.BaseSelector):
+
+    SEED = 0
+    NAME = 'StudentTTestSelection'
+
+    def __init__(
+        self,
+        method=None,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.method = method
+        self.num_features = num_features
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+
+        return check_X_y(X, y)
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
+
+    @property
+    def config_space(self):
+        """Returns the ANOVA F-value hyperparameter configuration space."""
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=100, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+
+        def _ttest_ind(X, y):
+
+            return ttest_ind(X, y, equal_var=False)
+
+        self._check_params(X, y)
+        #try:
+        selector = SelectKBest(gini_index, k=self.num_features)
+        selector.fit(X, y)
+        _support = selector.get_support(indices=True)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
+
+    def gini_index(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        p_values = []
+        for num in range(ncols):
+            _, p_value = ranksums(X[:, num], y)
+            p_values.append(num)
+
+        return np.array(p_values, dtype=float)
+
+
+class StudentTTestSelection(base.BaseSelector):
+
+    SEED = 0
+    NAME = 'StudentTTestSelection'
+
+    def __init__(
+        self,
+        method=None,
+        num_features=None,
+        error_handling='all'
+    ):
+
+        super().__init__(error_handling)
+
+        self.method = method
+        self.num_features = num_features
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+
+        return check_X_y(X, y)
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        if self.num_features < 1:
+            self.num_features = int(self.num_features)
+        elif self.num_features > ncols:
+            self.num_features = int(ncols - 1)
+        else:
+            self.num_features = int(self.num_features)
+
+        return self
+
+    @property
+    def config_space(self):
+        """Returns the ANOVA F-value hyperparameter configuration space."""
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=100, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self._check_X_y(X, y)
+
+        def _ttest_ind(X, y):
+
+            return ttest_ind(X, y, equal_var=False)
+
+        self._check_params(X, y)
+        #try:
+        selector = SelectKBest(_ttest_ind, k=self.num_features)
+        selector.fit(X, y)
+        _support = selector.get_support(indices=True)
+        #except:
+        #    warnings.warn('Failed support with {}.'.format(self.__name__))
+        #    _support = []
+
+        self.support = self.check_support(_support, X)
+
+        return self
 
 
 class CorrelationSelection(base.BaseSelector):
@@ -93,7 +263,7 @@ class CorrelationSelection(base.BaseSelector):
 
     def fit(self, X, y=None, **kwargs):
 
-        #X, y = self._check_X_y(X, y)
+        X, y = self._check_X_y(X, y)
 
         cols = np.arange(X.shape[1], dtype=int)
         df_X = pd.DataFrame(X, columns=cols)
@@ -248,7 +418,7 @@ class ANOVAFvalueSelection(base.BaseSelector):
         global SEED
 
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -325,7 +495,7 @@ class FScoreSelection(base.BaseSelector):
         global SEED
 
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         config = ConfigurationSpace()
         config.seed(SEED)
@@ -409,7 +579,7 @@ class WilcoxonSelection(base.BaseSelector):
         global SEED
 
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         config = ConfigurationSpace()
         config.seed(SEED)
@@ -507,7 +677,7 @@ class MRMRSelection(base.BaseSelector):
             'num_neighbors', lower=10, upper=100, default_value=20
         )
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -605,7 +775,7 @@ class ReliefFSelection(base.BaseSelector):
         [3]: Kononenko, I.: 1994, ‘Estimating  attributes:  analysis  and
              extensions  of  Relief’. In:  L. De Raedt and F. Bergadano (eds.):
              Machine Learning: ECML-94. pp. 171–182, Springer Verlag.
-        [4]: M. Robnik-Sikonja, Kononenko, I.: 1994,2003, ‘Theoretical and
+        [4]: M. Robnik-Sikonja, Kononenko, I.: 1994, 2003, ‘Theoretical and
              Empirical Analysis of ReliefF and RReliefF‘. In: Machine Learning
              Journal 53, p23-69.
 
@@ -643,7 +813,7 @@ class ReliefFSelection(base.BaseSelector):
             'num_neighbors', lower=10, upper=100, default_value=20
         )
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -737,7 +907,7 @@ class MutualInformationSelection(base.BaseSelector):
             'num_neighbors', lower=10, upper=100, default_value=20
         )
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         config = ConfigurationSpace()
         config.seed(SEED)
@@ -824,7 +994,7 @@ class Chi2Selection(base.BaseSelector):
         global SEED
 
         num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
+            'num_features', lower=2, upper=100, default_value=20
         )
         config = ConfigurationSpace()
         config.seed(SEED)
