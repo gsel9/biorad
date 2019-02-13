@@ -81,7 +81,7 @@ def model_comparison(
 
     results = []
     for experiment_id, setup in experiments.items():
-        workflow = config_experiment(experiment_id, setup, random_state)
+        workflow = config_experiment(experiment_id, setup, 0)
         print(workflow.items())
     """
         results.extend(
