@@ -25,6 +25,7 @@ from sklearn.svm import SVC
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import MinMaxScaler
 
+from sklearn.pipeline import FeatureUnion
 from sklearn.feature_selection import chi2
 from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import SelectKBest
@@ -36,43 +37,29 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
-from mlxtend.feature_selection import SequentialFeatureSelector
+
 from skfeature.function.similarity_based.fisher_score import fisher_score
 
 
 SEED = 0
 
 
-class SequentialSelection(base.BaseSelector):
-    """
+class CorrelationSelection(base.BaseSelector):
+    """Base representation of correlation based feature selection."""
 
-    """
-
-    NAME = 'SequentialSelection'
+    NAME = 'CorrelationSelection'
 
     def __init__(
         self,
-        model=None,
-        model_name=None,
-        num_features=None,
-        scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
-        verbose=0,
+        thresh=None,
+        method=None,
         error_handling='all'
     ):
 
         super().__init__(error_handling)
 
-        self.model = model
-        self.model_name = model_name
-        self.num_features = num_features
-        self.scoring = scoring
-        self.cv = cv
-        self.forward = forward
-        self.floating = floating
-        self.verbose = verbose
+        self.thresh = thresh
+        self.method = method
 
         # NOTE: Attribute set with instance.
         self.support = None
@@ -81,106 +68,94 @@ class SequentialSelection(base.BaseSelector):
 
         return self.NAME
 
-    @property
-    def config_space(self):
-
-        global SEED
-
-        num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(SEED)
-        config.add_hyperparameter(num_features)
-
-        return config
-
-    def set_params(self, **params):
-        """Update estimator hyperparamter configuration.
-
-        Kwargs:
-            params (dict): Hyperparameter settings.
-
-        """
-
-        self.num_features = params['num_features']
-
-        return self
-
-    def set_model_params(self, **params):
-        params = self._check_config(params)
-        self.model.set_params(**params)
-
-        return self
-
-    def _check_config(self, params):
-        # Validate model configuration by updating hyperparameter settings.
-
-        _params = {}
-        for key in params.keys():
-            if params[key] is not None:
-                if 'gamma' in key:
-                    if params['gamma'] == 'value':
-                        _params['gamma'] = params['gamma_value']
-                    else:
-                        _params['gamma'] = 'auto'
-                else:
-                    _params[key] = params[key]
-            else:
-                pass
-
-        return _params
-
     @staticmethod
     def _check_X_y(X, y):
         # A wrapper around the sklearn formatter function.
 
         return check_X_y(X, y)
 
+    @property
+    def config_space(self):
+        """Returns the ANOVA F-value hyperparameter configuration space."""
+
+        global SEED
+
+        thresh = UniformFloatHyperparameter(
+            'thresh', lower=1e-12, upper=1, default_value=0.9
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameter(thresh)
+
+        return config
+
+    # TODO: Can modify to select specific num of features for use with BBC-CV.
     def fit(self, X, y=None, **kwargs):
+
         X, y = self._check_X_y(X, y)
 
-        self._check_params(X, y)
+        columns = np.arange(X.shape[1], dtype=int)
+        df_X = pd.DataFrame(X, columns=columns)
 
-        #try:
-        if self.verbose > 0:
-            start_time = datetime.now()
-            print('Initializing sequential feature selection!')
-        selector = SequentialFeatureSelector(
-            estimator=self.model,
-            k_features=10,#self.num_features,
-            forward=self.forward,
-            floating=self.floating,
-            scoring=self.scoring,
-            cv=self.cv
+        # Create and select the upper triangle of correlation matrix.
+        corr_matrix = df_X.corr(method=self.method).abs()
+        upper = corr_matrix.where(
+            np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool)
         )
-        selector.fit(X, y)
-        _support = selector.k_feature_idx_
-
-        if self.verbose > 0:
-            run_time = datetime.now() - start_time
-            print('Completed sequential feature selection in {}'
-                  ''.format(run_time))
-        #except:
-        #    warnings.warn('Failed support with {}.'.format(self.__name__))
-        #    _support = []
-
+        # Identify any feature correlated to any other feature more strongly
+        # than thresh.
+        to_drop = [
+            column for column in upper.columns
+            if any(upper[column] > self.thresh)
+        ]
+        # Retain columns not selected as highly correlated.
+        _support = cols[np.logical_not(np.isin(cols, to_drop))]
         self.support = self.check_support(_support, X)
 
         return self
 
-    def _check_params(self, X, y):
 
-        _, ncols = np.shape(X)
-        if self.num_features < 1:
-            self.num_features = int(self.num_features)
-        elif self.num_features > ncols:
-            self.num_features = int(ncols - 1)
-        else:
-            self.num_features = int(self.num_features)
+class PearsonCorrelationSelection(CorrelationSelection):
 
-        return self
+    NAME = 'PearsonCorrelationSelection'
+
+    def __init__(
+        self,
+        thresh=None,
+        method='pearson',
+        error_handling='all'
+    ):
+
+        super().__init__(thresh, method, error_handling)
+
+
+class KendallCorrelationSelection(CorrelationSelection):
+
+    NAME = 'PearsonCorrelationSelection'
+
+    def __init__(
+        self,
+        thresh=None,
+        method='kendall',
+        error_handling='all'
+    ):
+
+        super().__init__(thresh, method, error_handling)
+
+
+class SpearmanCorrelationSelection(CorrelationSelection):
+
+    NAME = 'PearsonCorrelationSelection'
+
+    def __init__(
+        self,
+        thresh=None,
+        method='spearman',
+        error_handling='all'
+    ):
+
+        super().__init__(thresh, method, error_handling)
 
 
 class ANOVAFvalueSelection(base.BaseSelector):
