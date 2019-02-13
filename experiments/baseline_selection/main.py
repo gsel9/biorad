@@ -52,7 +52,7 @@ def build_setup(estimators, selectors):
                 (StandardScaler.__name__, StandardScaler()),
                 #(Whitening.__name__, Whitening(method='zca-cor')),
                 (selector_id, selector),
-                (CorrelationEnsembleSelection.__name__, CorrelationEnsembleSelection()),
+                #(CorrelationEnsembleSelection.__name__, CorrelationEnsembleSelection()),
                 (estimator_id, estimator)
             )
     return setup
@@ -76,20 +76,21 @@ if __name__ == '__main__':
 
     from algorithms.feature_selection import CorrelationEnsembleSelection
     from algorithms.feature_selection import MutualInformationSelection
-    from algorithms.feature_selection import CorrelationSelection
+    from algorithms.feature_selection import StudentTTestSelection
+    #from algorithms.feature_selection import CorrelationSelection
     from algorithms.feature_selection import ANOVAFvalueSelection
     from algorithms.feature_selection import WilcoxonSelection
-    from algorithms.feature_selection import ReliefFSelection
     from algorithms.feature_selection import FScoreSelection
     from algorithms.feature_selection import Chi2Selection
     from algorithms.feature_selection import MRMRSelection
 
     from algorithms.classification import LogRegEstimator
+    from algorithms.classification import DTreeEstimator
     from algorithms.classification import PLSREstimator
     from algorithms.classification import SVCEstimator
+    from algorithms.classification import KNNEstimator
     from algorithms.classification import GNBEstimator
     from algorithms.classification import RFEstimator
-    from algorithms.classification import KNNEstimator
 
     from sklearn.metrics import roc_auc_score
     from sklearn.pipeline import FeatureUnion
@@ -101,12 +102,10 @@ if __name__ == '__main__':
         # Wrapper for weighted ROC AUC score function.
         return roc_auc_score(y_true, y_pred, average='weighted')
 
-
-    np.random.seed(0)
-    random_states = np.random.randint(1000, size=5)
+    random_states = [359]#, 432, 763, 835, 192, 629, 559, 9, 723, 532]
 
     #path_to_results = './baseline_nofilter_dfs.csv'
-    path_to_results = './baseline_nofilter_zca_dfs.csv'
+    path_to_results = './test.csv'
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
 
@@ -116,16 +115,16 @@ if __name__ == '__main__':
         LogRegEstimator.__name__: LogRegEstimator(),
         GNBEstimator.__name__: GNBEstimator(),
         RFEstimator.__name__: RFEstimator(),
-        #KNNEstimator.__name__: KNNEstimator()
+        KNNEstimator.__name__: KNNEstimator(),
+        DTreeEstimator.__name__: DTreeEstimator(),
     }
     selectors = {
-        ReliefFSelection.__name__: ReliefFSelection(),
+        StudentTTestSelection.__name__: StudentTTestSelection(),
         MutualInformationSelection.__name__: MutualInformationSelection(),
         FScoreSelection.__name__: FScoreSelection(),
         WilcoxonSelection.__name__: WilcoxonSelection(),
         ANOVAFvalueSelection.__name__: ANOVAFvalueSelection(),
         Chi2Selection.__name__: Chi2Selection(),
-        # NB: MRMR Takes a very long time!
         #MRMRSelection.__name__: MRMRSelection(),
     }
     setup = build_setup(estimators, selectors)
@@ -135,10 +134,11 @@ if __name__ == '__main__':
         X=X, y=y,
         experiments=setup,
         score_func=balanced_roc_auc,
-        cv=5,
+        cv=2,
         write_prelim=True,
-        max_evals=20,
+        max_evals=2,
         output_dir='./parameter_search',
         random_states=random_states,
-        path_final_results=path_to_results
+        path_final_results=path_to_results,
+        verbose=1
     )
