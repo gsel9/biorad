@@ -12,6 +12,7 @@ __email__ = 'langberg91@gmail.com'
 from . import base
 
 from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -26,6 +27,56 @@ from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 
 SEED = 0
+
+
+class DTreeEstimator(base.BaseClassifier):
+
+    NAME = 'DTreeEstimator'
+
+    def __init__(
+        self,
+        model=DecisionTreeClassifier(
+            min_samples_split=2,
+            class_weight='balanced',
+        )
+    ):
+
+        super().__init__(model=model)
+
+        min_weight_fraction_leaf=0.0,
+        max_leaf_nodes=None, min_impurity_decrease=0.0,
+        min_impurity_split=None,
+
+    @property
+    def config_space(self):
+        """Returns the RF Regression hyperparameter space."""
+
+        criterion = CategoricalHyperparameter(
+            'criterion', ['gini', 'entropy'], default_value='gini'
+        )
+        max_depth = CategoricalHyperparameter(
+            'max_depth', [3, 5, None], default_value=None
+        )
+        max_features = CategoricalHyperparameter(
+            'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
+        )
+        min_samples_leaf = UniformFloatHyperparameter(
+            'min_samples_leaf', lower=1e-6, upper=0.5,
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(SEED)
+        config.add_hyperparameters(
+            (
+                n_estimators,
+                criterion,
+                max_depth,
+                max_features,
+                bootstrap,
+                min_samples_leaf
+            )
+        )
+        return config
 
 
 class RFEstimator(base.BaseClassifier):
