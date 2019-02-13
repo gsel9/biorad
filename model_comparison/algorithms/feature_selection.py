@@ -13,6 +13,7 @@ import mifs
 import warnings
 
 import numpy as np
+import pandas as pd
 
 from . import base
 from copy import deepcopy
@@ -94,10 +95,10 @@ class CorrelationSelection(base.BaseSelector):
     # TODO: Can modify to select specific num of features for use with BBC-CV.
     def fit(self, X, y=None, **kwargs):
 
-        X, y = self._check_X_y(X, y)
+        #X, y = self._check_X_y(X, y)
 
-        columns = np.arange(X.shape[1], dtype=int)
-        df_X = pd.DataFrame(X, columns=columns)
+        cols = np.arange(X.shape[1], dtype=int)
+        df_X = pd.DataFrame(X, columns=cols)
 
         # Create and select the upper triangle of correlation matrix.
         corr_matrix = df_X.corr(method=self.method).abs()
@@ -119,49 +120,73 @@ class CorrelationSelection(base.BaseSelector):
 
 class CorrelationEnsembleSelection(base.BaseSelector):
 
-    
-
-
-class PearsonCorrelationSelection(CorrelationSelection):
-
-    NAME = 'PearsonCorrelationSelection'
+    SEED = 0
+    NAME = 'CorrelationEnsembleSelection'
 
     def __init__(
         self,
-        thresh=None,
-        method='pearson',
+        pearson_thresh=None,
+        kendall_thresh=None,
+        spearman_thresh=None,
         error_handling='all'
     ):
+        super().__init__(error_handling)
 
-        super().__init__(thresh, method, error_handling)
+        self.pearson_thresh = pearson_thresh
+        self.kendall_thresh = kendall_thresh
+        self.spearman_thresh = spearman_thresh
 
+        # NOTE: Attribute set with instance.
+        self.model = FeatureUnion(
+            [
+                ('pearson', CorrelationSelection(method='pearson')),
+                ('kendall', CorrelationSelection(method='kendall')),
+                ('spearman', CorrelationSelection(method='spearman'))
+            ]
+        )
 
-class KendallCorrelationSelection(CorrelationSelection):
+    def __name__(self):
 
-    NAME = 'PearsonCorrelationSelection'
+        return self.NAME
 
-    def __init__(
-        self,
-        thresh=None,
-        method='kendall',
-        error_handling='all'
-    ):
+    @staticmethod
+    def _check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
 
-        super().__init__(thresh, method, error_handling)
+        return check_X_y(X, y)
 
+    @property
+    def config_space(self):
+        """Returns the CorrelationEnsembleSelection hyperparameter configuration space."""
 
-class SpearmanCorrelationSelection(CorrelationSelection):
+        pearson_thresh = UniformFloatHyperparameter(
+            'pearson_thresh', lower=1e-12, upper=1, default_value=0.9
+        )
+        kendall_thresh = UniformFloatHyperparameter(
+            'kendall_thresh', lower=1e-12, upper=1, default_value=0.9
+        )
+        spearman_thresh = UniformFloatHyperparameter(
+            'spearman_thresh', lower=1e-12, upper=1, default_value=0.9
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameters(
+            (pearson_thresh, kendall_thresh, spearman_thresh)
+        )
+        return config
 
-    NAME = 'PearsonCorrelationSelection'
+    def fit(self, X, y=None, **kwargs):
 
-    def __init__(
-        self,
-        thresh=None,
-        method='spearman',
-        error_handling='all'
-    ):
+        X, y = self._check_X_y(X, y)
 
-        super().__init__(thresh, method, error_handling)
+        self.model.fit(X)
+
+        return self
+
+    def transform(self, X, **kwargs):
+
+        return self.model.transform(X)
 
 
 class ANOVAFvalueSelection(base.BaseSelector):

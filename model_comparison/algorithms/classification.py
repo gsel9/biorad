@@ -184,12 +184,11 @@ class SVCEstimator(base.BaseClassifier):
         cv=0,
         forward=True,
         floating=False,
-        with_selection=False
     ):
 
         super().__init__(
             model=model,
-            with_selection=with_selection
+            with_selection=with_selection,
             scoring=scoring,
             cv=cv,
             forward=forward,

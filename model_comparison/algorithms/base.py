@@ -17,6 +17,8 @@ import warnings
 
 import numpy as np
 
+from copy import deepcopy
+
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
@@ -198,6 +200,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
                 scoring=self.scoring,
                 cv=self.cv
             )
+            selector.fit(X, y)
             self.support = np.array(selector.k_feature_idx_, dtype=int)
             self.model.fit(X[:, self.support], y, **kwargs)
         else:
@@ -243,7 +246,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
             if self.model.n_components > ncols:
                 self.model.n_components = ncols - 1
 
-        if self.num_features < 1:
+        if self.num_features is None:
+            return
+        elif self.num_features < 1:
             self.num_features = int(self.num_features)
         elif self.num_features > ncols:
             self.num_features = int(ncols - 1)

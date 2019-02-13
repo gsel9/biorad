@@ -81,16 +81,12 @@ def model_comparison(
 
     results = []
     for experiment_id, setup in experiments.items():
-        workflow = config_experiment(experiment_id, setup, 0)
-        print(workflow.items())
-    """
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
                     X=X, y=y,
                     experiment_id=experiment_id,
-                    hparam_space=hparam_space,
-                    workflow=workflow,
+                    workflow=config_experiment(setup, random_state),
                     cv=cv,
                     output_dir=output_dir,
                     score_func=score_func,
@@ -111,10 +107,9 @@ def model_comparison(
     _write_results(path_final_results, results)
 
     return None
-    """
 
 
-def config_experiment(experiment_id, setup, random_state):
+def config_experiment(setup, random_state):
     """
 
     """
@@ -122,7 +117,7 @@ def config_experiment(experiment_id, setup, random_state):
     config_space = ConfigurationSpace()
     config_space.seed(random_state)
 
-    workflow = OrderedDict()
+    #workflow = OrderedDict()
     for name, algorithm in setup:
         # Join hyperparameter spaces.
         if hasattr(algorithm, 'config_space'):
@@ -131,13 +126,13 @@ def config_experiment(experiment_id, setup, random_state):
                 configuration_space=algorithm.config_space,
                 delimiter='__'
             )
-        # Set seed for random generator of stochastic algorithms.
+        # Set random generator seed for stochastic algorithms.
         if hasattr(algorithm, 'random_state'):
             algorithm.random_state = random_state
 
-    workflow[experiment_id] = (Pipeline(setup), config_space)
+    #workflow[experiment_id] = (Pipeline(setup), config_space)
 
-    return workflow
+    return (Pipeline(setup), config_space)#workflow
 
 
 def _write_results(path_final_results, results):

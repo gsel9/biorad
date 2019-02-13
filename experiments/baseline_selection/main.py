@@ -50,8 +50,9 @@ def build_setup(estimators, selectors):
             setup[label] = (
                 (VarianceThreshold.__name__, VarianceThreshold()),
                 (StandardScaler.__name__, StandardScaler()),
-                (Whitening.__name__, Whitening(method='zca-cor')),
+                #(Whitening.__name__, Whitening(method='zca-cor')),
                 (selector_id, selector),
+                (CorrelationEnsembleSelection.__name__, CorrelationEnsembleSelection()),
                 (estimator_id, estimator)
             )
     return setup
@@ -73,7 +74,9 @@ if __name__ == '__main__':
 
     from algorithms.transforms import Whitening
 
+    from algorithms.feature_selection import CorrelationEnsembleSelection
     from algorithms.feature_selection import MutualInformationSelection
+    from algorithms.feature_selection import CorrelationSelection
     from algorithms.feature_selection import ANOVAFvalueSelection
     from algorithms.feature_selection import WilcoxonSelection
     from algorithms.feature_selection import ReliefFSelection
@@ -89,6 +92,7 @@ if __name__ == '__main__':
     from algorithms.classification import KNNEstimator
 
     from sklearn.metrics import roc_auc_score
+    from sklearn.pipeline import FeatureUnion
     from sklearn.preprocessing import StandardScaler
     from sklearn.feature_selection import VarianceThreshold
 
@@ -102,16 +106,16 @@ if __name__ == '__main__':
     random_states = np.random.randint(1000, size=10)
 
     #path_to_results = './baseline_nofilter_dfs.csv'
-    path_to_results = './baseline_pca_wlcx_svm_dfs.csv'
+    path_to_results = './baseline_nofilter_zca_dfs.csv'
     y = load_target('./../../../data_source/to_analysis/target_dfs.csv')
     X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
 
     estimators = {
-        #PLSREstimator.__name__: PLSREstimator(),
+        PLSREstimator.__name__: PLSREstimator(),
         SVCEstimator.__name__: SVCEstimator(),
-        #LogRegEstimator.__name__: LogRegEstimator(),
-        #GNBEstimator.__name__: GNBEstimator(),
-        #RFEstimator.__name__: RFEstimator(),
+        LogRegEstimator.__name__: LogRegEstimator(),
+        GNBEstimator.__name__: GNBEstimator(),
+        RFEstimator.__name__: RFEstimator(),
         #KNNEstimator.__name__: KNNEstimator()
     }
     selectors = {
@@ -133,7 +137,7 @@ if __name__ == '__main__':
         score_func=balanced_roc_auc,
         cv=5,
         write_prelim=True,
-        max_evals=60,
+        max_evals=20,
         output_dir='./parameter_search',
         random_states=random_states,
         path_final_results=path_to_results
