@@ -44,7 +44,6 @@ from mlxtend.feature_selection import SequentialFeatureSelector
 def model_selection(
         X, y,
         experiment_id,
-        hparam_space,
         workflow,
         score_func,
         cv=5,
@@ -87,9 +86,12 @@ def model_selection(
             print('Running experiment: {}'.format(random_state))
             start_time = datetime.now()
 
+        pipeline, hparam_space = workflow
+
         optimizer = SMACSearchCV(
             cv=cv,
-            workflow=workflow,
+            workflow=pipeline,
+            hparam_space=hparam_space,
             max_evals=max_evals,
             score_func=score_func,
             random_state=random_state,
@@ -100,12 +102,12 @@ def model_selection(
         )
         optimizer.fit(X, y)
 
-        _workflow = deepcopy(workflow)
-        _workflow.set_params(**optimizer.best_config)
+        _pipeline = deepcopy(pipeline)
+        _pipeline.set_params(**optimizer.best_config)
 
         # Estimate average performance of best model.
         results = cross_val_score(
-            X, y, cv, shuffle, random_state, _workflow, score_func
+            X, y, cv, shuffle, random_state, _pipeline, score_func
         )
         output.update(results)
         if path_tmp_results is not None:
@@ -153,6 +155,7 @@ class SMACSearchCV:
         self,
         cv=None,
         workflow=None,
+        hparam_space=None,
         max_evals=None,
         score_func=None,
         run_objective='quality',
@@ -167,6 +170,7 @@ class SMACSearchCV:
     ):
         self.cv = cv
         self.workflow = workflow
+        self.hparam_space = hparam_space
         self.max_evals = max_evals
         self.score_func = score_func
         self.run_objective = run_objective
@@ -219,7 +223,7 @@ class SMACSearchCV:
             {
                 'run_obj': self.run_objective,
                 'runcount-limit': self.max_evals,
-                'cs': self.workflow.hparams,
+                'cs': self.hparam_space,
                 'deterministic': self.deterministic,
                 'output_dir': self.output_dir,
                 'abort_on_first_run_crash': self.abort_first_run
