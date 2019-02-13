@@ -81,13 +81,16 @@ def model_comparison(
 
     results = []
     for experiment_id, setup in experiments.items():
+        workflow = config_experiment(experiment_id, setup, random_state)
+        print(workflow.items())
+    """
         results.extend(
             joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
                 joblib.delayed(comparison_scheme)(
                     X=X, y=y,
-                    workflow=config_experiment(
-                        experiment_id, setup, random_state
-                    ),
+                    experiment_id=experiment_id,
+                    hparam_space=hparam_space,
+                    workflow=workflow,
                     cv=cv,
                     output_dir=output_dir,
                     score_func=score_func,
@@ -108,6 +111,7 @@ def model_comparison(
     _write_results(path_final_results, results)
 
     return None
+    """
 
 
 def config_experiment(experiment_id, setup, random_state):
@@ -117,6 +121,8 @@ def config_experiment(experiment_id, setup, random_state):
 
     config_space = ConfigurationSpace()
     config_space.seed(random_state)
+
+    workflow = OrderedDict()
     for name, algorithm in setup:
         # Join hyperparameter spaces.
         if hasattr(algorithm, 'config_space'):
@@ -129,52 +135,9 @@ def config_experiment(experiment_id, setup, random_state):
         if hasattr(algorithm, 'random_state'):
             algorithm.random_state = random_state
 
-    workflow = WorkFlow(
-        name=experiment_id, flow=Pipeline(setup), hparams=config_space
-    )
+    workflow[experiment_id] = (Pipeline(setup), config_space)
+
     return workflow
-
-
-class WorkFlow:
-    """Worflow representation for model comparison experiments.
-
-    """
-
-    def __init__(self, name, flow, hparams):
-
-        self.name = name
-        self.flow = flow
-        self.hparams = hparams
-
-    def set_params(self, **kwargs):
-
-        self.flow.set_params(**kwargs)
-        # Handles hyperparameters of the sequential feature selection step.
-        if 'SequentialSelection' in self.flow.get_params():
-            self.set_sequential_selection_params()
-
-        return self
-
-    def set_sequential_selection_params(self):
-
-        # Assumes estimator is final step in pipeline.
-        _, estimator = self.flow.steps[-1]
-        # Assumes sequential feature selector is next to last step in pipeline.
-        _, selector = self.flow.steps[-2]
-        # Updates hyperparamters of the wrapped estimator.
-        selector.set_model_params(**estimator.get_params())
-
-        return self
-
-    def fit(self, X, y=None, **kwargs):
-
-        self.flow.fit(X, y, **kwargs)
-
-        return self
-
-    def predict(self, X, **kwargs):
-
-        return self.flow.predict(X, **kwargs)
 
 
 def _write_results(path_final_results, results):

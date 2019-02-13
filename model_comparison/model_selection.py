@@ -43,6 +43,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector
 
 def model_selection(
         X, y,
+        experiment_id,
+        hparam_space,
         workflow,
         score_func,
         cv=5,
@@ -69,7 +71,7 @@ def model_selection(
     if path_tmp_results is not None:
         path_case_file = os.path.join(
             path_tmp_results, 'experiment_{}_{}'.format(
-                random_state, workflow.name
+                random_state, experiment_id
             )
         )
     else:
@@ -80,7 +82,7 @@ def model_selection(
         output = utils.ioutil.read_prelim_result(path_case_file)
         print('Reloading results from: {}'.format(path_case_file))
     else:
-        output = {'exp_id': random_state, 'workflow_id': workflow.name}
+        output = {'exp_id': random_state, 'experiment_id': experiment_id}
         if verbose > 0:
             print('Running experiment: {}'.format(random_state))
             start_time = datetime.now()
@@ -97,7 +99,7 @@ def model_selection(
             store_predictions=True
         )
         optimizer.fit(X, y)
-        print(**optimizer.best_config)
+
         _workflow = deepcopy(workflow)
         _workflow.set_params(**optimizer.best_config)
 
@@ -105,9 +107,7 @@ def model_selection(
         results = cross_val_score(
             X, y, cv, shuffle, random_state, _workflow, score_func
         )
-        print(results)
         output.update(results)
-        print(output)
         if path_tmp_results is not None:
             print('Writing results...')
             utils.ioutil.write_prelim_results(path_case_file, output)
@@ -161,7 +161,7 @@ class SMACSearchCV:
         deterministic=True,
         output_dir=None,
         verbose=0,
-        abort_first_run=True,
+        abort_first_run=False,
         early_stopping=50,
         store_predictions=False
     ):

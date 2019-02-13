@@ -23,6 +23,7 @@ from scipy.stats import ranksums
 
 from sklearn.svm import SVC
 from sklearn.utils import check_X_y
+from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import MinMaxScaler
 
 from sklearn.pipeline import FeatureUnion
@@ -114,6 +115,11 @@ class CorrelationSelection(base.BaseSelector):
         self.support = self.check_support(_support, X)
 
         return self
+
+
+class CorrelationEnsembleSelection(base.BaseSelector):
+
+    
 
 
 class PearsonCorrelationSelection(CorrelationSelection):
