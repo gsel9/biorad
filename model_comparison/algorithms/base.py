@@ -17,12 +17,12 @@ import warnings
 
 import numpy as np
 
-#from .feature_selection import ForwardFloatingSelection
-
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
 from sklearn.base import MetaEstimatorMixin
+
+from mlxtend.feature_selection import SequentialFeatureSelector
 
 
 class BaseSelector(BaseEstimator, TransformerMixin):
@@ -162,6 +162,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         # NOTE: Attribute set with instance.
         self.support = None
+        self.num_features = None
 
     def set_params(self, **params):
         """Update estimator hyperparamter configuration.
@@ -185,11 +186,12 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         """
 
         """
-        self._check_model(X)
+        self._check_params(X, y)
 
         if self.with_selection:
+            _model = deepcopy(self.model)
             selector = SequentialFeatureSelector(
-                estimator=self.model,
+                estimator=_model,
                 k_features=self.num_features,
                 forward=self.forward,
                 floating=self.floating,
@@ -208,9 +210,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         """
         if self.with_selection:
-            y_pred = np.squeeze(self._model.predict(X[:, self.support]))
+            y_pred = np.squeeze(self.model.predict(X[:, self.support]))
         else:
-            y_pred = np.squeeze(self._model.predict(X))
+            y_pred = np.squeeze(self.model.predict(X))
 
         return np.array(y_pred, dtype=int)
 
@@ -225,6 +227,8 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
                         _params['gamma'] = params['gamma_value']
                     else:
                         _params['gamma'] = 'auto'
+                elif 'num_features' in key:
+                    self.num_features = params[key]
                 else:
                     _params[key] = params[key]
             else:
@@ -232,17 +236,13 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         return _params
 
-    def _check_model(self, X, y=None):
-
-        if 'n_components' in self.get_params():
-            if self._model.n_components > X.shape[1]:
-                self._model.n_components = X.shape[1] - 1
-
-        return self
-
     def _check_params(self, X, y):
 
         _, ncols = np.shape(X)
+        if 'n_components' in self.get_params():
+            if self.model.n_components > ncols:
+                self.model.n_components = ncols - 1
+
         if self.num_features < 1:
             self.num_features = int(self.num_features)
         elif self.num_features > ncols:
