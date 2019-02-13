@@ -83,11 +83,11 @@ def model_selection(
     else:
         output = {'exp_id': random_state, 'experiment_id': experiment_id}
         if verbose > 0:
-            print('Running experiment: {}'.format(random_state))
             start_time = datetime.now()
+            print('Running experiment {} with {}'
+                  ''.format(random_state, experiment_id))
 
         pipeline, hparam_space = workflow
-
         optimizer = SMACSearchCV(
             cv=cv,
             workflow=pipeline,
@@ -217,8 +217,8 @@ class SMACSearchCV:
         if self._current_min is None:
             self._current_min = float(np.inf)
 
-        # NOTE: see https://github.com/automl/auto-sklearn/issues/345 for
-        # info on `abort_on_first_run_crash`.
+        # NOTE: See https://automl.github.io/SMAC3/dev/options.html for
+        # options.
         scenario = Scenario(
             {
                 'run_obj': self.run_objective,
@@ -226,7 +226,9 @@ class SMACSearchCV:
                 'cs': self.hparam_space,
                 'deterministic': self.deterministic,
                 'output_dir': self.output_dir,
-                'abort_on_first_run_crash': self.abort_first_run
+                'abort_on_first_run_crash': self.abort_first_run,
+                'wallclock_limit': float(500),
+                'use_ta_time': True,
              }
         )
         smac = SMAC(
