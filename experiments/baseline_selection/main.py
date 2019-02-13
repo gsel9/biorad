@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
 
     np.random.seed(0)
-    random_states = np.random.randint(1000, size=10)
+    random_states = np.random.randint(1000, size=5)
 
     #path_to_results = './baseline_nofilter_dfs.csv'
     path_to_results = './baseline_nofilter_zca_dfs.csv'
@@ -119,12 +119,12 @@ if __name__ == '__main__':
         #KNNEstimator.__name__: KNNEstimator()
     }
     selectors = {
-        #ReliefFSelection.__name__: ReliefFSelection(),
-        #MutualInformationSelection.__name__: MutualInformationSelection(),
-        #FScoreSelection.__name__: FScoreSelection(),
+        ReliefFSelection.__name__: ReliefFSelection(),
+        MutualInformationSelection.__name__: MutualInformationSelection(),
+        FScoreSelection.__name__: FScoreSelection(),
         WilcoxonSelection.__name__: WilcoxonSelection(),
-        #ANOVAFvalueSelection.__name__: ANOVAFvalueSelection(),
-        #Chi2Selection.__name__: Chi2Selection(),
+        ANOVAFvalueSelection.__name__: ANOVAFvalueSelection(),
+        Chi2Selection.__name__: Chi2Selection(),
         # NB: MRMR Takes a very long time!
         #MRMRSelection.__name__: MRMRSelection(),
     }

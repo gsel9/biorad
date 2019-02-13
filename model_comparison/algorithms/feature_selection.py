@@ -49,19 +49,20 @@ SEED = 0
 class CorrelationSelection(base.BaseSelector):
     """Base representation of correlation based feature selection."""
 
+    SEED = 0
     NAME = 'CorrelationSelection'
 
     def __init__(
         self,
-        thresh=None,
         method=None,
+        num_features=None,
         error_handling='all'
     ):
 
         super().__init__(error_handling)
 
-        self.thresh = thresh
         self.method = method
+        self.num_features = num_features
 
         # NOTE: Attribute set with instance.
         self.support = None
@@ -80,19 +81,16 @@ class CorrelationSelection(base.BaseSelector):
     def config_space(self):
         """Returns the ANOVA F-value hyperparameter configuration space."""
 
-        global SEED
-
-        thresh = UniformFloatHyperparameter(
-            'thresh', lower=1e-12, upper=1, default_value=0.9
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
-        config.add_hyperparameter(thresh)
+        config.seed(self.SEED)
+        config.add_hyperparameter(num_features)
 
         return config
 
-    # TODO: Can modify to select specific num of features for use with BBC-CV.
     def fit(self, X, y=None, **kwargs):
 
         #X, y = self._check_X_y(X, y)
@@ -105,14 +103,11 @@ class CorrelationSelection(base.BaseSelector):
         upper = corr_matrix.where(
             np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool)
         )
-        # Identify any feature correlated to any other feature more strongly
-        # than thresh.
-        to_drop = [
-            column for column in upper.columns
-            if any(upper[column] > self.thresh)
-        ]
-        # Retain columns not selected as highly correlated.
-        _support = cols[np.logical_not(np.isin(cols, to_drop))]
+        # Remove columns with only NaNs and replace lower triangle NaNs with 0.
+        upper_clean = upper.dropna(axis=1, how='all').replace(np.nan, 0)
+        feature_corr = np.max(upper_clean.values, axis=0)
+        _support = np.argsort(feature_corr)[:self.num_features]
+
         self.support = self.check_support(_support, X)
 
         return self
@@ -125,16 +120,16 @@ class CorrelationEnsembleSelection(base.BaseSelector):
 
     def __init__(
         self,
-        pearson_thresh=None,
-        kendall_thresh=None,
-        spearman_thresh=None,
+        pearson_num_features=None,
+        kendall_num_features=None,
+        spearman_num_features=None,
         error_handling='all'
     ):
         super().__init__(error_handling)
 
-        self.pearson_thresh = pearson_thresh
-        self.kendall_thresh = kendall_thresh
-        self.spearman_thresh = spearman_thresh
+        self.pearson_num_features = pearson_num_features
+        self.kendall_num_features = kendall_num_features
+        self.spearman_num_features = spearman_num_features
 
         # NOTE: Attribute set with instance.
         self.model = FeatureUnion(
@@ -159,14 +154,14 @@ class CorrelationEnsembleSelection(base.BaseSelector):
     def config_space(self):
         """Returns the CorrelationEnsembleSelection hyperparameter configuration space."""
 
-        pearson_thresh = UniformFloatHyperparameter(
-            'pearson_thresh', lower=1e-12, upper=1, default_value=0.9
+        pearson_thresh = UniformIntegerHyperparameter(
+            'pearson__num_features', lower=2, upper=50, default_value=20
         )
-        kendall_thresh = UniformFloatHyperparameter(
-            'kendall_thresh', lower=1e-12, upper=1, default_value=0.9
+        kendall_thresh = UniformIntegerHyperparameter(
+            'kendall__num_features', lower=2, upper=50, default_value=20
         )
-        spearman_thresh = UniformFloatHyperparameter(
-            'spearman_thresh', lower=1e-12, upper=1, default_value=0.9
+        spearman_thresh = UniformIntegerHyperparameter(
+            'spearman__num_features', lower=2, upper=50, default_value=20
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -175,6 +170,12 @@ class CorrelationEnsembleSelection(base.BaseSelector):
             (pearson_thresh, kendall_thresh, spearman_thresh)
         )
         return config
+
+    def set_params(self, **kwargs):
+
+        self.model.set_params(**kwargs)
+
+        return self
 
     def fit(self, X, y=None, **kwargs):
 
@@ -187,6 +188,33 @@ class CorrelationEnsembleSelection(base.BaseSelector):
     def transform(self, X, **kwargs):
 
         return self.model.transform(X)
+
+    def _check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+
+        if self.pearson_num_features < 1:
+            self.pearson_num_features = int(self.pearson_num_features)
+        elif self.pearson_num_features > ncols:
+            self.pearson_num_features = int(ncols - 1)
+        else:
+            self.pearson_num_features = int(self.pearson_num_features)
+
+        if self.kendall_num_features < 1:
+            self.kendall_num_features = int(self.kendall_num_features)
+        elif self.kendall_num_features > ncols:
+            self.kendall_num_features = int(ncols - 1)
+        else:
+            self.kendall_num_features = int(self.kendall_num_features)
+
+        if self.spearman_num_features < 1:
+            self.spearman_num_features = int(self.spearman_num_features)
+        elif self.spearman_num_features > ncols:
+            self.spearman_num_features = int(ncols - 1)
+        else:
+            self.spearman_num_features = int(self.spearman_num_features)
+
+        return self
 
 
 class ANOVAFvalueSelection(base.BaseSelector):
