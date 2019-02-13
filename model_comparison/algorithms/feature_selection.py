@@ -925,6 +925,7 @@ class MutualInformationSelection(base.BaseSelector):
 
             return mutual_info_classif(
                 X, y,
+                discrete_features=False,
                 n_neighbors=self.num_neighbors,
                 random_state=self.random_state
             )
