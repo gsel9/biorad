@@ -114,7 +114,7 @@ class GiniIndexSelection(base.BaseSelector):
 
         self._check_params(X, y)
         #try:
-        selector = SelectKBest(gini_index, k=self.num_features)
+        selector = gini_index(gini_index, k=self.num_features)
         selector.fit(X, y)
         _support = selector.get_support(indices=True)
         #except:
@@ -131,7 +131,7 @@ class GiniIndexSelection(base.BaseSelector):
 
         p_values = []
         for num in range(ncols):
-            _, p_value = ranksums(X[:, num], y)
+            _, p_value = 2
             p_values.append(num)
 
         return np.array(p_values, dtype=float)
