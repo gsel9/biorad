@@ -64,11 +64,9 @@ class DTreeEstimator(base.BaseClassifier):
         config.seed(SEED)
         config.add_hyperparameters(
             (
-                n_estimators,
                 criterion,
                 max_depth,
                 max_features,
-                bootstrap,
                 min_samples_leaf
             )
         )
