@@ -67,7 +67,7 @@ def model_comparison(
         path_final_results (str):
 
     """
-    global TMP_RESULTS_DIR, ESTIMATOR_ID, SELECTOR_ID
+    global TMP_RESULTS_DIR
 
     # Setup temporary directory to store preliminary results.
     if write_prelim:
@@ -117,7 +117,6 @@ def config_experiment(setup, random_state):
     config_space = ConfigurationSpace()
     config_space.seed(random_state)
 
-    #workflow = OrderedDict()
     for name, algorithm in setup:
         # Join hyperparameter spaces.
         if hasattr(algorithm, 'config_space'):
@@ -130,9 +129,7 @@ def config_experiment(setup, random_state):
         if hasattr(algorithm, 'random_state'):
             algorithm.random_state = random_state
 
-    #workflow[experiment_id] = (Pipeline(setup), config_space)
-
-    return (Pipeline(setup), config_space)#workflow
+    return (Pipeline(setup), config_space)
 
 
 def _write_results(path_final_results, results):

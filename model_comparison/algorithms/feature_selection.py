@@ -4,6 +4,11 @@
 #
 
 """
+
+Notes:
+* Permutation importance is sensitive towards correlated features.
+* ReliefF requires scaling of features to unit length.
+
 """
 
 __author__ = 'Severin Langberg'
@@ -45,96 +50,6 @@ from skfeature.function.similarity_based.fisher_score import fisher_score
 
 
 SEED = 0
-
-
-class GiniIndexSelection(base.BaseSelector):
-
-    SEED = 0
-    NAME = 'StudentTTestSelection'
-
-    def __init__(
-        self,
-        method=None,
-        num_features=None,
-        error_handling='all'
-    ):
-
-        super().__init__(error_handling)
-
-        self.method = method
-        self.num_features = num_features
-
-        # NOTE: Attribute set with instance.
-        self.support = None
-
-    def __name__(self):
-
-        return self.NAME
-
-    @staticmethod
-    def _check_X_y(X, y):
-        # A wrapper around the sklearn formatter function.
-
-        return check_X_y(X, y)
-
-    def _check_params(self, X, y):
-
-        _, ncols = np.shape(X)
-
-        if self.num_features < 1:
-            self.num_features = int(self.num_features)
-        elif self.num_features > ncols:
-            self.num_features = int(ncols - 1)
-        else:
-            self.num_features = int(self.num_features)
-
-        return self
-
-    @property
-    def config_space(self):
-        """Returns the ANOVA F-value hyperparameter configuration space."""
-
-        num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=100, default_value=20
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.SEED)
-        config.add_hyperparameter(num_features)
-
-        return config
-
-    def fit(self, X, y=None, **kwargs):
-
-        X, y = self._check_X_y(X, y)
-
-        def _ttest_ind(X, y):
-
-            return ttest_ind(X, y, equal_var=False)
-
-        self._check_params(X, y)
-        #try:
-        selector = gini_index(gini_index, k=self.num_features)
-        selector.fit(X, y)
-        _support = selector.get_support(indices=True)
-        #except:
-        #    warnings.warn('Failed support with {}.'.format(self.__name__))
-        #    _support = []
-
-        self.support = self.check_support(_support, X)
-
-        return self
-
-    def gini_index(self, X, y):
-
-        _, ncols = np.shape(X)
-
-        p_values = []
-        for num in range(ncols):
-            _, p_value = 2
-            p_values.append(num)
-
-        return np.array(p_values, dtype=float)
 
 
 class StudentTTestSelection(base.BaseSelector):
@@ -744,7 +659,6 @@ class MRMRSelection(base.BaseSelector):
         X_nonegative = X + np.abs(np.min(X)) + 1
 
         return X_nonegative, y
-
 
 
 # pip install ReliefF from https://github.com/gitter-badger/ReliefF

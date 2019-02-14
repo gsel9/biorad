@@ -189,7 +189,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         """
         self._check_params(X, y)
-        
+
         if self.with_selection:
             _model = deepcopy(self.model)
             selector = SequentialFeatureSelector(

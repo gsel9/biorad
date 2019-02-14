@@ -109,9 +109,9 @@ class RFEstimator(base.BaseClassifier):
         bootstrap = CategoricalHyperparameter(
             'bootstrap', [True, False], default_value=True
         )
-        min_samples_leaf = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1e-6, upper=0.5,
-        )
+        #min_samples_leaf = UniformFloatHyperparameter(
+        #    'min_samples_leaf', lower=1e-6, upper=0.5,
+        #)
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
@@ -122,7 +122,7 @@ class RFEstimator(base.BaseClassifier):
                 max_depth,
                 max_features,
                 bootstrap,
-                min_samples_leaf
+                #min_samples_leaf
             )
         )
         return config
@@ -252,7 +252,6 @@ class SVCEstimator(base.BaseClassifier):
         )
         shrinking = CategoricalHyperparameter(
             'shrinking', [True, False], default_value=True
-            #['true', 'false'], default_value='true'
         )
         kernel = CategoricalHyperparameter(
             'kernel', ['linear', 'rbf', 'poly', 'sigmoid'],

@@ -21,6 +21,7 @@ setting:
   # Normalizing cause negative gray level values. Adding the largest mean
   # across all samples to prevent negative values which is required by some
   # feature calculations.
+  # NOTE: Requires <int>.
   voxelArrayShift: 3
   # Value of ROI in mask (is binary).
   label: 1

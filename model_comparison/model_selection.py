@@ -227,7 +227,7 @@ class SMACSearchCV:
                 'deterministic': self.deterministic,
                 'output_dir': self.output_dir,
                 'abort_on_first_run_crash': self.abort_first_run,
-                'wallclock_limit': float(500),
+                'wallclock_limit': float(1200),
                 'use_ta_time': True,
              }
         )
