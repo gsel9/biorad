@@ -25,6 +25,7 @@ from . import base
 
 from scipy import linalg
 
+from sklearn.manifold import TSNE
 from sklearn.covariance import OAS
 from sklearn.covariance import LedoitWolf
 from sklearn.covariance import MinCovDet
@@ -40,9 +41,10 @@ class tSNE(TransformerMixin, BaseEstimator):
 
     def __init__(
         self,
-        model=DecisionTreeClassifier(
-            min_samples_split=2,
-            class_weight='balanced',
+        model=TSNE(
+            n_components=2,
+            n_iter=2000,
+            method='exact'
         )
     ):
 
@@ -52,17 +54,17 @@ class tSNE(TransformerMixin, BaseEstimator):
     def config_space(self):
         """Returns the RF Regression hyperparameter space."""
 
-        criterion = CategoricalHyperparameter(
-            'criterion', ['gini', 'entropy'], default_value='gini'
-        )
-        max_depth = CategoricalHyperparameter(
+        perplexity = CategoricalHyperparameter(
             'max_depth', [3, 5, None], default_value=None
         )
-        max_features = CategoricalHyperparameter(
+        early_exaggeration = CategoricalHyperparameter(
             'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
         )
-        min_samples_leaf = UniformFloatHyperparameter(
+        learning_rate = UniformFloatHyperparameter(
             'min_samples_leaf', lower=1e-6, upper=0.5,
+        )
+        metric = CategoricalHyperparameter(
+
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
