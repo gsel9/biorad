@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from scipy.stats import spearmanr
 
@@ -165,15 +166,15 @@ def _external_metrics(indicators, nbiclusters, data):
     scores = {}
     for num in range(nbiclusters):
 
-        _row_cluster = data.values[row_idx[num], :]
+        _row_cluster = data[row_idx[num], :]
         cluster = _row_cluster[:, col_idx[num]]
         if np.any(cluster):
             scores[num] = {
-                'smr': mean_squared_residue,
-                'smsr': scaled_mean_squared_residue,
-                'vr': virtual_error,
-                'tvr': transposed_virtual_error,
-                'asr': avg_spearmans_rho,
+                'smr': mean_squared_residue(cluster),
+                'smsr': scaled_mean_squared_residue(cluster),
+                'vr': virtual_error(cluster),
+                'tvr': transposed_virtual_error(cluster),
+                #'asr': avg_spearmans_rho(cluster),
             }
         else:
             pass
