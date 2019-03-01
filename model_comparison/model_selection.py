@@ -164,7 +164,7 @@ class SMACSearchCV:
         deterministic=True,
         output_dir=None,
         verbose=0,
-        abort_first_run=False,
+        abort_first_run=True,
         early_stopping=50,
         store_predictions=False
     ):
@@ -192,6 +192,8 @@ class SMACSearchCV:
         self._current_min = None
         self._objective_func = None
         self._predictions = None
+
+        self.eval_counts = 0
 
     @property
     def best_config(self):
@@ -260,7 +262,7 @@ class SMACSearchCV:
             test_scores.append(
                 self.score_func(y_test, np.squeeze(_workflow.predict(X_test)))
             )
-        loss = 1.0 - np.mean(test_scores)
+        loss = np.mean(test_scores)
         # Early stopping mechanism.
         if self._current_min < loss:
             self.early_stopping = self.early_stopping - 1
