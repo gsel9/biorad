@@ -1,4 +1,0 @@
-"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
-0.000000, 2147483648.000000, 0.000135, 1, 0.000135, SphereFunction_1__parameter='5.0000005', SphereFunction_2__parameter='5.0000005'
-0.030659, -24.000005, 0.055699, 1, 0.025040, SphereFunction_1__parameter='5.0000005', SphereFunction_2__parameter='5.0000005'
-0.057327, -89.953951, 0.370326, 2, 0.312999, SphereFunction_1__parameter='9.15082192822058', SphereFunction_2__parameter='9.536978098683438'
