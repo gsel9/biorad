@@ -1,0 +1,2008 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        5.0000005,
+        0.035082101821899414,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        2,
+        null,
+        0
+      ],
+      [
+        4.952754299140389,
+        0.023290157318115234,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        3,
+        null,
+        0
+      ],
+      [
+        3.042914329860828,
+        0.02343606948852539,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        4,
+        null,
+        0
+      ],
+      [
+        9.72476891278282,
+        0.0225067138671875,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        5,
+        null,
+        0
+      ],
+      [
+        9.59442265095293,
+        0.02261495590209961,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        6,
+        null,
+        0
+      ],
+      [
+        0.932028336261077,
+        0.021358966827392578,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        7,
+        null,
+        0
+      ],
+      [
+        2.9382477693203026,
+        0.02692413330078125,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        8,
+        null,
+        0
+      ],
+      [
+        4.628864576592173,
+        0.023624181747436523,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        9,
+        null,
+        0
+      ],
+      [
+        3.446190914985155,
+        0.024559974670410156,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        10,
+        null,
+        0
+      ],
+      [
+        7.1124720020347185,
+        0.02174997329711914,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        11,
+        null,
+        0
+      ],
+      [
+        5.317745997746517,
+        0.021775007247924805,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        12,
+        null,
+        0
+      ],
+      [
+        0.5063933976594589,
+        0.025053977966308594,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        13,
+        null,
+        0
+      ],
+      [
+        0.27183434408385565,
+        0.023303985595703125,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        14,
+        null,
+        0
+      ],
+      [
+        0.33666343426274187,
+        0.025797128677368164,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        15,
+        null,
+        0
+      ],
+      [
+        5.931544167398699,
+        0.023386240005493164,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        16,
+        null,
+        0
+      ],
+      [
+        8.122144488221785,
+        0.021200180053710938,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        17,
+        null,
+        0
+      ],
+      [
+        1.7754114274738693,
+        0.020878076553344727,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        18,
+        null,
+        0
+      ],
+      [
+        0.8287754069504369,
+        0.02210092544555664,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        19,
+        null,
+        0
+      ],
+      [
+        5.744216439107328,
+        0.02058887481689453,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        20,
+        null,
+        0
+      ],
+      [
+        9.388524375581703,
+        0.02923297882080078,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        21,
+        null,
+        0
+      ],
+      [
+        5.980067022437154,
+        0.018975019454956055,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        22,
+        null,
+        0
+      ],
+      [
+        0.501832796072943,
+        0.021152019500732422,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        23,
+        null,
+        0
+      ],
+      [
+        6.988999965410153,
+        0.01806807518005371,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        24,
+        null,
+        0
+      ],
+      [
+        3.176548062020064,
+        0.028771162033081055,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        25,
+        null,
+        0
+      ],
+      [
+        3.071404193773386,
+        0.023367881774902344,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        26,
+        null,
+        0
+      ],
+      [
+        0.49672197312716565,
+        0.02416515350341797,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        27,
+        null,
+        0
+      ],
+      [
+        5.893332203672546,
+        0.027319669723510742,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        28,
+        null,
+        0
+      ],
+      [
+        0.5003078376245584,
+        0.03473091125488281,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        29,
+        null,
+        0
+      ],
+      [
+        2.614544410795155,
+        0.0294802188873291,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        30,
+        null,
+        0
+      ],
+      [
+        8.770475907302442,
+        0.030167102813720703,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        31,
+        null,
+        0
+      ],
+      [
+        0.06302974508337306,
+        0.026492834091186523,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        32,
+        null,
+        0
+      ],
+      [
+        1.5775162943128067,
+        0.022118091583251953,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        33,
+        null,
+        0
+      ],
+      [
+        1.9492118482751617,
+        0.023890018463134766,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        34,
+        null,
+        0
+      ],
+      [
+        0.35763624014804657,
+        0.02588629722595215,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        35,
+        null,
+        0
+      ],
+      [
+        0.0941129841934415,
+        0.025033950805664062,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        36,
+        null,
+        0
+      ],
+      [
+        6.587680152691161,
+        0.019141197204589844,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        37,
+        null,
+        0
+      ],
+      [
+        8.813449022778684,
+        0.01797199249267578,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        38,
+        null,
+        0
+      ],
+      [
+        9.630324928938752,
+        0.018282175064086914,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        39,
+        null,
+        0
+      ],
+      [
+        0.19797420756678166,
+        0.01883387565612793,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        40,
+        null,
+        0
+      ],
+      [
+        0.04226492347810839,
+        0.01995110511779785,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        41,
+        null,
+        0
+      ],
+      [
+        0.02350713270145472,
+        0.020087003707885742,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        42,
+        null,
+        0
+      ],
+      [
+        0.11911790843305084,
+        0.03632998466491699,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        43,
+        null,
+        0
+      ],
+      [
+        9.095420809064533,
+        0.023493051528930664,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        44,
+        null,
+        0
+      ],
+      [
+        1.700621816943365,
+        0.026083707809448242,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        45,
+        null,
+        0
+      ],
+      [
+        9.329810856680874,
+        0.023422956466674805,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        46,
+        null,
+        0
+      ],
+      [
+        4.225486452998741,
+        0.025171995162963867,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        47,
+        null,
+        0
+      ],
+      [
+        5.465140554805298,
+        0.01774907112121582,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        48,
+        null,
+        0
+      ],
+      [
+        0.01812252197013167,
+        0.02148580551147461,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        49,
+        null,
+        0
+      ],
+      [
+        1.7161417503134302,
+        0.020473003387451172,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        50,
+        null,
+        0
+      ],
+      [
+        0.06818839452972847,
+        0.02091383934020996,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        51,
+        null,
+        0
+      ],
+      [
+        0.22329962163479697,
+        0.020924091339111328,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        52,
+        null,
+        0
+      ],
+      [
+        3.0073916136629473,
+        0.021495819091796875,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        53,
+        null,
+        0
+      ],
+      [
+        0.7718831299318675,
+        0.02233099937438965,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        54,
+        null,
+        0
+      ],
+      [
+        0.03998365977183342,
+        0.020748138427734375,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        55,
+        null,
+        0
+      ],
+      [
+        4.539839324090506,
+        0.020253896713256836,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        56,
+        null,
+        0
+      ],
+      [
+        0.0040400646371393486,
+        0.02085709571838379,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        57,
+        null,
+        0
+      ],
+      [
+        0.001387612445842082,
+        0.02155303955078125,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        58,
+        null,
+        0
+      ],
+      [
+        5.345486662412793,
+        0.02423095703125,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        59,
+        null,
+        0
+      ],
+      [
+        0.034464120210944894,
+        0.021942853927612305,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        60,
+        null,
+        0
+      ],
+      [
+        0.006482568925910247,
+        0.021451234817504883,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        61,
+        null,
+        0
+      ],
+      [
+        8.045460371133993,
+        0.020544052124023438,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        62,
+        null,
+        0
+      ],
+      [
+        6.027536843537649,
+        0.019486188888549805,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        63,
+        null,
+        0
+      ],
+      [
+        0.009178587551469844,
+        0.022904157638549805,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        64,
+        null,
+        0
+      ],
+      [
+        0.04621553420886091,
+        0.020770788192749023,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        65,
+        null,
+        0
+      ],
+      [
+        2.188185196387296,
+        0.018526077270507812,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        66,
+        null,
+        0
+      ],
+      [
+        4.759078629486702,
+        0.0190579891204834,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        67,
+        null,
+        0
+      ],
+      [
+        0.0265147148264468,
+        0.020498037338256836,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        68,
+        null,
+        0
+      ],
+      [
+        0.006908035098413129,
+        0.024196147918701172,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        69,
+        null,
+        0
+      ],
+      [
+        6.44583670115926,
+        0.027894973754882812,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        70,
+        null,
+        0
+      ],
+      [
+        0.010605869084309041,
+        0.03323507308959961,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        71,
+        null,
+        0
+      ],
+      [
+        0.14586129721936356,
+        0.028794050216674805,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        72,
+        null,
+        0
+      ],
+      [
+        0.00226344615286146,
+        0.05729103088378906,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        73,
+        null,
+        0
+      ],
+      [
+        0.4331321409539176,
+        0.030768871307373047,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        74,
+        null,
+        0
+      ],
+      [
+        6.6020502257695854,
+        0.023875713348388672,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        75,
+        null,
+        0
+      ],
+      [
+        6.860511865510562,
+        0.024197101593017578,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        76,
+        null,
+        0
+      ],
+      [
+        0.008078254619189299,
+        0.03125810623168945,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        77,
+        null,
+        0
+      ],
+      [
+        6.772920044533754,
+        0.025480985641479492,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        78,
+        null,
+        0
+      ],
+      [
+        8.216322069675797,
+        0.027041912078857422,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        79,
+        null,
+        0
+      ],
+      [
+        0.6937507954727516,
+        0.04986691474914551,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        80,
+        null,
+        0
+      ],
+      [
+        0.00226344615286146,
+        0.026782989501953125,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        81,
+        null,
+        0
+      ],
+      [
+        0.006259613951472983,
+        0.03505301475524902,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        82,
+        null,
+        0
+      ],
+      [
+        0.008823781429443163,
+        0.027052879333496094,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        83,
+        null,
+        0
+      ],
+      [
+        0.005186193290030426,
+        0.02918100357055664,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        84,
+        null,
+        0
+      ],
+      [
+        0.0006875605562723046,
+        0.03418993949890137,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        85,
+        null,
+        0
+      ],
+      [
+        0.0002990610114264763,
+        0.03283190727233887,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        86,
+        null,
+        0
+      ],
+      [
+        0.0006875605562723046,
+        0.02025580406188965,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        87,
+        null,
+        0
+      ],
+      [
+        0.0002990610114264763,
+        0.024712800979614258,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        88,
+        null,
+        0
+      ],
+      [
+        5.151046694269147,
+        0.0241549015045166,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        89,
+        null,
+        0
+      ],
+      [
+        0.0002990610114264763,
+        0.024744749069213867,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        90,
+        null,
+        0
+      ],
+      [
+        7.614188723264928,
+        0.03456878662109375,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        91,
+        null,
+        0
+      ],
+      [
+        6.069579607049168,
+        0.03322792053222656,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        92,
+        null,
+        0
+      ],
+      [
+        5.921253131440701,
+        0.026382923126220703,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        93,
+        null,
+        0
+      ],
+      [
+        0.0021452936298533617,
+        0.02277398109436035,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        94,
+        null,
+        0
+      ],
+      [
+        4.964301799513586,
+        0.024793148040771484,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        95,
+        null,
+        0
+      ],
+      [
+        0.003092308196952673,
+        0.021023988723754883,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        96,
+        null,
+        0
+      ],
+      [
+        0.006259613951472983,
+        0.035681724548339844,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        97,
+        null,
+        0
+      ],
+      [
+        0.0006875605562723046,
+        0.03024005889892578,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        98,
+        null,
+        0
+      ],
+      [
+        0.0005970199539691803,
+        0.024445772171020508,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        99,
+        null,
+        0
+      ],
+      [
+        0.000921084581238335,
+        0.020258188247680664,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        100,
+        null,
+        0
+      ],
+      [
+        3.766251747163177,
+        0.025417804718017578,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default",
+    "2": "Random Search",
+    "3": "Random Search",
+    "4": "Random Search",
+    "5": "Random Search",
+    "6": "Random Search",
+    "7": "Random Search (sorted)",
+    "8": "Random Search",
+    "9": "Random Search (sorted)",
+    "10": "Random Search",
+    "11": "Random Search (sorted)",
+    "12": "Random Search (sorted)",
+    "13": "Random Search (sorted)",
+    "14": "Random Search (sorted)",
+    "15": "Random Search",
+    "16": "Random Search",
+    "17": "Random Search",
+    "18": "Random Search (sorted)",
+    "19": "Random Search",
+    "20": "Random Search",
+    "21": "Random Search",
+    "22": "Local Search",
+    "23": "Random Search",
+    "24": "Local Search",
+    "25": "Local Search",
+    "26": "Random Search (sorted)",
+    "27": "Random Search",
+    "28": "Local Search",
+    "29": "Random Search",
+    "30": "Random Search",
+    "31": "Random Search (sorted)",
+    "32": "Random Search",
+    "33": "Random Search",
+    "34": "Random Search (sorted)",
+    "35": "Random Search (sorted)",
+    "36": "Random Search",
+    "37": "Random Search",
+    "38": "Random Search",
+    "39": "Random Search (sorted)",
+    "40": "Local Search",
+    "41": "Random Search (sorted)",
+    "42": "Random Search (sorted)",
+    "43": "Random Search",
+    "44": "Random Search",
+    "45": "Random Search",
+    "46": "Random Search",
+    "47": "Random Search",
+    "48": "Random Search (sorted)",
+    "49": "Random Search",
+    "50": "Local Search",
+    "51": "Local Search",
+    "52": "Random Search",
+    "53": "Random Search",
+    "54": "Local Search",
+    "55": "Random Search",
+    "56": "Local Search",
+    "57": "Local Search",
+    "58": "Random Search",
+    "59": "Local Search",
+    "60": "Local Search",
+    "61": "Random Search",
+    "62": "Random Search",
+    "63": "Local Search",
+    "64": "Random Search (sorted)",
+    "65": "Random Search",
+    "66": "Random Search",
+    "67": "Local Search",
+    "68": "Local Search",
+    "69": "Random Search",
+    "70": "Local Search",
+    "71": "Random Search",
+    "72": "Local Search",
+    "73": "Random Search",
+    "74": "Random Search",
+    "75": "Random Search",
+    "76": "Random Search (sorted)",
+    "77": "Random Search",
+    "78": "Random Search",
+    "79": "Random Search",
+    "80": "Local Search",
+    "81": "Local Search",
+    "82": "Local Search",
+    "83": "Local Search",
+    "84": "Local Search",
+    "85": "Local Search",
+    "86": "Local Search",
+    "87": "Local Search",
+    "88": "Random Search",
+    "89": "Local Search",
+    "90": "Random Search",
+    "91": "Random Search",
+    "92": "Random Search",
+    "93": "Local Search",
+    "94": "Random Search",
+    "95": "Random Search (sorted)",
+    "96": "Local Search",
+    "97": "Local Search",
+    "98": "Local Search",
+    "99": "Local Search",
+    "100": "Random Search"
+  },
+  "configs": {
+    "1": {
+      "SphereFunction_1__parameter": 5.0000005,
+      "SphereFunction_2__parameter": 5.0000005
+    },
+    "2": {
+      "SphereFunction_1__parameter": 2.6878831773704284,
+      "SphereFunction_2__parameter": 4.952754299140389
+    },
+    "3": {
+      "SphereFunction_1__parameter": 8.566619350583569,
+      "SphereFunction_2__parameter": 3.042914329860828
+    },
+    "4": {
+      "SphereFunction_1__parameter": 2.825190813812945,
+      "SphereFunction_2__parameter": 9.72476891278282
+    },
+    "5": {
+      "SphereFunction_1__parameter": 3.3162129791669117,
+      "SphereFunction_2__parameter": 9.59442265095293
+    },
+    "6": {
+      "SphereFunction_1__parameter": 2.767733779953982,
+      "SphereFunction_2__parameter": 0.932028336261077
+    },
+    "7": {
+      "SphereFunction_1__parameter": 4.529096733400984,
+      "SphereFunction_2__parameter": 2.9382477693203026
+    },
+    "8": {
+      "SphereFunction_1__parameter": 5.214991437729982,
+      "SphereFunction_2__parameter": 4.628864576592173
+    },
+    "9": {
+      "SphereFunction_1__parameter": 7.78833924627207,
+      "SphereFunction_2__parameter": 3.446190914985155
+    },
+    "10": {
+      "SphereFunction_1__parameter": 8.296808845578122,
+      "SphereFunction_2__parameter": 7.1124720020347185
+    },
+    "11": {
+      "SphereFunction_1__parameter": 8.918483475924168,
+      "SphereFunction_2__parameter": 5.317745997746517
+    },
+    "12": {
+      "SphereFunction_1__parameter": 1.0377705569924172,
+      "SphereFunction_2__parameter": 0.5063933976594589
+    },
+    "13": {
+      "SphereFunction_1__parameter": 1.2624520338267298,
+      "SphereFunction_2__parameter": 0.27183434408385565
+    },
+    "14": {
+      "SphereFunction_1__parameter": 2.048430978718034,
+      "SphereFunction_2__parameter": 0.33666343426274187
+    },
+    "15": {
+      "SphereFunction_1__parameter": 0.49797564300027647,
+      "SphereFunction_2__parameter": 5.931544167398699
+    },
+    "16": {
+      "SphereFunction_1__parameter": 4.735755232158836,
+      "SphereFunction_2__parameter": 8.122144488221785
+    },
+    "17": {
+      "SphereFunction_1__parameter": 2.800741643131827,
+      "SphereFunction_2__parameter": 1.7754114274738695
+    },
+    "18": {
+      "SphereFunction_1__parameter": 2.7145353834458525,
+      "SphereFunction_2__parameter": 0.828775406950437
+    },
+    "19": {
+      "SphereFunction_1__parameter": 4.104320773424086,
+      "SphereFunction_2__parameter": 5.744216439107328
+    },
+    "20": {
+      "SphereFunction_1__parameter": 9.152073378622106,
+      "SphereFunction_2__parameter": 9.388524375581703
+    },
+    "21": {
+      "SphereFunction_1__parameter": 3.9414283304128563,
+      "SphereFunction_2__parameter": 5.980067022437154
+    },
+    "22": {
+      "SphereFunction_1__parameter": 2.820174426092086,
+      "SphereFunction_2__parameter": 0.501832796072943
+    },
+    "23": {
+      "SphereFunction_1__parameter": 7.7025552962707895,
+      "SphereFunction_2__parameter": 6.9889999654101524
+    },
+    "24": {
+      "SphereFunction_1__parameter": 2.811585326970256,
+      "SphereFunction_2__parameter": 3.176548062020064
+    },
+    "25": {
+      "SphereFunction_1__parameter": 2.8130416576352726,
+      "SphereFunction_2__parameter": 3.071404193773386
+    },
+    "26": {
+      "SphereFunction_1__parameter": 0.7554260893911909,
+      "SphereFunction_2__parameter": 0.4967219731271657
+    },
+    "27": {
+      "SphereFunction_1__parameter": 8.78569668659228,
+      "SphereFunction_2__parameter": 5.893332203672546
+    },
+    "28": {
+      "SphereFunction_1__parameter": 2.82025072112167,
+      "SphereFunction_2__parameter": 0.5003078376245584
+    },
+    "29": {
+      "SphereFunction_1__parameter": 4.523441013056615,
+      "SphereFunction_2__parameter": 2.614544410795155
+    },
+    "30": {
+      "SphereFunction_1__parameter": 5.504830805365225,
+      "SphereFunction_2__parameter": 8.770475907302442
+    },
+    "31": {
+      "SphereFunction_1__parameter": 2.882097649804143,
+      "SphereFunction_2__parameter": 0.06302974508337306
+    },
+    "32": {
+      "SphereFunction_1__parameter": 1.1425422264050915,
+      "SphereFunction_2__parameter": 1.5775162943128067
+    },
+    "33": {
+      "SphereFunction_1__parameter": 2.502502403009879,
+      "SphereFunction_2__parameter": 1.949211848275162
+    },
+    "34": {
+      "SphereFunction_1__parameter": 3.089211457402675,
+      "SphereFunction_2__parameter": 0.35763624014804657
+    },
+    "35": {
+      "SphereFunction_1__parameter": 3.0218174406703477,
+      "SphereFunction_2__parameter": 0.0941129841934415
+    },
+    "36": {
+      "SphereFunction_1__parameter": 5.319529551071006,
+      "SphereFunction_2__parameter": 6.587680152691161
+    },
+    "37": {
+      "SphereFunction_1__parameter": 9.793974846237868,
+      "SphereFunction_2__parameter": 8.813449022778684
+    },
+    "38": {
+      "SphereFunction_1__parameter": 3.7863388586768134,
+      "SphereFunction_2__parameter": 9.630324928938752
+    },
+    "39": {
+      "SphereFunction_1__parameter": 2.91621457672674,
+      "SphereFunction_2__parameter": 0.19797420756678166
+    },
+    "40": {
+      "SphereFunction_1__parameter": 3.1697196602226727,
+      "SphereFunction_2__parameter": 0.04226492347810839
+    },
+    "41": {
+      "SphereFunction_1__parameter": 3.1683942345861467,
+      "SphereFunction_2__parameter": 0.02350713270145472
+    },
+    "42": {
+      "SphereFunction_1__parameter": 3.359239685370351,
+      "SphereFunction_2__parameter": 0.11911790843305084
+    },
+    "43": {
+      "SphereFunction_1__parameter": 4.347414570550221,
+      "SphereFunction_2__parameter": 9.095420809064533
+    },
+    "44": {
+      "SphereFunction_1__parameter": 2.94980096074956,
+      "SphereFunction_2__parameter": 1.7006218169433647
+    },
+    "45": {
+      "SphereFunction_1__parameter": 1.3135458789274526,
+      "SphereFunction_2__parameter": 9.329810856680874
+    },
+    "46": {
+      "SphereFunction_1__parameter": 1.458323628802986,
+      "SphereFunction_2__parameter": 4.225486452998741
+    },
+    "47": {
+      "SphereFunction_1__parameter": 7.730310178636229,
+      "SphereFunction_2__parameter": 5.465140554805298
+    },
+    "48": {
+      "SphereFunction_1__parameter": 3.4334776239442033,
+      "SphereFunction_2__parameter": 0.01812252197013167
+    },
+    "49": {
+      "SphereFunction_1__parameter": 6.041521572571853,
+      "SphereFunction_2__parameter": 1.7161417503134304
+    },
+    "50": {
+      "SphereFunction_1__parameter": 3.68123377427616,
+      "SphereFunction_2__parameter": 0.06818839452972847
+    },
+    "51": {
+      "SphereFunction_1__parameter": 3.6965131575074808,
+      "SphereFunction_2__parameter": 0.22329962163479697
+    },
+    "52": {
+      "SphereFunction_1__parameter": 3.1937243774819644,
+      "SphereFunction_2__parameter": 3.0073916136629473
+    },
+    "53": {
+      "SphereFunction_1__parameter": 3.6270314764392433,
+      "SphereFunction_2__parameter": 0.7718831299318675
+    },
+    "54": {
+      "SphereFunction_1__parameter": 3.8401447008714213,
+      "SphereFunction_2__parameter": 0.03998365977183342
+    },
+    "55": {
+      "SphereFunction_1__parameter": 7.989672946020762,
+      "SphereFunction_2__parameter": 4.539839324090506
+    },
+    "56": {
+      "SphereFunction_1__parameter": 3.7088935873162403,
+      "SphereFunction_2__parameter": 0.0040400646371393486
+    },
+    "57": {
+      "SphereFunction_1__parameter": 3.7290007821091504,
+      "SphereFunction_2__parameter": 0.001387612445842082
+    },
+    "58": {
+      "SphereFunction_1__parameter": 7.502506375855003,
+      "SphereFunction_2__parameter": 5.345486662412793
+    },
+    "59": {
+      "SphereFunction_1__parameter": 2.8263091408974668,
+      "SphereFunction_2__parameter": 0.034464120210944894
+    },
+    "60": {
+      "SphereFunction_1__parameter": 3.9480427739562884,
+      "SphereFunction_2__parameter": 0.006482568925910246
+    },
+    "61": {
+      "SphereFunction_1__parameter": 8.796048826697278,
+      "SphereFunction_2__parameter": 8.045460371133993
+    },
+    "62": {
+      "SphereFunction_1__parameter": 5.754138922368875,
+      "SphereFunction_2__parameter": 6.027536843537649
+    },
+    "63": {
+      "SphereFunction_1__parameter": 3.7710308090790647,
+      "SphereFunction_2__parameter": 0.009178587551469844
+    },
+    "64": {
+      "SphereFunction_1__parameter": 0.24480534369511173,
+      "SphereFunction_2__parameter": 0.04621553420886091
+    },
+    "65": {
+      "SphereFunction_1__parameter": 6.778066774498244,
+      "SphereFunction_2__parameter": 2.188185196387296
+    },
+    "66": {
+      "SphereFunction_1__parameter": 2.7895335422931846,
+      "SphereFunction_2__parameter": 4.759078629486702
+    },
+    "67": {
+      "SphereFunction_1__parameter": 4.137744720898742,
+      "SphereFunction_2__parameter": 0.0265147148264468
+    },
+    "68": {
+      "SphereFunction_1__parameter": 3.1697196602226727,
+      "SphereFunction_2__parameter": 0.006908035098413129
+    },
+    "69": {
+      "SphereFunction_1__parameter": 5.871349602612427,
+      "SphereFunction_2__parameter": 6.445836701159259
+    },
+    "70": {
+      "SphereFunction_1__parameter": 3.83277711920669,
+      "SphereFunction_2__parameter": 0.010605869084309041
+    },
+    "71": {
+      "SphereFunction_1__parameter": 8.568093190588884,
+      "SphereFunction_2__parameter": 0.14586129721936356
+    },
+    "72": {
+      "SphereFunction_1__parameter": 3.786945730368924,
+      "SphereFunction_2__parameter": 0.00226344615286146
+    },
+    "73": {
+      "SphereFunction_1__parameter": 5.442430477362105,
+      "SphereFunction_2__parameter": 0.4331321409539176
+    },
+    "74": {
+      "SphereFunction_1__parameter": 2.3423333900056234,
+      "SphereFunction_2__parameter": 6.602050225769585
+    },
+    "75": {
+      "SphereFunction_1__parameter": 0.014452314779918736,
+      "SphereFunction_2__parameter": 6.860511865510562
+    },
+    "76": {
+      "SphereFunction_1__parameter": 9.945997655552247,
+      "SphereFunction_2__parameter": 0.008078254619189299
+    },
+    "77": {
+      "SphereFunction_1__parameter": 7.421599861900396,
+      "SphereFunction_2__parameter": 6.7729200445337545
+    },
+    "78": {
+      "SphereFunction_1__parameter": 8.678804665756543,
+      "SphereFunction_2__parameter": 8.216322069675797
+    },
+    "79": {
+      "SphereFunction_1__parameter": 7.4502379096308395,
+      "SphereFunction_2__parameter": 0.6937507954727516
+    },
+    "80": {
+      "SphereFunction_1__parameter": 3.7339086647228528,
+      "SphereFunction_2__parameter": 0.00226344615286146
+    },
+    "81": {
+      "SphereFunction_1__parameter": 3.8957713995627743,
+      "SphereFunction_2__parameter": 0.006259613951472983
+    },
+    "82": {
+      "SphereFunction_1__parameter": 8.942144008498577,
+      "SphereFunction_2__parameter": 0.008823781429443163
+    },
+    "83": {
+      "SphereFunction_1__parameter": 9.78860359555334,
+      "SphereFunction_2__parameter": 0.005186193290030426
+    },
+    "84": {
+      "SphereFunction_1__parameter": 5.474591964394529,
+      "SphereFunction_2__parameter": 0.0006875605562723046
+    },
+    "85": {
+      "SphereFunction_1__parameter": 5.266647408578573,
+      "SphereFunction_2__parameter": 0.0002990610114264763
+    },
+    "86": {
+      "SphereFunction_1__parameter": 5.509280023455715,
+      "SphereFunction_2__parameter": 0.0006875605562723046
+    },
+    "87": {
+      "SphereFunction_1__parameter": 5.582464883161346,
+      "SphereFunction_2__parameter": 0.0002990610114264763
+    },
+    "88": {
+      "SphereFunction_1__parameter": 0.33806540874368685,
+      "SphereFunction_2__parameter": 5.151046694269147
+    },
+    "89": {
+      "SphereFunction_1__parameter": 5.494311509504558,
+      "SphereFunction_2__parameter": 0.0002990610114264763
+    },
+    "90": {
+      "SphereFunction_1__parameter": 9.546425372963776,
+      "SphereFunction_2__parameter": 7.614188723264928
+    },
+    "91": {
+      "SphereFunction_1__parameter": 3.4765678817566528,
+      "SphereFunction_2__parameter": 6.069579607049168
+    },
+    "92": {
+      "SphereFunction_1__parameter": 7.192743721268503,
+      "SphereFunction_2__parameter": 5.921253131440701
+    },
+    "93": {
+      "SphereFunction_1__parameter": 9.496016510347928,
+      "SphereFunction_2__parameter": 0.0021452936298533617
+    },
+    "94": {
+      "SphereFunction_1__parameter": 7.902614219620468,
+      "SphereFunction_2__parameter": 4.964301799513586
+    },
+    "95": {
+      "SphereFunction_1__parameter": 1.8975777576984396,
+      "SphereFunction_2__parameter": 0.003092308196952673
+    },
+    "96": {
+      "SphereFunction_1__parameter": 5.502163112004892,
+      "SphereFunction_2__parameter": 0.006259613951472983
+    },
+    "97": {
+      "SphereFunction_1__parameter": 5.763624837261517,
+      "SphereFunction_2__parameter": 0.0006875605562723046
+    },
+    "98": {
+      "SphereFunction_1__parameter": 9.131169134174307,
+      "SphereFunction_2__parameter": 0.0005970199539691803
+    },
+    "99": {
+      "SphereFunction_1__parameter": 9.025794572803761,
+      "SphereFunction_2__parameter": 0.0009210845812383351
+    },
+    "100": {
+      "SphereFunction_1__parameter": 8.116040414669405,
+      "SphereFunction_2__parameter": 3.766251747163177
+    }
+  }
+}

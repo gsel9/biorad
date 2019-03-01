@@ -1,0 +1,10 @@
+"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
+0.000000, 2147483648.000000, 0.000133, 1, 0.000133, SphereFunction_1__parameter='5.0000005', SphereFunction_2__parameter='5.0000005'
+0.034291, 5.000000, 0.049248, 1, 0.014957, SphereFunction_1__parameter='5.0000005', SphereFunction_2__parameter='5.0000005'
+0.053644, 2.715175, 0.255234, 2, 0.201590, SphereFunction_1__parameter='4.11427614148182', SphereFunction_2__parameter='2.7151751816218446'
+0.091653, 2.359697, 0.824838, 3, 0.733185, SphereFunction_1__parameter='9.00051415880553', SphereFunction_2__parameter='2.3596969482650474'
+0.131663, 0.149271, 1.422818, 4, 1.291155, SphereFunction_1__parameter='6.4810381771265515', SphereFunction_2__parameter='0.1492710629475837'
+0.364084, 0.098385, 6.152881, 5, 5.788797, SphereFunction_1__parameter='6.995916336812173', SphereFunction_2__parameter='0.0983845684095403'
+0.532167, 0.095204, 10.180236, 6, 9.648069, SphereFunction_1__parameter='7.643364338465589', SphereFunction_2__parameter='0.095204423201249'
+0.676655, 0.032541, 14.026229, 7, 13.349574, SphereFunction_1__parameter='8.689501286414371', SphereFunction_2__parameter='0.03254099453977977'
+0.959417, 0.006759, 20.423984, 8, 19.464567, SphereFunction_1__parameter='6.62653430948214', SphereFunction_2__parameter='0.006758883280936519'

@@ -1,0 +1,12 @@
+execdir = .
+deterministic = True
+run_obj = quality
+overall_obj = par10
+par_factor = 10
+cost_for_crash = 2147483647.0
+algo_runs_timelimit = 1200.0
+wallclock_limit = inf
+always_race_default = False
+ta_run_limit = 200.0
+initial_incumbent = DEFAULT
+pcs_fn = ./parameter_search/run_53761797/configspace.json
