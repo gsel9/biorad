@@ -53,18 +53,26 @@ def sample_paths(path_image_dir, path_mask_dir, target_format=None):
 
         return None
 
-    # NOTE: Both images and masks should be of NRRD format.
-    sample_paths = relative_paths(path_image_dir, target_format=target_format)
+    image_paths = relative_paths(path_image_dir, target_format=target_format)
     mask_paths = relative_paths(path_mask_dir, target_format=target_format)
 
-    samples = []
-    for sample, mask in zip(sample_paths, mask_paths):
-        samples.append(
-            OrderedDict(
-                Image=sample, Mask=mask, Patient=_sample_num(sample), Reader=''
-            )
-        )
-    return samples
+    images_and_mask_paths = []
+    for image_path in image_paths:
+
+        # Match sample with mask by number.
+        mask = None
+        image_num = _sample_num(image_path)
+        for mask_path in mask_paths:
+            if _sample_num(mask_path) == image_num:
+                images_and_mask_paths.append(
+                    OrderedDict(
+                        Image=image_path,
+                        Mask=mask_path,
+                        Patient=image_num,
+                        Reader=''
+                    )
+                )
+    return images_and_mask_paths
 
 
 def read_prelim_result(path_to_file):
@@ -119,3 +127,16 @@ def teardown_tempdir(path_to_dir):
     shutil.rmtree(path_to_dir)
 
     return None
+
+
+if __name__ == '__main__':
+    path_ct_imagedir = './../../../data_source/images/ct_anomaly_filtered_nrrd/'
+    path_masksdir = './../../../data_source/images/masks_nrrd/'
+
+    paths_ct_images = sample_paths(
+        path_ct_imagedir, path_masksdir, target_format='nrrd'
+    )
+    for item in paths_ct_images:
+        print(item['Image'].split('/')[-1])
+        print(item['Mask'].split('/')[-1])
+        print()
