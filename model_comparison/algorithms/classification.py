@@ -9,8 +9,6 @@
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-from . import base
-
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -25,12 +23,12 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
-
-SEED = 0
+from . import base
 
 
 class DTreeEstimator(base.BaseClassifier):
 
+    SEED = 0
     NAME = 'DTreeEstimator'
 
     def __init__(
@@ -39,11 +37,11 @@ class DTreeEstimator(base.BaseClassifier):
             min_samples_split=2,
             class_weight='balanced',
         ),
-	with_selection=False,
+        with_selection: bool=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
 
         super().__init__(
@@ -74,7 +72,7 @@ class DTreeEstimator(base.BaseClassifier):
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
+        config.seed(self.SEED)
         config.add_hyperparameters(
             (
                 criterion,
@@ -83,16 +81,19 @@ class DTreeEstimator(base.BaseClassifier):
                 min_samples_leaf
             )
         )
+        # Add additional hyperparameter for a number of feature to select.
         if self.with_selection:
             num_features = UniformIntegerHyperparameter(
                 'num_features', lower=2, upper=50, default_value=20
             )
             config.add_hyperparameter(num_features)
+
         return config
 
 
 class RFEstimator(base.BaseClassifier):
 
+    SEED = 0
     NAME = 'RFEstimator'
 
     def __init__(
@@ -104,13 +105,12 @@ class RFEstimator(base.BaseClassifier):
             min_samples_split=2,
             class_weight='balanced',
         ),
-        with_selection=False,
+        with_selection: bool=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
-
         super().__init__(
             model=model,
             with_selection=with_selection,
@@ -145,7 +145,7 @@ class RFEstimator(base.BaseClassifier):
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
+        config.seed(self.SEED)
         config.add_hyperparameters(
             (
                 n_estimators,
@@ -153,31 +153,37 @@ class RFEstimator(base.BaseClassifier):
                 max_depth,
                 max_features,
                 bootstrap,
-                #min_samples_leaf
+                min_samples_leaf
             )
         )
+        # Add additional hyperparameter for a number of feature to select.
         if self.with_selection:
             num_features = UniformIntegerHyperparameter(
                 'num_features', lower=2, upper=50, default_value=20
             )
             config.add_hyperparameter(num_features)
+
         return config
 
 
 class PLSREstimator(base.BaseClassifier):
 
+    SEED = 0
     NAME = 'PLSREstimator'
 
     def __init__(
         self,
-        model=PLSRegression(scale=False, copy=True, max_iter=int(1e4)),
-        with_selection=False,
+        model=PLSRegression(
+            scale=False,
+            copy=True,
+            max_iter=int(1e4)
+        ),
+        with_selection: bool=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
-
         super().__init__(
             model=model,
             with_selection=with_selection,
@@ -192,8 +198,6 @@ class PLSREstimator(base.BaseClassifier):
     def config_space(self):
         """Returns the PLS regression hyperparameter configuration space."""
 
-        global SEED
-
         tol = UniformFloatHyperparameter(
             'tol', lower=1e-9, upper=1e-3, default_value=1e-7
         )
@@ -202,8 +206,9 @@ class PLSREstimator(base.BaseClassifier):
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
+        config.seed(self.SEED)
         config.add_hyperparameters((tol, n_components))
+        # Add additional hyperparameter for a number of feature to select.
         if self.with_selection:
             num_features = UniformIntegerHyperparameter(
                 'num_features', lower=2, upper=50, default_value=20
@@ -227,6 +232,7 @@ class PLSREstimator(base.BaseClassifier):
 # * The max_iter is not usefull with `liblinear` solver.
 class LogRegEstimator(base.BaseClassifier):
 
+    SEED = 0
     NAME = 'LogRegEstimator'
 
     def __init__(
@@ -241,13 +247,12 @@ class LogRegEstimator(base.BaseClassifier):
             warm_start=False,
             class_weight='balanced',
         ),
-        with_selection=False,
+        with_selection: bool=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
-
         super().__init__(
             model=model,
             with_selection=with_selection,
@@ -262,9 +267,7 @@ class LogRegEstimator(base.BaseClassifier):
     def config_space(self):
         """Returns the LR hyperparameter configuration space."""
 
-        global SEED
-
-        C = UniformFloatHyperparameter(
+        C_param = UniformFloatHyperparameter(
             'C', lower=0.001, upper=1000.0, default_value=1.0
         )
         penalty = CategoricalHyperparameter(
@@ -272,8 +275,9 @@ class LogRegEstimator(base.BaseClassifier):
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
-        config.add_hyperparameters((C, penalty))
+        config.seed(self.SEED)
+        config.add_hyperparameters((C_param, penalty))
+        # Add additional hyperparameter for a number of feature to select.
         if self.with_selection:
             num_features = UniformIntegerHyperparameter(
                 'num_features', lower=2, upper=50, default_value=20
@@ -285,6 +289,7 @@ class LogRegEstimator(base.BaseClassifier):
 
 class SVCEstimator(base.BaseClassifier):
 
+    SEED = 0
     NAME = 'SVCEstimator'
 
     def __init__(
@@ -296,13 +301,12 @@ class SVCEstimator(base.BaseClassifier):
             max_iter=int(3e4),
             decision_function_shape='ovr',
         ),
-        with_selection=False,
+        with_selection: bool=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
-
         super().__init__(
             model=model,
             with_selection=with_selection,
@@ -317,9 +321,7 @@ class SVCEstimator(base.BaseClassifier):
     def config_space(self):
         """Returns the SVC hyperparameter configuration space."""
 
-        global SEED
-
-        C = UniformFloatHyperparameter(
+        C_param = UniformFloatHyperparameter(
             'C', lower=0.001, upper=1000.0, default_value=1.0
         )
         shrinking = CategoricalHyperparameter(
@@ -342,10 +344,10 @@ class SVCEstimator(base.BaseClassifier):
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
+        config.seed(self.SEED)
         config.add_hyperparameters(
             (
-                C,
+                C_param,
                 shrinking,
                 kernel,
                 degree,
@@ -354,6 +356,7 @@ class SVCEstimator(base.BaseClassifier):
                 gamma_value
             )
         )
+        # Add additional hyperparameter for a number of feature to select.
         if self.with_selection:
             num_features = UniformIntegerHyperparameter(
                 'num_features', lower=2, upper=50, default_value=20
@@ -379,7 +382,7 @@ class SVCEstimator(base.BaseClassifier):
 
 # NOTE: This algorithm does not associate hyperparameters.
 class GNBEstimator(base.BaseClassifier):
-    
+
     SEED = 0
     NAME = 'GNBEstimator'
 
@@ -388,9 +391,9 @@ class GNBEstimator(base.BaseClassifier):
         model=GaussianNB(),
         with_selection=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
 
         super().__init__(
@@ -402,7 +405,7 @@ class GNBEstimator(base.BaseClassifier):
             floating=floating
         )
         self.with_selection = with_selection
-    
+
     @property
     def config_space(self):
         """Returns the KNN hyperparameter configuration space."""
@@ -420,18 +423,18 @@ class GNBEstimator(base.BaseClassifier):
 
 class KNNEstimator(base.BaseClassifier):
 
+    SEED = 0
     NAME = 'KNNEstimator'
 
     def __init__(
         self,
         model=KNeighborsClassifier(algorithm='auto'),
-        with_selection=False,
+        with_selection: bool=False,
         scoring='roc_auc',
-        cv=0,
-        forward=True,
-        floating=False,
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
     ):
-
         super().__init__(
             model=model,
             with_selection=with_selection,
@@ -446,8 +449,6 @@ class KNNEstimator(base.BaseClassifier):
     def config_space(self):
         """Returns the KNN hyperparameter configuration space."""
 
-        global SEED
-
         n_neighbors = UniformIntegerHyperparameter(
             'n_neighbors', 3, 100, default_value=5
         )
@@ -459,21 +460,20 @@ class KNNEstimator(base.BaseClassifier):
             ['euclidean', 'manhattan', 'chebyshev', 'minkowski'],
             default_value='minkowski'
         )
-        p = UniformIntegerHyperparameter('p', 1, 5, default_value=2)
-
+        p_param = UniformIntegerHyperparameter('p', 1, 5, default_value=2)
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
-        config.seed(SEED)
-        config.add_hyperparameters((n_neighbors, leaf_size, metric, p))
+        config.seed(self.SEED)
+        config.add_hyperparameters((n_neighbors, leaf_size, metric, p_param))
+        # Add additional hyperparameter for a number of feature to select.
         if self.with_selection:
             num_features = UniformIntegerHyperparameter(
                 'num_features', lower=2, upper=50, default_value=20
             )
             config.add_hyperparameter(num_features)
-
         # Conditionals on hyperparameters specific to kernels.
         config.add_condition(
-            InCondition(child=p, parent=metric, values=['minkowski'])
+            InCondition(child=p_param, parent=metric, values=['minkowski'])
         )
         return config
 
