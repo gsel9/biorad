@@ -12,20 +12,15 @@ framework, scikti-learn `Pipeline` objects and hyperopt `fmin` function.
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-
 import warnings
 
-import numpy as np
-
 from copy import deepcopy
-
+import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
-from sklearn.base import MetaEstimatorMixin
 
-#from mlxtend.feature_selection import SequentialFeatureSelector
-from . import sffs 
+from . import sffs
 
 
 class BaseSelector(BaseEstimator, TransformerMixin):
@@ -100,7 +95,6 @@ class BaseSelector(BaseEstimator, TransformerMixin):
         """
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
-
         # Check if support is empty. Fall back to error mechanism if so.
         if np.size(support) < 1:
             warnings.warn('Error mechanism: {}'.format(self.error_handling))
@@ -110,29 +104,31 @@ class BaseSelector(BaseEstimator, TransformerMixin):
                 return np.nan
             else:
                 raise RuntimeError('Cannot format support: {}'.format(support))
-
         # Ensure correct support dimensionality.
         if np.ndim(support) > 1:
             support = np.squeeze(support)
         if np.ndim(support) < 1:
             support = support[np.newaxis]
-
-        # Sanity check (breaks if error handling is `return NaN`).
-        if self.error_handling == 'all':
+        # NOTE: Sanity check breaks if error handling returns NaN.
+        if self.error_handling != 'nan':
             assert np.ndim(support) == 1
 
         return support
 
     def transform(self, X):
-        """
+        """Extract the selected feature subset from the predictor matrix.
+
+        Args:
+            (array-like): Original predictor matrix.
+
+        Returns:
+            (array-like): The predictor subset matrix.
 
         """
-
-        # Method is shared by all subclasses as a required pipeline signature.
         if self.support is np.nan:
             return X
-        else:
-            return self.check_subset(X[:, self.support])
+
+        return self.check_subset(X[:, self.support])
 
 
 class BaseClassifier(BaseEstimator, ClassifierMixin):
@@ -147,11 +143,11 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         model=None,
-        with_selection=None,
+        with_selection: bool=None,
         scoring=None,
-        cv=None,
-        forward=None,
-        floating=None,
+        cv: int=None,
+        forward: bool=None,
+        floating: bool=None,
     ):
 
         super().__init__()
@@ -186,14 +182,15 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         return self.model.get_params(deep=deep)
 
     def fit(self, X, y=None, **kwargs):
-        """
+        """Train classifier with optional sequential feature selection to
+        reduce in the input feature space.
 
         """
         self._check_params(X, y)
         if self.with_selection:
-            _model = deepcopy(self.model)
+            model = deepcopy(self.model)
             selector = sffs.SequentialFeatureSelector(
-                estimator=_model,
+                estimator=model,
                 k_features=self.num_features,
                 forward=self.forward,
                 floating=self.floating,
@@ -202,7 +199,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
             )
             selector.fit(X, y)
             self.support = np.array(selector.k_feature_idx_, dtype=int)
-
+            # Check hyperparameter setup with the reduced feature set.
             self._check_params(X[:, self.support], y)
             self.model.fit(X[:, self.support], y, **kwargs)
         else:
@@ -211,7 +208,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
-        """
+        """Generate model prediction.
 
         """
         if self.with_selection:
@@ -222,8 +219,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         return np.array(y_pred, dtype=int)
 
     def _check_config(self, params):
-        # Validate model configuration by updating hyperparameter settings.
-
+        # Validate model hyperparameter configuration settings for updating.
         _params = {}
         for key in params.keys():
             if params[key] is not None:
@@ -241,15 +237,21 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         return _params
 
-    def _check_params(self, X, y):
+    def _check_params(self, X, y=None):
+        # Validate model hyperparamter configuration for training.
 
         _, ncols = np.shape(X)
+        
+        # NOTE: Limited to the number of selected features from previous steps.
         if 'n_components' in self.get_params():
             if self.model.n_components > ncols:
                 self.model.n_components = int(ncols - 1)
             elif self.model.n_components < 1:
                 self.model.n_components = 1
+            else:
+                raise RuntimeError('Invalid value of columns, {ncols}, in X')
 
+        # NOTE: Limited to the number of selected features from previous steps.
         if self.num_features is None:
             return
         elif self.num_features < 1:
