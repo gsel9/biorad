@@ -41,31 +41,27 @@ def model_selection(
     Args:
 
     """
-
-    # Determine if storing preliminary results.
-    if path_tmp_results is not None:
-        path_case_file = os.path.join(
-            path_tmp_results, 'experiment_{}_{}'.format(
-                random_state, experiment_id
-            )
-        )
-    else:
+    # Determine if should write prelim results, and if some results already
+    # exists and needs to be reloaded into memory for output results inclusion.
+    if path_tmp_results is None:
         path_case_file = ''
-
-    # Determine if results already exists.
+    else:
+        path_case_file = os.path.join(
+            path_tmp_results, 'experiment_{random_state}_{experiment_id}'
+        )
     if os.path.isfile(path_case_file):
         output = utils.ioutil.read_prelim_result(path_case_file)
-        print('Reloading results from: {}'.format(path_case_file))
+        print('Reloading results from: {path_case_file}')
     else:
         output = {'exp_id': random_state, 'experiment_id': experiment_id}
         if verbose > 0:
             start_time = datetime.now()
-            print('Running experiment {} with {}'
-                  ''.format(random_state, experiment_id))
+            print('Running experiment {random_state} with {experiment_id}')
 
+        # Unpack workflow elements and copy pipeline for fresh start.
         pipeline, hparam_space = workflow
         _pipeline = deepcopy(pipeline)
-
+        # Run hyperparameter optimization protocol.
         optimizer = SMACSearchCV(
             cv=cv,
             experiment_id=experiment_id,
@@ -79,49 +75,66 @@ def model_selection(
             output_dir=output_dir
         )
         optimizer.fit(X, y)
+        # Include best hyperparameter config in output records.
         output.update(**optimizer.best_config)
-
+        # Copy pipeline for fresh start, and config with best hyperparameters.
         _pipeline = deepcopy(pipeline)
         _pipeline.set_params(**optimizer.best_config)
-
-        # Estimate average performance of best model.
+        # Estimate average performance of best model in outer CV loop.
         results = cross_val_score(
-            X, y, cv, shuffle, random_state, _pipeline, score_func
+            X, y,
+            cv,
+            shuffle,
+            random_state,
+            _pipeline,
+            score_func
         )
         output.update(results)
         if path_tmp_results is not None:
             print('Writing results...')
             utils.ioutil.write_prelim_results(path_case_file, output)
-
         if verbose > 0:
-            durat = datetime.now() - start_time
-            print('Experiment {} completed in {}'.format(random_state, durat))
-            output['exp_duration'] = durat
+            duration = datetime.now() - start_time
+            print('Experiment {random_state} completed in {duration}')
+            output['exp_duration'] = duration
 
     return output
 
 
-def cross_val_score(X, y, cv, shuffle, random_state, workflow, score_func):
+def cross_val_score(
+    X, y,
+    cv: int,
+    shuffle: bool,
+    random_state: int,
+    pipeline,
+    score_func
+):
+    """Represents the outer K-fold cross-validation loop of a nested
+    scheme.
 
+    Returns:
+        (collections.OrderedDict):
+
+    """
     feature_votes = np.zeros(X.shape[1], dtype=int)
 
     test_scores, train_scores = [], []
-    folds = StratifiedKFold(cv, shuffle, random_state)
-    for train_idx, test_idx in folds.split(X, y):
-
+    kfolds = StratifiedKFold(cv, shuffle, random_state)
+    for train_idx, test_idx in kfolds.split(X, y):
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        workflow.fit(X_train, y_train)
-
-        _, model = workflow.steps[-1]
-        feature_votes[model.support] += 1
+        pipeline.fit(X_train, y_train)
+        # Count feature votes by utilizing the support attribute from
+        # BaseClassifier.
+        _, final_estimator = pipeline.steps[-1][1]
+        feature_votes[final_estimator.support] += 1
 
         test_scores.append(
-            score_func(y_test, np.squeeze(workflow.predict(X_test)))
+            score_func(y_test, np.squeeze(pipeline.predict(X_test)))
         )
         train_scores.append(
-            score_func(y_train, np.squeeze(workflow.predict(X_train)))
+            score_func(y_train, np.squeeze(pipeline.predict(X_train)))
         )
     return OrderedDict(
         [
@@ -135,21 +148,23 @@ def cross_val_score(X, y, cv, shuffle, random_state, workflow, score_func):
 
 
 class SMACSearchCV:
+    """Hyperparameter optimization by Sequential Model-based Algorithm
+    Configuration (SMAC).
+
+    """
 
     def __init__(
         self,
-        cv=None,
+        cv: int=None,
         experiment_id=None,
         workflow=None,
         hparam_space=None,
-        max_evals=None,
+        max_evals: int=None,
         score_func=None,
-        random_state=None,
-        shuffle=True,
-        deterministic=True,
-        output_dir=None,
-        verbose=0,
-        abort_first_run=True
+        random_state: int=None,
+        shuffle: bool=True,
+        output_dir: str=None,
+        verbose: int=0,
     ):
         self.cv = cv
         self.experiment_id = experiment_id
@@ -161,78 +176,88 @@ class SMACSearchCV:
         self.shuffle = shuffle
         self.verbose = verbose
         self.output_dir = output_dir
-        self.abort_first_run = abort_first_run
 
-        if deterministic:
-            self.deterministic = 'true'
-        else:
-            self.deterministic = 'false'
-
+        # NOTE: Attribute set with instance.
+        self._y = None
+        self._X = None
         self._best_config = None
 
     @property
     def best_config(self):
-
+        """Returns the optimal workflow configuration."""
         return self._best_config
 
     @property
     def best_workflow(self):
+        """Returns the optimally configures workflow."""
+        workflow = deepcopy(self.workflow)
+        workflow.set_params(**self.best_config)
 
-        _workflow = deepcopy(self.workflow)
-        _workflow.set_params(**self.best_config)
-
-        return _workflow
+        return workflow
 
     def fit(self, X, y):
+        """Execture hyperparameter search.
 
-        # NB: Carefull!
-        self.X, self.y = self._check_X_y(X, y)
+        Args:
+            X (array-like): Predictor matrix.
+            y (array-like): Target variable vector.
 
+        """
+        # NB:
+        self._X, self._y = self._check_X_y(X, y)
         # Location to store metadata from hyperparameter search.
-        _output_dir = os.path.join(
-            self.output_dir, '{}_{}'.format(self.experiment_id, self.random_state)
+        search_mdata_dir = os.path.join(
+            self.output_dir, '{self.experiment_id}_{self.random_state}'
         )
-        if not os.path.isdir(_output_dir):
-            os.makedirs(_output_dir)
-
-        # NOTE: See https://automl.github.io/SMAC3/dev/options.html for
+        if not os.path.isdir(search_mdata_dir):
+            os.makedirs(search_mdata_dir)
+        # NOTE: See https://automl.github.io/SMAC3/dev/options.html for further
         # options.
         scenario = Scenario(
             {
-                'run_obj': 'quality',
-                'runcount-limit': self.max_evals,
-                'cs': self.hparam_space,
-                'deterministic': self.deterministic,
-                'output_dir': _output_dir,
-                'abort_on_first_run_crash': self.abort_first_run,
-                'wallclock_limit': float(500),
                 'use_ta_time': True,
+                'wallclock_limit': float(1600),
+                'cs': self.hparam_space,
+                'output_dir': search_mdata_dir,
+                'runcount-limit': self.max_evals,
+                'run_obj': 'quality',
+                'deterministic': 'true',
+                'abort_on_first_run_crash': 'true',
              }
         )
         smac = SMAC(
             scenario=scenario,
             rng=np.random.RandomState(self.random_state),
-            tae_runner=self.cv_objective
+            tae_runner=self.cv_objective_fn
         )
         self._best_config = smac.optimize()
 
         return self
 
-    def cv_objective(self, hparams):
+    def cv_objective_fn(self, hparams):
+        """Optimization objective function.
 
+        Args:
+            hparams (dict): A hyperparameter configuration.
+
+        Returns:
+            (float): The loss score obtained with the input configuration.
+
+        """
         test_scores = []
-        folds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
-        for train_idx, test_idx in folds.split(self.X, self.y):
+        kfolds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
+        for train_idx, test_idx in kfolds.split(self._X, self._y):
+            X_train, X_test = self._X[train_idx], self._X[test_idx]
+            y_train, y_test = self._y[train_idx], self._y[test_idx]
 
-            X_train, X_test = self.X[train_idx], self.X[test_idx]
-            y_train, y_test = self.y[train_idx], self.y[test_idx]
+            # Copy workflow for fresh start with each fold.
+            workflow = deepcopy(self.workflow)
+            workflow.set_params(**hparams)
+            workflow.fit(X_train, y_train)
 
-            _workflow = deepcopy(self.workflow)
-            _workflow.set_params(**hparams)
-            _workflow.fit(X_train, y_train)
-
+            # Include test scores as objective loss.
             test_scores.append(
-                self.score_func(y_test, np.squeeze(_workflow.predict(X_test)))
+                self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
         return 1.0 - np.mean(test_scores)
 
