@@ -62,6 +62,7 @@ def model_comparison(
                     score_func=score_func,
                     max_evals=max_evals,
                     verbose=verbose,
+                    shuffle=shuffle,
                     random_state=random_state,
                     path_tmp_results=path_tmp_results,
                 )
