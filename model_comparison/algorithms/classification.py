@@ -38,10 +38,23 @@ class DTreeEstimator(base.BaseClassifier):
         model=DecisionTreeClassifier(
             min_samples_split=2,
             class_weight='balanced',
-        )
+        ),
+	with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
@@ -51,13 +64,13 @@ class DTreeEstimator(base.BaseClassifier):
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
         max_depth = CategoricalHyperparameter(
-            'max_depth', [3, 5, None], default_value=None
+            'max_depth', [3, 5, 10, 20, None], default_value=None
         )
         max_features = CategoricalHyperparameter(
             'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
         )
         min_samples_leaf = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1e-6, upper=0.5,
+            'min_samples_leaf', lower=1e-6, upper=0.5 - 1e-10,
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -70,6 +83,11 @@ class DTreeEstimator(base.BaseClassifier):
                 min_samples_leaf
             )
         )
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
         return config
 
 
@@ -85,23 +103,36 @@ class RFEstimator(base.BaseClassifier):
             oob_score=False,
             min_samples_split=2,
             class_weight='balanced',
-        )
+        ),
+        with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
         """Returns the RF Regression hyperparameter space."""
 
         n_estimators = UniformIntegerHyperparameter(
-            'n_estimators', lower=10, upper=3000, default_value=100
+            'n_estimators', lower=2, upper=3000, default_value=100
         )
         criterion = CategoricalHyperparameter(
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
         max_depth = CategoricalHyperparameter(
-            'max_depth', [3, 5, None], default_value=None
+            'max_depth', [3, 5, 10, 20, None], default_value=None
         )
         max_features = CategoricalHyperparameter(
             'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
@@ -109,9 +140,9 @@ class RFEstimator(base.BaseClassifier):
         bootstrap = CategoricalHyperparameter(
             'bootstrap', [True, False], default_value=True
         )
-        #min_samples_leaf = UniformFloatHyperparameter(
-        #    'min_samples_leaf', lower=1e-6, upper=0.5,
-        #)
+        min_samples_leaf = UniformFloatHyperparameter(
+            'min_samples_leaf', lower=1e-6, upper=0.5 - 1e-10,
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(SEED)
@@ -125,6 +156,11 @@ class RFEstimator(base.BaseClassifier):
                 #min_samples_leaf
             )
         )
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
         return config
 
 
@@ -134,10 +170,23 @@ class PLSREstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        model=PLSRegression(scale=False, copy=True, max_iter=-1)
+        model=PLSRegression(scale=False, copy=True, max_iter=int(1e4)),
+        with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
@@ -155,6 +204,11 @@ class PLSREstimator(base.BaseClassifier):
         config = ConfigurationSpace()
         config.seed(SEED)
         config.add_hyperparameters((tol, n_components))
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
 
         return config
 
@@ -179,17 +233,30 @@ class LogRegEstimator(base.BaseClassifier):
         self,
         model=LogisticRegression(
             solver='liblinear',
-            max_iter=1000,
+            max_iter=int(1e4),
             verbose=0,
             n_jobs=1,
             dual=False,
             multi_class='ovr',
             warm_start=False,
             class_weight='balanced',
-        )
+        ),
+        with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
@@ -207,6 +274,11 @@ class LogRegEstimator(base.BaseClassifier):
         config = ConfigurationSpace()
         config.seed(SEED)
         config.add_hyperparameters((C, penalty))
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
 
         return config
 
@@ -220,8 +292,8 @@ class SVCEstimator(base.BaseClassifier):
         model=SVC(
             class_weight='balanced',
             verbose=False,
-            cache_size=500,
-            max_iter=-1,
+            cache_size=1500,
+            max_iter=int(3e4),
             decision_function_shape='ovr',
         ),
         with_selection=False,
@@ -307,15 +379,43 @@ class SVCEstimator(base.BaseClassifier):
 
 # NOTE: This algorithm does not associate hyperparameters.
 class GNBEstimator(base.BaseClassifier):
-
+    
+    SEED = 0
     NAME = 'GNBEstimator'
 
     def __init__(
         self,
-        model=GaussianNB()
+        model=GaussianNB(),
+        with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
+    
+    @property
+    def config_space(self):
+        """Returns the KNN hyperparameter configuration space."""
+
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
+
+        return config
 
 
 class KNNEstimator(base.BaseClassifier):
@@ -324,10 +424,23 @@ class KNNEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        model=KNeighborsClassifier(algorithm='auto')
+        model=KNeighborsClassifier(algorithm='auto'),
+        with_selection=False,
+        scoring='roc_auc',
+        cv=0,
+        forward=True,
+        floating=False,
     ):
 
-        super().__init__(model=model)
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
@@ -352,6 +465,11 @@ class KNNEstimator(base.BaseClassifier):
         config = ConfigurationSpace()
         config.seed(SEED)
         config.add_hyperparameters((n_neighbors, leaf_size, metric, p))
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
 
         # Conditionals on hyperparameters specific to kernels.
         config.add_condition(

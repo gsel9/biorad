@@ -21,11 +21,8 @@ __contact__ = 'langberg91@gmail.com'
 
 import numpy as np
 
-from . import base
-
 from scipy import linalg
 
-from sklearn.manifold import TSNE
 from sklearn.covariance import OAS
 from sklearn.covariance import LedoitWolf
 from sklearn.covariance import MinCovDet
@@ -33,51 +30,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.base import TransformerMixin, BaseEstimator
 
 from sklearn.utils import check_array
-
-
-class tSNE(TransformerMixin, BaseEstimator):
-
-    NAME = 'DTreeEstimator'
-
-    def __init__(
-        self,
-        model=TSNE(
-            n_components=2,
-            n_iter=2000,
-            method='exact'
-        )
-    ):
-
-        super().__init__(model=model)
-
-    @property
-    def config_space(self):
-        """Returns the RF Regression hyperparameter space."""
-
-        perplexity = CategoricalHyperparameter(
-            'max_depth', [3, 5, None], default_value=None
-        )
-        early_exaggeration = CategoricalHyperparameter(
-            'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
-        )
-        learning_rate = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1e-6, upper=0.5,
-        )
-        metric = CategoricalHyperparameter(
-
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(SEED)
-        config.add_hyperparameters(
-            (
-                criterion,
-                max_depth,
-                max_features,
-                min_samples_leaf
-            )
-        )
-        return config
 
 
 class Whitening(TransformerMixin, BaseEstimator):

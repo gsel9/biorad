@@ -24,7 +24,8 @@ from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
 from sklearn.base import MetaEstimatorMixin
 
-from mlxtend.feature_selection import SequentialFeatureSelector
+#from mlxtend.feature_selection import SequentialFeatureSelector
+from . import sffs 
 
 
 class BaseSelector(BaseEstimator, TransformerMixin):
@@ -189,10 +190,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         """
         self._check_params(X, y)
-
         if self.with_selection:
             _model = deepcopy(self.model)
-            selector = SequentialFeatureSelector(
+            selector = sffs.SequentialFeatureSelector(
                 estimator=_model,
                 k_features=self.num_features,
                 forward=self.forward,
@@ -202,6 +202,8 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
             )
             selector.fit(X, y)
             self.support = np.array(selector.k_feature_idx_, dtype=int)
+
+            self._check_params(X[:, self.support], y)
             self.model.fit(X[:, self.support], y, **kwargs)
         else:
             self.model.fit(X, y, **kwargs)
@@ -244,12 +246,14 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         _, ncols = np.shape(X)
         if 'n_components' in self.get_params():
             if self.model.n_components > ncols:
-                self.model.n_components = ncols - 1
+                self.model.n_components = int(ncols - 1)
+            elif self.model.n_components < 1:
+                self.model.n_components = 1
 
         if self.num_features is None:
             return
         elif self.num_features < 1:
-            self.num_features = int(self.num_features)
+            self.num_features = 1
         elif self.num_features > ncols:
             self.num_features = int(ncols - 1)
         else:

@@ -46,14 +46,13 @@ def model_selection(
         experiment_id,
         workflow,
         score_func,
-        cv=5,
+        cv=10,
         output_dir=None,
-        max_evals=None,
+        max_evals=100,
         verbose=1,
         shuffle=True,
         random_state=None,
         path_tmp_results=None,
-        error_score='all',
     ):
     """
     Work function for parallelizable model selection experiments.
@@ -88,19 +87,22 @@ def model_selection(
                   ''.format(random_state, experiment_id))
 
         pipeline, hparam_space = workflow
+        _pipeline = deepcopy(pipeline)
+
         optimizer = SMACSearchCV(
             cv=cv,
-            workflow=pipeline,
+            experiment_id=experiment_id,
+            workflow=_pipeline,
             hparam_space=hparam_space,
             max_evals=max_evals,
             score_func=score_func,
             random_state=random_state,
             shuffle=shuffle,
             verbose=verbose,
-            output_dir=output_dir,
-            store_predictions=True
+            output_dir=output_dir
         )
         optimizer.fit(X, y)
+        output.update(**optimizer.best_config)
 
         _pipeline = deepcopy(pipeline)
         _pipeline.set_params(**optimizer.best_config)
@@ -124,6 +126,8 @@ def model_selection(
 
 def cross_val_score(X, y, cv, shuffle, random_state, workflow, score_func):
 
+    feature_votes = np.zeros(X.shape[1], dtype=int)
+
     test_scores, train_scores = [], []
     folds = StratifiedKFold(cv, shuffle, random_state)
     for train_idx, test_idx in folds.split(X, y):
@@ -132,6 +136,9 @@ def cross_val_score(X, y, cv, shuffle, random_state, workflow, score_func):
         y_train, y_test = y[train_idx], y[test_idx]
 
         workflow.fit(X_train, y_train)
+
+        _, model = workflow.steps[-1]
+        feature_votes[model.support] += 1
 
         test_scores.append(
             score_func(y_test, np.squeeze(workflow.predict(X_test)))
@@ -145,6 +152,7 @@ def cross_val_score(X, y, cv, shuffle, random_state, workflow, score_func):
             ('train_score', np.mean(train_scores)),
             ('test_score_variance', np.var(test_scores)),
             ('train_score_variance', np.var(train_scores)),
+            ('feature_votes', np.array(feature_votes, dtype=int))
         ]
     )
 
@@ -154,46 +162,36 @@ class SMACSearchCV:
     def __init__(
         self,
         cv=None,
+        experiment_id=None,
         workflow=None,
         hparam_space=None,
         max_evals=None,
         score_func=None,
-        run_objective='quality',
         random_state=None,
         shuffle=True,
         deterministic=True,
         output_dir=None,
         verbose=0,
-        abort_first_run=True,
-        early_stopping=50,
-        store_predictions=False
+        abort_first_run=True
     ):
         self.cv = cv
+        self.experiment_id = experiment_id
         self.workflow = workflow
         self.hparam_space = hparam_space
         self.max_evals = max_evals
         self.score_func = score_func
-        self.run_objective = run_objective
         self.random_state = random_state
         self.shuffle = shuffle
         self.verbose = verbose
         self.output_dir = output_dir
         self.abort_first_run = abort_first_run
 
-        self.early_stopping = early_stopping
-        self.store_predictions = store_predictions
         if deterministic:
             self.deterministic = 'true'
         else:
             self.deterministic = 'false'
 
-        self._rgen = None
         self._best_config = None
-        self._current_min = None
-        self._objective_func = None
-        self._predictions = None
-
-        self.eval_counts = 0
 
     @property
     def best_config(self):
@@ -212,30 +210,31 @@ class SMACSearchCV:
 
         # NB: Carefull!
         self.X, self.y = self._check_X_y(X, y)
-
-        if self._rgen is None:
-            self._rgen = np.random.RandomState(self.random_state)
-
-        if self._current_min is None:
-            self._current_min = float(np.inf)
+       
+        # Location to store metadata from hyperparameter search.
+        _output_dir = os.path.join(
+            self.output_dir, '{}_{}'.format(self.experiment_id, self.random_state)
+        )
+        if not os.path.isdir(_output_dir):
+            os.makedirs(_output_dir)
 
         # NOTE: See https://automl.github.io/SMAC3/dev/options.html for
         # options.
         scenario = Scenario(
             {
-                'run_obj': self.run_objective,
+                'run_obj': 'quality',
                 'runcount-limit': self.max_evals,
                 'cs': self.hparam_space,
                 'deterministic': self.deterministic,
-                'output_dir': self.output_dir,
+                'output_dir': _output_dir,
                 'abort_on_first_run_crash': self.abort_first_run,
-                'wallclock_limit': float(1200),
+                'wallclock_limit': float(500),
                 'use_ta_time': True,
              }
         )
         smac = SMAC(
             scenario=scenario,
-            rng=self._rgen,
+            rng=np.random.RandomState(self.random_state),
             tae_runner=self.cv_objective
         )
         self._best_config = smac.optimize()
@@ -243,10 +242,6 @@ class SMACSearchCV:
         return self
 
     def cv_objective(self, hparams):
-
-        if self.early_stopping < 1:
-            warnings.warn('Exiting by early stopping.')
-            return self._best_params
 
         test_scores = []
         folds = StratifiedKFold(self.cv, self.shuffle, self.random_state)
@@ -262,15 +257,8 @@ class SMACSearchCV:
             test_scores.append(
                 self.score_func(y_test, np.squeeze(_workflow.predict(X_test)))
             )
-        loss = np.mean(test_scores)
-        # Early stopping mechanism.
-        if self._current_min < loss:
-            self.early_stopping = self.early_stopping - 1
-        else:
-            self._current_min = loss
-
-        return loss
-
+        return 1.0 - np.mean(test_scores)
+   
     @staticmethod
     def _check_X_y(X, y):
         # Wrapping the sklearn formatter function.

@@ -43,7 +43,6 @@ def model_comparison(
     random_states=None,
     output_dir=None,
     write_prelim=False,
-    error_score='nan',
     n_jobs=1,
     path_final_results=None
 ):
@@ -94,7 +93,6 @@ def model_comparison(
                     verbose=verbose,
                     random_state=random_state,
                     path_tmp_results=path_tmp_results,
-                    error_score=error_score
                 )
                 for random_state in random_states
             )

@@ -609,23 +609,23 @@ class MRMRSelection(base.BaseSelector):
         X, y = self._check_X_y(X, y)
 
         self._check_params(X, y)
-        #try:
-        # NOTE: Categorical refers to the target variable data type.
-        selector = mifs.MutualInformationFeatureSelector(
-            method='MRMR',
-            categorical=True,
-            k=self.num_neighbors,
-            n_features=self.num_features,
-        )
-        selector.fit(X, y)
-        # Check for all NaNs.
-        if np.all(np.isnan(selector.support_)):
+        try:
+            # NOTE: Categorical refers to the target variable data type.
+            selector = mifs.MutualInformationFeatureSelector(
+                method='MRMR',
+                categorical=True,
+                k=self.num_neighbors,
+                n_features=self.num_features,
+            )
+            selector.fit(X, y)
+            # Check for all NaNs.
+            if np.all(np.isnan(selector.support_)):
+                _support = []
+            else:
+                _support = np.squeeze(np.where(selector.support_))
+        except:
+            warnings.warn('Failed support with {}.'.format(self.__name__))
             _support = []
-        else:
-            _support = np.squeeze(np.where(selector.support_))
-        #except:
-        #    warnings.warn('Failed support with {}.'.format(self.__name__))
-        #    _support = []
         self.support = self.check_support(_support, X)
 
         return self
