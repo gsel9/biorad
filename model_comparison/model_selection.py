@@ -1,67 +1,44 @@
-
 # -*- coding: utf-8 -*-
 #
 # model_selection.py
 #
 
 """
-
+Work function for model selection experiments.
 """
 
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-import os
-import time
-import utils
-import warnings
-
-import numpy as np
-
 from copy import deepcopy
-from datetime import datetime
 from collections import OrderedDict
-
-from numba import jit, vectorize, float64
-
-from hyperopt import hp
-from hyperopt import tpe
-from hyperopt import fmin
-from hyperopt import Trials
-from hyperopt import space_eval
-from hyperopt import STATUS_OK
-
+from datetime import datetime
+import os
 from sklearn.utils import check_X_y
 from sklearn.model_selection import StratifiedKFold
-
 from smac.facade.smac_facade import SMAC
 from smac.scenario.scenario import Scenario
-from smac.tae.execute_func import ExecuteTAFuncDict
-
-from mlxtend.feature_selection import SequentialFeatureSelector
+import numpy as np
+import utils
 
 
 def model_selection(
-        X, y,
-        experiment_id,
-        workflow,
-        score_func,
-        cv=10,
-        output_dir=None,
-        max_evals=100,
-        verbose=1,
-        shuffle=True,
-        random_state=None,
-        path_tmp_results=None,
-    ):
+    X, y,
+    experiment_id,
+    workflow,
+    score_func,
+    cv: int=10,
+    output_dir=None,
+    max_evals: int=100,
+    verbose: int=1,
+    shuffle: bool=True,
+    random_state=None,
+    path_tmp_results: str=None,
+):
     """
-    Work function for parallelizable model selection experiments.
+    Nested cross-validtion model comparison.
 
     Args:
-
-        cv (int): The number of folds in stratified k-fold cross-validation.
-        oob (int): The number of samples in out-of-bag bootstrap re-sampling.
-        max_evals (int): The number of iterations in hyperparameter search.
 
     """
 
@@ -210,7 +187,7 @@ class SMACSearchCV:
 
         # NB: Carefull!
         self.X, self.y = self._check_X_y(X, y)
-       
+
         # Location to store metadata from hyperparameter search.
         _output_dir = os.path.join(
             self.output_dir, '{}_{}'.format(self.experiment_id, self.random_state)
@@ -258,7 +235,7 @@ class SMACSearchCV:
                 self.score_func(y_test, np.squeeze(_workflow.predict(X_test)))
             )
         return 1.0 - np.mean(test_scores)
-   
+
     @staticmethod
     def _check_X_y(X, y):
         # Wrapping the sklearn formatter function.
