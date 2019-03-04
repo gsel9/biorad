@@ -241,7 +241,7 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         # Validate model hyperparamter configuration for training.
 
         _, ncols = np.shape(X)
-        
+
         # NOTE: Limited to the number of selected features from previous steps.
         if 'n_components' in self.get_params():
             if self.model.n_components > ncols:
