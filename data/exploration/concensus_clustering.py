@@ -170,9 +170,9 @@ def _external_metrics(indicators, nbiclusters, data):
         cluster = _row_cluster[:, col_idx[num]]
         if np.any(cluster):
             scores[num] = {
-                'smr': mean_squared_residue(cluster),
-                'smsr': scaled_mean_squared_residue(cluster),
-                'vr': virtual_error(cluster),
+                #'smr': mean_squared_residue(cluster),
+                #'smsr': scaled_mean_squared_residue(cluster),
+                #'vr': virtual_error(cluster),
                 'tvr': transposed_virtual_error(cluster),
                 #'asr': avg_spearmans_rho(cluster),
             }
