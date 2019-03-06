@@ -22,6 +22,7 @@ def model_comparison(
     X, y,
     experiments,
     score_func,
+    optimizer: str,
     cv: int,
     max_evals: int,
     shuffle: bool=True,
@@ -49,6 +50,13 @@ def model_comparison(
     if n_jobs is None:
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else 1
 
+    if optimizer == 'smac':
+        configurator = config_smac_experiment
+    elif optimizer == 'tpe':
+        configurator = config_tpe_experiment
+    else:
+        raise ValueError(f'Invalid optimizer {optimizer}')
+
     results = []
     for experiment_id, setup in experiments.items():
         results.extend(
@@ -56,7 +64,7 @@ def model_comparison(
                 joblib.delayed(comparison_scheme)(
                     X=X, y=y,
                     experiment_id=experiment_id,
-                    workflow=config_experiment(setup, random_state),
+                    workflow=configurator(setup, random_state),
                     cv=cv,
                     output_dir=output_dir,
                     score_func=score_func,
@@ -78,10 +86,32 @@ def model_comparison(
     return None
 
 
-def config_experiment(setup, random_state):
+def config_tpe_experiment(procedure, random_state):
     """Setup experimental configurations:
     - Joins hyperparameter spaces.
-    - Assigns random state to stichastic algorithms.
+    - Assigns random state to stochastic algorithms.
+    - Formats workflow as a scikit-learn Pipeline object.
+
+    Returns:
+        (tuple): Pipeline and hyperparameter space.
+
+    """
+    config_space = []
+    # TODO: Can use name in TPE hparam config func.
+    for name, algorithm in procedure:
+        if hasattr(algorithm, 'config_space'):
+            config_space.append(config_space)
+
+        if hasattr(algorithm, 'random_state'):
+            algorithm.random_state = random_state
+
+    return (Pipeline(procedure), config_space)
+
+
+def config_smac_experiment(procedure, random_state):
+    """Setup experimental configurations:
+    - Joins hyperparameter spaces.
+    - Assigns random state to stochastic algorithms.
     - Formats workflow as a scikit-learn Pipeline object.
 
     Returns:
@@ -90,7 +120,7 @@ def config_experiment(setup, random_state):
     """
     config_space = ConfigurationSpace()
     config_space.seed(random_state)
-    for name, algorithm in setup:
+    for name, algorithm in procedure:
         # Join hyperparameter spaces.
         if hasattr(algorithm, 'config_space'):
             config_space.add_configuration_space(
@@ -102,7 +132,7 @@ def config_experiment(setup, random_state):
         if hasattr(algorithm, 'random_state'):
             algorithm.random_state = random_state
 
-    return (Pipeline(setup), config_space)
+    return (Pipeline(procedure), config_space)
 
 
 def _write_results(path_final_results, results):
