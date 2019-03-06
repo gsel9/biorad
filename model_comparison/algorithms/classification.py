@@ -17,13 +17,129 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
 
+from tsetlinmachine import TsetlinLayer
+
 from smac.configspace import ConfigurationSpace
 from ConfigSpace.conditions import InCondition
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
-from . import base
+import base
+import pyximport
+
+import numpy as np
+
+# To import Cython modules.
+pyximport.install(
+    setup_args={"include_dirs":np.get_include()},
+    reload_support=True
+)
+
+
+class TsetlinMachine(base.BaseClassifier):
+
+    SEED = 0
+    NAME = 'TsetlinMachine'
+
+    def __init__(
+        self,
+        model=TsetlinLayer(None, None, None, None, None)
+    ):
+
+        self.model = model
+
+    @property
+    def config_space(self):
+        """Returns the RF Regression hyperparameter space."""
+
+        threshold = UniformFloatHyperparameter(
+            'threshold', lower=, upper=,
+        )
+        precision = UniformFloatHyperparameter(
+            'precision', lower=, upper=,
+        )
+        number_of_clauses = UniformIntegerHyperparameter(
+            'number_of_clauses', lower=, upper=,
+        )
+        states = UniformIntegerHyperparameter(
+            'states', lower=, upper=,
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameters(
+            (
+                criterion,
+                max_depth,
+                max_features,
+                min_samples_leaf
+            )
+        )
+        # Add additional hyperparameter for a number of feature to select.
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
+
+        return config
+
+
+    def set_params(self, **params):
+        """Update estimator hyperparamter configuration.
+
+        Kwargs:
+            params (dict): Hyperparameter settings.
+
+        """
+        params = self._check_config(params)
+        self.model.set_params(**params)
+
+        return self
+
+    def get_params(self, deep=True):
+        """Returns hyperparameter configurations.
+
+        """
+        return self.model.get_params(deep=deep)
+
+    def fit(self, X, y=None, **kwargs):
+        """Train classifier with optional sequential feature selection to
+        reduce in the input feature space.
+
+        """
+        self._check_params(X, y)
+        if self.with_selection:
+            model = deepcopy(self.model)
+            selector = sffs.SequentialFeatureSelector(
+                estimator=model,
+                k_features=self.num_features,
+                forward=self.forward,
+                floating=self.floating,
+                scoring=self.scoring,
+                cv=self.cv
+            )
+            selector.fit(X, y)
+            self.support = np.array(selector.k_feature_idx_, dtype=int)
+            # Check hyperparameter setup with the reduced feature set.
+            self._check_params(X[:, self.support], y)
+            self.model.fit(X[:, self.support], y, **kwargs)
+        else:
+            self.model.fit(X, y, **kwargs)
+
+        return self
+
+    def predict(self, X):
+        """Generate model prediction.
+
+        """
+        if self.with_selection:
+            y_pred = np.squeeze(self.model.predict(X[:, self.support]))
+        else:
+            y_pred = np.squeeze(self.model.predict(X))
+
+        return np.array(y_pred, dtype=int)
 
 
 class DTreeEstimator(base.BaseClassifier):
