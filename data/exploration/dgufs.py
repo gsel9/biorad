@@ -194,16 +194,16 @@ class DGUFS(BaseEstimator, TransformerMixin):
     def memberships(self):
         """Return the cluster indicator labels for each obeservation."""
 
-        # NOTE: Alternatively use scipy.sparse.linalg.eigs with
-        # k=self.num_clusters.
         eigD, eigV = linalg.eig(np.maximum(self.L, np.transpose(self.L)))
+        
         # Discard imaginary parts and truncate assuming comps are sorted.
         eigD = np.real(np.diag(eigD)[:self.num_clusters, :self.num_clusters])
         eigV = np.real(eigV[:, :self.num_clusters])
         self.V = np.dot(eigV, np.sqrt(eigD + 1e-12))
+        
         # The final cluster labels can be obtained by determining the position
         # of the largest element at each cluster indicator in V.
-        return np.argmax(self.V, axis=1)
+        return np.argmax(self.V.T, axis=1)
 
     def fit(self, X, **kwargs):
         """Select features from X.
