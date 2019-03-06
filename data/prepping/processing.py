@@ -1,10 +1,107 @@
 import os
 
+from scipy.stats import mode
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pandas as pd
 
 
-class PostProcessor:
+class BasePreprocessor(ABC):
+    
+    @abstractmethod
+    def __call__(self, images, targets):
+        """The function being applied to the input images.
+        """
+        pass
+
+    @abstractmethod
+    def output_channels(self, input_channels):
+        """The number of output channels as a function of input channels.
+        """
+        pass
+
+    @abstractmethod
+    def output_targets(self, input_targets):
+        """The number of output channels as a function of input channels.
+        """
+        pass
+
+
+class Preprocessor(BasePreprocessor):
+    """Superclass for all preprocessors. Does nothing.
+    """
+
+    def __call__(self, images, targets):
+        """The function being applied to the input images.
+        """
+        return images, targets
+
+    def output_channels(self, input_channels):
+        """The number of output channels as a function of input channels.
+        """
+        return input_channels
+
+    def output_targets(self, input_targets):
+        """The number of output channels as a function of input channels.
+        """
+        return input_targets
+
+
+class WindowingPreprocessor(Preprocessor):
+    """Used to set the dynamic range of an image.
+    """
+
+    def __init__(self, window_center, window_width, channel):
+        self.window_center, self.window_width = window_center, window_width
+        self.channel = channel
+
+    def perform_windowing(self, image):
+        image = image - self.window_center
+        image[image < -self.window_width / 2] = -self.window_width / 2
+        image[image > self.window_width / 2] = self.window_width / 2
+        return image
+
+    def __call__(self, images, targets):
+        images = images.copy()
+        images[..., self.channel] = self.perform_windowing(images[..., self.channel])
+        return images, targets
+
+
+class MultipleWindowsPreprocessor(WindowingPreprocessor):
+    """Used to create multiple windows of the same channel.
+    """
+
+    def __init__(self, window_centers, window_widths, channel):
+        self.window_centers = window_centers
+        self.window_widths = window_widths
+        self.channel = channel
+
+    def generate_all_windows(self, images):
+        channel = images[..., self.channel]
+        new_channels = []
+        for window_center, window_width in zip(self.window_centers, self.window_widths):
+            self.window_center, self.window_width = window_center, window_width
+            new_channel = self.perform_windowing(channel)
+            new_channels.append(new_channel)
+
+        return np.stack(new_channels, axis=-1)
+
+    def __call__(self, images, targets):
+        new_channels = self.generate_all_windows(images)
+
+        # Replace current CT channel with all windowed versions
+        images = np.delete(images, self.channel, axis=-1)
+        images = np.concatenate((images, new_channels), axis=-1)
+        return images, targets
+
+    def output_channels(self, input_channels):
+        return input_channels + len(self.window_widths) - 1
+
+
+
+
+class FeaturePostProcessor(Preprocessor):
     """Process raw feature sets extracted with PyRadiomics.
 
     Args:
