@@ -8,7 +8,7 @@ import pandas as pd
 
 
 class BasePreprocessor(ABC):
-    
+
     @abstractmethod
     def __call__(self, images, targets):
         """The function being applied to the input images.
@@ -57,14 +57,18 @@ class WindowingPreprocessor(Preprocessor):
         self.channel = channel
 
     def perform_windowing(self, image):
+
         image = image - self.window_center
         image[image < -self.window_width / 2] = -self.window_width / 2
         image[image > self.window_width / 2] = self.window_width / 2
+
         return image
 
     def __call__(self, images, targets):
+
         images = images.copy()
         images[..., self.channel] = self.perform_windowing(images[..., self.channel])
+
         return images, targets
 
 
