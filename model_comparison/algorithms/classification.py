@@ -9,6 +9,7 @@
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
+# Shallow learners.
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -17,8 +18,20 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
 
-from tsetlinmachine import TsetlinLayer
+# Tsetlin machine.
+#from tsetlinmachine import TsetlinLayer
+#import numpy as np
+#import pyximport
+# To import Cython modules.
+#pyximport.install(
+#    setup_args={"include_dirs":np.get_include()},
+#    reload_support=True
+#)
 
+# Gradient boosting trees.
+from xgboost import XGBClassifier
+
+# Hyperparameter configs. Installation successfull by conda instal gcc and swig.
 from smac.configspace import ConfigurationSpace
 from ConfigSpace.conditions import InCondition
 from ConfigSpace.hyperparameters import CategoricalHyperparameter
@@ -26,15 +39,100 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 import base
-import pyximport
 
-import numpy as np
 
-# To import Cython modules.
-pyximport.install(
-    setup_args={"include_dirs":np.get_include()},
-    reload_support=True
-)
+class XGBoosting(base.BaseClassifier):
+    """eXtreme Gradient Boosting"""
+
+    SEED = 0
+    NAME = 'XGBoost'
+
+    def __init__(
+        self,
+        model=XGBClassifier(
+            missing=None,
+            booster='gbtree',
+            objective='binary:logistic',
+            eval_metric='auc'
+
+        ),
+        with_selection: bool=False,
+        scoring='roc_auc',
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
+    ):
+
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
+
+
+    @property
+    def config_space(self):
+        """
+        TODO
+        """
+        n_estimators = UniformIntegerHyperparameter(
+            'n_estimators', lower=2, upper=3000, default_value=100
+        )
+        # The minimum sum of weights of all observations required in a child.
+        min_child_weight = UniformIntegerHyperparameter(
+            'min_child_weight', lower=2, upper=100, default_value=3
+        )
+        learning_rate = UniformFloatHyperparameter(
+            'learning_rate', lower=1e-10, upper=5 - 1e-10, default_value=0.1
+        )
+        # L1 regularization term on weights.
+        reg_alpha = UniformFloatHyperparameter(
+            'reg_alpha', lower=1e-10, upper=5 - 1e-10, default_value=0
+        )
+        # L2 regularization term on weights.
+        reg_lambda = UniformFloatHyperparameter(
+            'reg_lambda', lower=1e-10, upper=5 - 1e-10, default_value=1
+        )
+        # The minimum loss reduction required to make a split.
+        gamma = UniformFloatHyperparameter(
+            'gamma', lower=1e-10, upper=1e-3, default_value=0
+        )
+        # The minimum loss reduction required to make a split.
+        max_delta_step = UniformIntegerHyperparameter(
+            'max_delta_step', lower=0, upper=100, default_value=0
+        )
+        # The maximum depth of a tree.
+        max_depth = UniformIntegerHyperparameter(
+            'max_depth', lower=2, upper=100, default_value=3
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameters(
+            (
+                n_estimators,
+                min_child_weight,
+                learning_rate,
+                reg_alpha,
+                reg_lambda,
+                gamma,
+                max_delta_step,
+                max_depth,
+            )
+        )
+        # Add additional hyperparameter for a number of feature to select.
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
+
+        return config
+
 
 
 class TsetlinMachine(base.BaseClassifier):
@@ -44,7 +142,7 @@ class TsetlinMachine(base.BaseClassifier):
 
     def __init__(
         self,
-        model=TsetlinLayer(None, None, None, None, None)
+        model=None#TsetlinLayer(None, None, None, None, None)
     ):
 
         self.model = model
@@ -53,6 +151,7 @@ class TsetlinMachine(base.BaseClassifier):
     def config_space(self):
         """Returns the RF Regression hyperparameter space."""
 
+        """
         threshold = UniformFloatHyperparameter(
             'threshold', lower=, upper=,
         )
@@ -65,6 +164,7 @@ class TsetlinMachine(base.BaseClassifier):
         states = UniformIntegerHyperparameter(
             'states', lower=, upper=,
         )
+        """
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.SEED)
