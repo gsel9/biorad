@@ -22,7 +22,6 @@ def model_comparison(
     X, y,
     experiments,
     score_func,
-    optimizer: str,
     cv: int,
     max_evals: int,
     shuffle: bool=True,
@@ -30,7 +29,7 @@ def model_comparison(
     random_states=None,
     output_dir: str=None,
     write_prelim: bool=False,
-    n_jobs: int=1,
+    n_jobs: int=None,
     path_final_results: str=None
 ):
     """
@@ -50,12 +49,12 @@ def model_comparison(
     if n_jobs is None:
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else 1
 
-    if optimizer == 'smac':
-        configurator = config_smac_experiment
-    elif optimizer == 'tpe':
-        configurator = config_tpe_experiment
-    else:
-        raise ValueError(f'Invalid optimizer {optimizer}')
+    #if optimizer == 'smac':
+    configurator = config_smac_experiment
+    #elif optimizer == 'tpe':
+    #    configurator = config_tpe_experiment
+    #else:
+    #    raise ValueError(f'Invalid optimizer {optimizer}')
 
     results = []
     for experiment_id, setup in experiments.items():
