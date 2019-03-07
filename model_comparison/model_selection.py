@@ -47,16 +47,16 @@ def model_selection(
         path_case_file = ''
     else:
         path_case_file = os.path.join(
-            path_tmp_results, 'experiment_{random_state}_{experiment_id}'
+            path_tmp_results, f'experiment_{random_state}_{experiment_id}'
         )
     if os.path.isfile(path_case_file):
         output = utils.ioutil.read_prelim_result(path_case_file)
-        print('Reloading results from: {path_case_file}')
+        print(f'Reloading results from: {path_case_file}')
     else:
         output = {'exp_id': random_state, 'experiment_id': experiment_id}
         if verbose > 0:
             start_time = datetime.now()
-            print('Running experiment {random_state} with {experiment_id}')
+            print(f'Running experiment {random_state} with {experiment_id}')
 
         # Unpack workflow elements and copy pipeline for fresh start.
         pipeline, hparam_space = workflow
@@ -95,7 +95,7 @@ def model_selection(
             utils.ioutil.write_prelim_results(path_case_file, output)
         if verbose > 0:
             duration = datetime.now() - start_time
-            print('Experiment {random_state} completed in {duration}')
+            print(f'Experiment {random_state} completed in {duration}')
             output['exp_duration'] = duration
 
     return output
@@ -207,7 +207,7 @@ class SMACSearchCV:
         self._X, self._y = self._check_X_y(X, y)
         # Location to store metadata from hyperparameter search.
         search_mdata_dir = os.path.join(
-            self.output_dir, '{self.experiment_id}_{self.random_state}'
+            self.output_dir, f'{self.experiment_id}_{self.random_state}'
         )
         if not os.path.isdir(search_mdata_dir):
             os.makedirs(search_mdata_dir)
