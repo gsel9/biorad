@@ -30,6 +30,7 @@ from sklearn.cross_decomposition import PLSRegression
 
 # Gradient boosting trees.
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
 # Hyperparameter configs. Installation successfull by conda instal gcc and swig.
 from smac.configspace import ConfigurationSpace
@@ -39,6 +40,97 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 import base
+
+
+class LightGBM(base.BaseClassifier):
+    SEED = 0
+    NAME = 'LightGBM'
+
+    def __init__(
+        self,
+        model=LGBMClassifier(
+            boosting_type='gbdt',
+            class_weight='balanced',
+            objective='binary'
+        ),
+        with_selection: bool=False,
+        scoring='roc_auc',
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
+    ):
+
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
+
+    @property
+    def config_space(self):
+        """
+        TODO
+        """
+
+        n_estimators = UniformIntegerHyperparameter(
+            'n_estimators', lower=2, upper=3000, default_value=100
+        )
+        # The maximum depth of a tree.
+        num_leaves = UniformIntegerHyperparameter(
+            'num_leaves', lower=2, upper=3000, default_value=50
+        )
+        min_data_in_leaf = UniformIntegerHyperparameter(
+            'num_leaves', lower=2, upper=100, default_value=50
+        )
+        learning_rate = UniformFloatHyperparameter(
+            'learning_rate', lower=1e-10, upper=5 - 1e-10, default_value=0.1
+        )
+        # L1 regularization term on weights.
+        reg_alpha = UniformFloatHyperparameter(
+            'reg_alpha', lower=1e-10, upper=5 - 1e-10, default_value=0
+        )
+        # L2 regularization term on weights.
+        reg_lambda = UniformFloatHyperparameter(
+            'reg_lambda', lower=1e-10, upper=5 - 1e-10, default_value=0
+        )
+        # The maximum depth of a tree.
+        max_depth = UniformIntegerHyperparameter(
+            'max_depth', lower=2, upper=1000, default_value=100
+        )
+        min_child_weight = UniformIntegerHyperparameter(
+            'min_child_weight', lower=1e-9, upper=10, default_value=1e-3
+        )
+        min_child_samples = UniformIntegerHyperparameter(
+            'min_child_samples', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameters(
+            (
+                n_estimators,
+                num_leaves,
+                min_data_in_leaf,
+                min_child_weight,
+                min_child_samples,
+                learning_rate,
+                reg_alpha,
+                reg_lambda,
+                max_depth,
+            )
+        )
+        # Add additional hyperparameter for a number of feature to select.
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
+
+        return config
 
 
 class XGBoosting(base.BaseClassifier):
@@ -54,7 +146,6 @@ class XGBoosting(base.BaseClassifier):
             booster='gbtree',
             objective='binary:logistic',
             eval_metric='auc'
-
         ),
         with_selection: bool=False,
         scoring='roc_auc',
@@ -84,7 +175,7 @@ class XGBoosting(base.BaseClassifier):
         )
         # The minimum sum of weights of all observations required in a child.
         min_child_weight = UniformIntegerHyperparameter(
-            'min_child_weight', lower=2, upper=100, default_value=3
+            'min_child_weight', lower=1e-9, upper=10, default_value=1
         )
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-10, upper=5 - 1e-10, default_value=0.1
@@ -107,7 +198,7 @@ class XGBoosting(base.BaseClassifier):
         )
         # The maximum depth of a tree.
         max_depth = UniformIntegerHyperparameter(
-            'max_depth', lower=2, upper=100, default_value=3
+            'max_depth', lower=2, upper=1000, default_value=100
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -695,4 +786,6 @@ class KNNEstimator(base.BaseClassifier):
 
 
 if __name__ == '__main__':
-    pass
+
+    model = LGBMClassifier()
+    print(model.get_params())
