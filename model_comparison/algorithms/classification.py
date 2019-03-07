@@ -787,5 +787,10 @@ class KNNEstimator(base.BaseClassifier):
 
 if __name__ == '__main__':
 
+    import numpy as np
+    X = np.random.random((10, 4))
+    y = np.random.choice((0, 1), size=10)
     model = LGBMClassifier()
-    print(model.get_params())
+    model.fit(X, y)
+    y_hat = model.predict(X)
+    print(sum(y_hat == y))
