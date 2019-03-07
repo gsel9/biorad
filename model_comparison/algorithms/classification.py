@@ -39,7 +39,7 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
-import base
+from . import base
 
 
 class LightGBM(base.BaseClassifier):
@@ -84,25 +84,25 @@ class LightGBM(base.BaseClassifier):
             'num_leaves', lower=2, upper=3000, default_value=50
         )
         min_data_in_leaf = UniformIntegerHyperparameter(
-            'num_leaves', lower=2, upper=100, default_value=50
+            'min_data_in_leaf', lower=2, upper=100, default_value=50
         )
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-10, upper=5 - 1e-10, default_value=0.1
         )
         # L1 regularization term on weights.
         reg_alpha = UniformFloatHyperparameter(
-            'reg_alpha', lower=1e-10, upper=5 - 1e-10, default_value=0
+            'reg_alpha', lower=1e-10, upper=5 - 1e-10, default_value=1e-3
         )
         # L2 regularization term on weights.
         reg_lambda = UniformFloatHyperparameter(
-            'reg_lambda', lower=1e-10, upper=5 - 1e-10, default_value=0
+            'reg_lambda', lower=1e-10, upper=5 - 1e-10, default_value=1e-3
         )
         # The maximum depth of a tree.
         max_depth = UniformIntegerHyperparameter(
             'max_depth', lower=2, upper=1000, default_value=100
         )
         min_child_weight = UniformIntegerHyperparameter(
-            'min_child_weight', lower=1e-9, upper=10, default_value=1e-3
+            'min_child_weight', lower=1, upper=10, default_value=1
         )
         min_child_samples = UniformIntegerHyperparameter(
             'min_child_samples', lower=2, upper=50, default_value=20
@@ -114,7 +114,7 @@ class LightGBM(base.BaseClassifier):
             (
                 n_estimators,
                 num_leaves,
-                min_data_in_leaf,
+                #min_data_in_leaf,
                 min_child_weight,
                 min_child_samples,
                 learning_rate,
@@ -175,18 +175,18 @@ class XGBoosting(base.BaseClassifier):
         )
         # The minimum sum of weights of all observations required in a child.
         min_child_weight = UniformIntegerHyperparameter(
-            'min_child_weight', lower=1e-9, upper=10, default_value=1
+            'min_child_weight', lower=1, upper=10, default_value=1
         )
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-10, upper=5 - 1e-10, default_value=0.1
         )
         # L1 regularization term on weights.
         reg_alpha = UniformFloatHyperparameter(
-            'reg_alpha', lower=1e-10, upper=5 - 1e-10, default_value=0
+            'reg_alpha', lower=1e-10, upper=5 - 1e-10, default_value=1e-3
         )
         # L2 regularization term on weights.
         reg_lambda = UniformFloatHyperparameter(
-            'reg_lambda', lower=1e-10, upper=5 - 1e-10, default_value=1
+            'reg_lambda', lower=1e-10, upper=5 - 1e-10, default_value=1e-3
         )
         # The minimum loss reduction required to make a split.
         gamma = UniformFloatHyperparameter(
