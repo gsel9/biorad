@@ -20,7 +20,7 @@ from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
 
-import sffs
+from . import sffs
 
 
 class BaseSelector(BaseEstimator, TransformerMixin):
