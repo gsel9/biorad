@@ -74,6 +74,8 @@ if __name__ == '__main__':
     from sklearn.preprocessing import StandardScaler
     from sklearn.feature_selection import VarianceThreshold
 
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
 
     def balanced_roc_auc(y_true, y_pred):
 
@@ -82,8 +84,8 @@ if __name__ == '__main__':
     np.random.seed(seed=0)
     random_states = np.random.choice(100, size=100)
 
-    path_to_results = './baseline_nofilter_dfs.csv'
-    X = load_predictors('./../../../data_source/to_analysis/no_filter_concat.csv')
+    path_to_results = './80evals_100eps_boosting_dfs.csv'
+    X = load_predictors('./../../../data_source/to_analysis/anomaly_filtered_concat.csv')
 
     dropped = [38, 45, 82]
     y = pd.read_csv('./../../../data_source/to_analysis/target_dfs.csv', index_col=0)
@@ -94,6 +96,8 @@ if __name__ == '__main__':
         LightGBM.__name__: LightGBM(),
         XGBoosting.__name__: XGBoosting(),
     }
+    # NB: Unable to run LightGBM in parallell. Maybe because LightGBM n_jobs=-1
+    # by default?
     comparison.model_comparison(
         comparison_scheme=model_selection.model_selection,
         X=X, y=y,
@@ -101,9 +105,10 @@ if __name__ == '__main__':
         score_func=balanced_roc_auc,
         cv=10,
         write_prelim=True,
-        max_evals=100,
+        max_evals=80,
         output_dir='./parameter_search',
         random_states=random_states,
         path_final_results=path_to_results,
+        n_jobs=1,
         verbose=1
     )
