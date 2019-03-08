@@ -1,0 +1,3 @@
+"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
+0.000000, 2147483648.000000, 0.000140, 1, 0.000140, BinaryThreshold__delta='0.0', TsetlinMachine__epochs='500', TsetlinMachine__number_of_clauses='300', TsetlinMachine__number_of_features='50005', TsetlinMachine__precision='3.0', TsetlinMachine__states='100', TsetlinMachine__threshold='10.0'
+0.136332, 0.500000, 0.147800, 1, 0.011468, BinaryThreshold__delta='0.0', TsetlinMachine__epochs='500', TsetlinMachine__number_of_clauses='300', TsetlinMachine__number_of_features='50005', TsetlinMachine__precision='3.0', TsetlinMachine__states='100', TsetlinMachine__threshold='10.0'
