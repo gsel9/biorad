@@ -45,25 +45,16 @@ def model_comparison(
         )
     else:
         path_tmp_results = None
-    # Set the default number of available working CPUs.
-    if n_jobs is None:
-        n_jobs = cpu_count() - 1 if cpu_count() > 1 else 1
-
-    #if optimizer == 'smac':
-    configurator = config_smac_experiment
-    #elif optimizer == 'tpe':
-    #    configurator = config_tpe_experiment
-    #else:
-    #    raise ValueError(f'Invalid optimizer {optimizer}')
 
     results = []
-    for experiment_id, setup in experiments.items():
-        results.extend(
-            joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
-                joblib.delayed(comparison_scheme)(
+    # TODO: Checkout multiprocessing pool for parallel experiments with Cython.
+    if n_jobs is not None and n_jobs < 2:
+        for experiment_id, setup in experiments.items():
+            for random_state in random_states:
+                output = comparison_scheme(
                     X=X, y=y,
                     experiment_id=experiment_id,
-                    workflow=configurator(setup, random_state),
+                    workflow=config_smac_experiment(setup, random_state),
                     cv=cv,
                     output_dir=output_dir,
                     score_func=score_func,
@@ -73,9 +64,31 @@ def model_comparison(
                     random_state=random_state,
                     path_tmp_results=path_tmp_results,
                 )
-                for random_state in random_states
+                results.extend(output)
+    else:
+        # Set the default number of available working CPUs.
+        if n_jobs is None:
+            n_jobs = cpu_count() - 1 if cpu_count() > 1 else 1
+
+        for experiment_id, setup in experiments.items():
+            results.extend(
+                joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
+                    joblib.delayed(comparison_scheme)(
+                        X=X, y=y,
+                        experiment_id=experiment_id,
+                        workflow=config_smac_experiment(setup, random_state),
+                        cv=cv,
+                        output_dir=output_dir,
+                        score_func=score_func,
+                        max_evals=max_evals,
+                        verbose=verbose,
+                        shuffle=shuffle,
+                        random_state=random_state,
+                        path_tmp_results=path_tmp_results,
+                    )
+                    for random_state in random_states
+                )
             )
-        )
     # Remove temporary dir if succesfully writing final results to disk.
     if write_prelim:
         _cleanup_prelim(path_tmp_results)
