@@ -23,13 +23,80 @@ import numpy as np
 
 from scipy import linalg
 
-from sklearn.covariance import OAS
 from sklearn.covariance import LedoitWolf
-from sklearn.covariance import MinCovDet
-from sklearn.preprocessing import StandardScaler
 from sklearn.base import TransformerMixin, BaseEstimator
 
+from smac.configspace import ConfigurationSpace
+from ConfigSpace.conditions import InCondition
+from ConfigSpace.hyperparameters import UniformFloatHyperparameter
+
 from sklearn.utils import check_array
+
+
+class GroupedBinaryThreshold(TransformerMixin, BaseEstimator):
+
+    SEED = 0
+    NAME = 'GropuedBinaryThreshold'
+
+    def __init__(
+        self,
+        clinical_delta=0.0,
+        shape_delta=0.0,
+        pet_texture_delta=0.0,
+        ct_texture_delta=0.0
+    ):
+
+        self.clinical_delta = clinical_delta
+        self.shape_delta = shape_delta
+        self.pet_texture_delta = pet_texture_delta
+        self.ct_texture_delta = ct_texture_delta
+
+
+class BinaryThreshold(TransformerMixin, BaseEstimator):
+
+    SEED = 0
+    NAME = 'BinaryThreshold'
+
+    def __init__(self, delta=0.0):
+
+        self.delta = delta
+
+    def __name__(self):
+
+        return self.NAME
+
+    def set_params(self, **params):
+
+        self.delta = float(params['delta'])
+
+    def get_params(self, deep=True):
+
+        return {'delta': self.delta}
+
+    @property
+    def config_space(self):
+        """TODO"""
+
+        delta = UniformFloatHyperparameter(
+            'delta', lower=-10.0, upper=10.0, default_value=0.0
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameter(delta)
+
+        return config
+
+    def fit(self, X, y=None, **kwargs):
+
+        return self
+
+    def transform(self, X):
+
+        X_binary = np.zeros_like(X, dtype=np.int32)
+        X_binary[X > self.delta] = 1
+
+        return X_binary
 
 
 class Whitening(TransformerMixin, BaseEstimator):

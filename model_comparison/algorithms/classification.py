@@ -10,6 +10,7 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 # Shallow learners.
+from pyglmnet import GLM
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -19,18 +20,18 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.cross_decomposition import PLSRegression
 
 # Tsetlin machine.
-#from tsetlinmachine import TsetlinLayer
-#import numpy as np
-#import pyximport
-# To import Cython modules.
-#pyximport.install(
-#    setup_args={"include_dirs":np.get_include()},
-#    reload_support=True
-#)
+import numpy as np
+import pyximport
+
+import pyximport; pyximport.install(setup_args={
+                              "include_dirs":np.get_include()},
+                            reload_support=True)
+#import TsetlinMachine
+
 
 # Gradient boosting trees.
-from xgboost import XGBClassifier
-from lightgbm import LGBMClassifier
+#from xgboost import XGBClassifier
+#from lightgbm import LGBMClassifier
 
 # Hyperparameter configs. Installation successfull by conda instal gcc and swig.
 from smac.configspace import ConfigurationSpace
@@ -39,20 +40,112 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
-from . import base
+try:
+    from . import base
+except:
+    import base
+
+
+class GroupLASSO(base.BaseClassifier):
+
+    SEED = 0
+    NAME = 'GroupLASSO'
+
+    def __init__(
+        self,
+        group_idx,
+        model=None,
+        with_selection: bool=False,
+        scoring='roc_auc',
+        cv: int=0,
+        forward: bool=True,
+        floating: bool=False,
+    ):
+
+        # Hack:
+        self.model = GLM(
+            distr='binomial',
+            tol=None,
+            group=group_idx,
+            alpha=None
+        )
+        super().__init__(
+            model=self.model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.with_selection = with_selection
+
+    def get_params(self, deep=True):
+
+        return {
+            'alpha': self.model.alpha,
+            'tol': self.model.tol
+        }
+
+    def set_params(self, **params):
+        """Update estimator hyperparamter configuration.
+
+        Kwargs:
+            params (dict): Hyperparameter settings.
+
+        """
+        params = self._check_config(params)
+
+        for key, value in params.items():
+            if key == 'alpha':
+                self.model.alpha = value
+            elif key == 'tol':
+                self.model.tol = value
+
+        return self
+
+    @property
+    def config_space(self):
+        """
+        TODO
+        """
+        alpha = UniformFloatHyperparameter(
+            'alpha', lower=0.0, upper=10.0, default_value=1.0
+        )
+        tol = UniformFloatHyperparameter(
+            'tol', lower=1e-9, upper=1e-3, default_value=1e-7
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameters(
+            (
+                alpha,
+                tol
+            )
+        )
+        # Add additional hyperparameter for a number of feature to select.
+        if self.with_selection:
+            num_features = UniformIntegerHyperparameter(
+                'num_features', lower=2, upper=50, default_value=20
+            )
+            config.add_hyperparameter(num_features)
+
+        return config
 
 
 class LightGBM(base.BaseClassifier):
+
     SEED = 0
     NAME = 'LightGBM'
 
     def __init__(
         self,
-        model=LGBMClassifier(
-            boosting_type='gbdt',
-            class_weight='balanced',
-            objective='binary'
-        ),
+        model=None,#LGBMClassifier(
+        #    boosting_type='gbdt',
+        #    class_weight='balanced',
+        #    objective='binary',
+        #    n_jobs=-1
+        #),
         with_selection: bool=False,
         scoring='roc_auc',
         cv: int=0,
@@ -141,12 +234,13 @@ class XGBoosting(base.BaseClassifier):
 
     def __init__(
         self,
-        model=XGBClassifier(
-            missing=None,
-            booster='gbtree',
-            objective='binary:logistic',
-            eval_metric='auc'
-        ),
+        model=None,#XGBClassifier(
+            #missing=None,
+            #booster='gbtree',
+            #objective='binary:logistic',
+            #eval_metric='auc',
+            #n_jobs=-1
+        #),
         with_selection: bool=False,
         scoring='roc_auc',
         cv: int=0,
@@ -163,7 +257,6 @@ class XGBoosting(base.BaseClassifier):
             floating=floating
         )
         self.with_selection = with_selection
-
 
     @property
     def config_space(self):
@@ -225,46 +318,66 @@ class XGBoosting(base.BaseClassifier):
         return config
 
 
-
-class TsetlinMachine(base.BaseClassifier):
+class TsetlinMachineWrapper(base.BaseClassifier):
 
     SEED = 0
     NAME = 'TsetlinMachine'
 
     def __init__(
         self,
-        model=None#TsetlinLayer(None, None, None, None, None)
+        model=None,#TsetlinMachine.TsetlinMachine(),
+        with_selection: bool=False,
+        scoring='roc_auc',
+        cv: int=0,
+        num_epochs: int=500,
+        forward: bool=True,
+        floating: bool=False,
     ):
 
-        self.model = model
+        super().__init__(
+            model=model,
+            with_selection=with_selection,
+            scoring=scoring,
+            cv=cv,
+            forward=forward,
+            floating=floating
+        )
+        self.num_epochs = num_epochs
+        self.with_selection = with_selection
 
     @property
     def config_space(self):
         """Returns the RF Regression hyperparameter space."""
 
-        """
         threshold = UniformFloatHyperparameter(
-            'threshold', lower=, upper=,
+            'threshold', lower=2, upper=100, default_value=10
         )
         precision = UniformFloatHyperparameter(
-            'precision', lower=, upper=,
+            'precision', lower=1, upper=10, default_value=3
         )
         number_of_clauses = UniformIntegerHyperparameter(
-            'number_of_clauses', lower=, upper=,
+            'number_of_clauses', lower=10, upper=int(1e5), default_value=300
+        )
+        number_of_features = UniformIntegerHyperparameter(
+            'number_of_features', lower=10, upper=int(1e5),
         )
         states = UniformIntegerHyperparameter(
-            'states', lower=, upper=,
+            'states', lower=10, upper=1000, default_value=100
         )
-        """
+        epochs = UniformIntegerHyperparameter(
+            'epochs', lower=100, upper=1000, default_value=500
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.SEED)
         config.add_hyperparameters(
             (
-                criterion,
-                max_depth,
-                max_features,
-                min_samples_leaf
+                threshold,
+                precision,
+                number_of_clauses,
+                number_of_features,
+                states,
+                epochs
             )
         )
         # Add additional hyperparameter for a number of feature to select.
@@ -276,6 +389,29 @@ class TsetlinMachine(base.BaseClassifier):
 
         return config
 
+    def fit(self, X, y, **kwargs):
+
+        self.model.fit(X, y, np.int32(y.size), np.int32(self.num_epochs))
+
+        return self
+
+    def predict(self, X):
+
+        y_preds = []
+        for x in X:
+            y_pred = self.model.predict(X)
+            y_preds.append(y_pred)
+
+        return np.array(y_preds, dtype=int)
+
+    def get_params(self, deep=True):
+        return {
+            'number_of_clauses': self.model.get_number_of_clauses(),
+            'number_of_features': self.model.get_number_of_features(),
+            'number_of_states': self.model.get_number_of_states(),
+            's': self.model.get_s(),
+            'threshold': self.model.get_threshold(),
+        }
 
     def set_params(self, **params):
         """Update estimator hyperparamter configuration.
@@ -285,52 +421,20 @@ class TsetlinMachine(base.BaseClassifier):
 
         """
         params = self._check_config(params)
-        self.model.set_params(**params)
+
+        for key, value in params.items():
+            if key == 'number_of_clauses':
+                self.model.set_number_of_clauses(value)
+            elif key == 'number_of_features':
+                self.model.set_number_of_features(value)
+            elif key == 'number_of_states':
+                self.model.set_number_of_states(value)
+            elif key == 's':
+                self.model.set_s(value)
+            elif key == 'threshold':
+                self.model.set_threshold(value)
 
         return self
-
-    def get_params(self, deep=True):
-        """Returns hyperparameter configurations.
-
-        """
-        return self.model.get_params(deep=deep)
-
-    def fit(self, X, y=None, **kwargs):
-        """Train classifier with optional sequential feature selection to
-        reduce in the input feature space.
-
-        """
-        self._check_params(X, y)
-        if self.with_selection:
-            model = deepcopy(self.model)
-            selector = sffs.SequentialFeatureSelector(
-                estimator=model,
-                k_features=self.num_features,
-                forward=self.forward,
-                floating=self.floating,
-                scoring=self.scoring,
-                cv=self.cv
-            )
-            selector.fit(X, y)
-            self.support = np.array(selector.k_feature_idx_, dtype=int)
-            # Check hyperparameter setup with the reduced feature set.
-            self._check_params(X[:, self.support], y)
-            self.model.fit(X[:, self.support], y, **kwargs)
-        else:
-            self.model.fit(X, y, **kwargs)
-
-        return self
-
-    def predict(self, X):
-        """Generate model prediction.
-
-        """
-        if self.with_selection:
-            y_pred = np.squeeze(self.model.predict(X[:, self.support]))
-        else:
-            y_pred = np.squeeze(self.model.predict(X))
-
-        return np.array(y_pred, dtype=int)
 
 
 class DTreeEstimator(base.BaseClassifier):
@@ -787,10 +891,25 @@ class KNNEstimator(base.BaseClassifier):
 
 if __name__ == '__main__':
 
-    import numpy as np
-    X = np.random.random((10, 4))
-    y = np.random.choice((0, 1), size=10)
-    model = LGBMClassifier()
-    model.fit(X, y)
-    y_hat = model.predict(X)
-    print(sum(y_hat == y))
+    from sklearn.datasets import make_classification
+
+    _X, y = make_classification(
+        n_samples=100,
+        n_features=10,
+        n_informative=8,
+        n_redundant=0,
+        n_repeated=0,
+        n_classes=2,
+        shuffle=True,
+        random_state=0
+    )
+    #y = y.astype(np.int32)
+    #X = np.zeros_like(_X, dtype=np.int32)
+    #X[X > 0.5] = 1
+    #m = TsetlinMachineWrapper()
+    #m.fit(X, y)
+    #y_pred = m.predict(y)
+    #print(y_pred)
+    #print(sum(y_pred == y) / np.size(y))
+    m = GLM(group=[1,1,2])
+    print(m.group)

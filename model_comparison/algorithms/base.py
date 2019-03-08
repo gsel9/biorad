@@ -20,7 +20,10 @@ from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
 
-from . import sffs
+try:
+    from . import sffs
+except:
+    import sffs
 
 
 class BaseSelector(BaseEstimator, TransformerMixin):
