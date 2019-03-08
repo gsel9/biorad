@@ -1,1 +1,0 @@
-{"cpu_time": 0, "total_cpu_time": null, "wallclock_time": 0.00010800361633300781, "evaluations": 0, "cost": 2147483648, "incumbent": ["GroupLASSO__alpha='1.0'", "GroupLASSO__tol='1e-07'"], "origin": "Default"}
