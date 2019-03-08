@@ -10,7 +10,8 @@ Work function for model selection experiments.
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-from copy import deepcopy
+# NOTE: Deep copy does not wotk with Cython (Tsetlin) objects.
+from copy import copy
 from collections import OrderedDict
 from datetime import datetime
 import os
@@ -60,7 +61,7 @@ def model_selection(
 
         # Unpack workflow elements and copy pipeline for fresh start.
         pipeline, hparam_space = workflow
-        _pipeline = deepcopy(pipeline)
+        _pipeline = copy(pipeline)
         # Run hyperparameter optimization protocol.
         optimizer = SMACSearchCV(
             cv=cv,
@@ -78,7 +79,7 @@ def model_selection(
         # Include best hyperparameter config in output records.
         output.update(**optimizer.best_config)
         # Copy pipeline for fresh start, and config with best hyperparameters.
-        _pipeline = deepcopy(pipeline)
+        _pipeline = copy(pipeline)
         _pipeline.set_params(**optimizer.best_config)
         # Estimate average performance of best model in outer CV loop.
         results = cross_val_score(
@@ -127,7 +128,7 @@ def cross_val_score(
         pipeline.fit(X_train, y_train)
         # Count feature votes by utilizing the support attribute from
         # BaseClassifier.
-        _, final_estimator = pipeline.steps[-1][1]
+        final_estimator = pipeline.steps[-1][-1]
         feature_votes[final_estimator.support] += 1
 
         test_scores.append(
@@ -190,7 +191,7 @@ class SMACSearchCV:
     @property
     def best_workflow(self):
         """Returns the optimally configures workflow."""
-        workflow = deepcopy(self.workflow)
+        workflow = copy(self.workflow)
         workflow.set_params(**self.best_config)
 
         return workflow
@@ -251,7 +252,7 @@ class SMACSearchCV:
             y_train, y_test = self._y[train_idx], self._y[test_idx]
 
             # Copy workflow for fresh start with each fold.
-            workflow = deepcopy(self.workflow)
+            workflow = copy(self.workflow)
             workflow.set_params(**hparams)
             workflow.fit(X_train, y_train)
 
@@ -259,6 +260,7 @@ class SMACSearchCV:
             test_scores.append(
                 self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
+        print(1. - np.mean(test_scores))
         return 1.0 - np.mean(test_scores)
 
     @staticmethod
