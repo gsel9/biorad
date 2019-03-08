@@ -48,7 +48,7 @@ def model_comparison(
 
     results = []
     # TODO: Checkout multiprocessing pool for parallel experiments with Cython.
-    if n_jobs is not None and n_jobs != 1:
+    if n_jobs == 1:
         for experiment_id, setup in experiments.items():
             for random_state in random_states:
                 output = comparison_scheme(
