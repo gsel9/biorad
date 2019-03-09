@@ -50,6 +50,107 @@ from skfeature.function.similarity_based.fisher_score import fisher_score
 from . import base
 
 
+# TODO: Write in Cython.
+class GeneralizedFisherScore(base.BaseSelector):
+
+    SEED = 0
+    NAME = 'GeneralizedFisherScore'
+
+    def __init__(
+        self,
+        num_features: int=None,
+        num_classes=None,
+        gamma=None,
+        kernel='linear',
+        error_handling: str='all'
+    ):
+        super().__init__(error_handling)
+
+        self.num_classes = num_classes
+        self.gamma = gamma
+        self.kernel = kernel
+
+        self.num_features = num_features
+
+        # NOTE: Attribute set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    def fit(self, X, y=None, **kwargs):
+
+        if self.num_classes is None:
+            try:
+                self.num_classes = np.size(np.unique(y))
+            # Raise error
+            except:
+                pass
+
+        nrows, _ = np.shape(X)
+
+        H = self.construct_H(X, y)
+
+        # Setup.
+        V = 1 / nrows * np.ones((nrows, self.num_classes))
+        t = 1
+
+        for _ in range(1):
+
+            # Initialize kernel weights.
+            _lambdas = 1 / t * np.ones(len(P))
+
+            for _ in range(1):
+                V = self.solve_V(X, V, _lambdas, H)
+                _lambdas = self.solve_lambda(_lambda)
+
+            t = t + 1
+
+        return self
+
+    def get_intialize_P(self):
+        pass
+
+    def solve_V(self, X, V, _lambdas, H):
+
+        I = np.identity(nrows)
+
+        V = 0
+        for t, p in enumerate(P):
+            core = 0
+            # NOTE: May replace dot(x, x) by arbitrary kernel function.
+            for j, x in enumerate(X):
+                core = core + p[j] * np.dot(x, x) + I
+            V = V + _lambda[t] * core
+        V = np.linalg.inv(1 / self.gamma * V) * H
+
+        return V
+
+    def solve_lambda(self):
+
+        for t, p in enumerate(P):
+            core = 0
+            # NOTE: May replace dot(x, x) by arbitrary kernel function.
+            for j, x in enumerate(X):
+                core = core + p[j] * np.dot(x, x) * V
+            core = 1 / (2 * self.gamma) * np.trace(np.transpose(V) * core)
+            _lambda[t] = _lambda[t] + core
+
+        return _lambda
+
+    def construct_H(self, X, y):
+
+        num_rows, _ = np.shape(X)
+
+        H = np.ones((num_rows, self.num_classes), dtype=np.float32)
+        for num in range(nclasses):
+            num_hits = np.sum(y == num)
+            H[np.squeeze(np.where(y == num)), num] = np.sqrt(num_rows / num_hits) - np.sqrt(num_hits / num_rows)
+            H[np.squeeze(np.where(y != num)), num] = -1.0 * np.sqrt(num_hits / num_rows)
+
+        return H
+
 class StudentTTestSelection(base.BaseSelector):
 
     SEED = 0
