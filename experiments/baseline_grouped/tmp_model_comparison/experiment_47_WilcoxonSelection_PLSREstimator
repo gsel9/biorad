@@ -1,2 +1,0 @@
-exp_id,experiment_id,PLSREstimator__n_components,PLSREstimator__tol,WilcoxonSelection__num_features,test_score,train_score,test_score_variance,train_score_variance,feature_votes
-47,WilcoxonSelection_PLSREstimator,27,1e-07,20,0.5083333333333334,0.5017700501253133,0.0006250000000000006,1.2533536614091614e-05,[10 10 10 10 10 10 10 10 10 10 10 10 10]

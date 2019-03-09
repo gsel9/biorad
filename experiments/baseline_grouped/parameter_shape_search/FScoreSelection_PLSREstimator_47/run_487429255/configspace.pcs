@@ -1,3 +1,0 @@
-FScoreSelection__num_features integer [2, 100] [20]
-PLSREstimator__n_components integer [1, 40] [27]
-PLSREstimator__tol real [1e-09, 0.001] [1e-07]
