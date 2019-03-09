@@ -21,11 +21,11 @@ from sklearn.cross_decomposition import PLSRegression
 
 # Tsetlin machine.
 import numpy as np
-import pyximport
+#import pyximport
 
-import pyximport; pyximport.install(setup_args={
-                              "include_dirs":np.get_include()},
-                            reload_support=True)
+#import pyximport; pyximport.install(setup_args={
+#                              "include_dirs":np.get_include()},
+#                            reload_support=True)
 #import TsetlinMachine
 
 
@@ -53,7 +53,9 @@ class GroupLASSO(base.BaseClassifier):
 
     def __init__(
         self,
-        group_idx,
+        group_idx=None,
+        alpha=None,
+        tol=1e-10,
         model=None,
         with_selection: bool=False,
         scoring='roc_auc',
@@ -65,9 +67,9 @@ class GroupLASSO(base.BaseClassifier):
         # Hack:
         self.model = GLM(
             distr='binomial',
-            tol=None,
+            tol=tol,
             group=group_idx,
-            alpha=None
+            alpha=alpha
         )
         super().__init__(
             model=self.model,
@@ -102,6 +104,16 @@ class GroupLASSO(base.BaseClassifier):
                 self.model.tol = value
 
         return self
+
+    def fit(self, X, y):
+
+        self.model.fit(X, y)
+        return self
+
+    def predict(self, X):
+
+        y_pred = self.model.predict(X)
+        return np.squeeze(y_pred)
 
     @property
     def config_space(self):
