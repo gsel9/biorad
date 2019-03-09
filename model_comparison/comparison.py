@@ -13,7 +13,8 @@ __email__ = 'langberg91@gmail.com'
 from multiprocessing import cpu_count
 from smac.configspace import ConfigurationSpace
 from sklearn.pipeline import Pipeline
-from sklearn.externals import joblib
+from joblib import Parallel
+from joblib import delayed
 from utils import ioutil
 
 
@@ -72,8 +73,8 @@ def model_comparison(
 
         for experiment_id, setup in experiments.items():
             results.extend(
-                joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
-                    joblib.delayed(comparison_scheme)(
+                Parallel(n_jobs=n_jobs, verbose=verbose)(
+                    delayed(comparison_scheme)(
                         X=X, y=y,
                         experiment_id=experiment_id,
                         workflow=config_smac_experiment(setup, random_state),
