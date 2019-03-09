@@ -1,0 +1,2 @@
+{"cpu_time": 0, "total_cpu_time": null, "wallclock_time": 0.0004029273986816406, "evaluations": 0, "cost": 2147483648, "incumbent": ["PLSREstimator__n_components='27'", "PLSREstimator__tol='1e-07'", "WilcoxonSelection__num_features='20'"], "origin": "Default"}
+{"cpu_time": 3.014847993850708, "total_cpu_time": null, "wallclock_time": 3.3105719089508057, "evaluations": 1, "cost": 0.5, "incumbent": ["PLSREstimator__n_components='27'", "PLSREstimator__tol='1e-07'", "WilcoxonSelection__num_features='20'"], "origin": "Default"}

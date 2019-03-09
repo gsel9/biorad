@@ -1,0 +1,3 @@
+"CPU Time Used","Estimated Training Performance","Wallclock Time","Incumbent ID","Automatic Configurator (CPU) Time","Configuration..."
+0.000000, 2147483648.000000, 0.000168, 1, 0.000168, PLSREstimator__n_components='27', PLSREstimator__tol='1e-07', StudentTTestSelection__num_features='20'
+3.237211, 0.500000, 3.580555, 1, 0.343344, PLSREstimator__n_components='27', PLSREstimator__tol='1e-07', StudentTTestSelection__num_features='20'

@@ -1,0 +1,2 @@
+exp_id,experiment_id,MutualInformationSelection__num_features,MutualInformationSelection__num_neighbors,PLSREstimator__n_components,PLSREstimator__tol,test_score,train_score,test_score_variance,train_score_variance,feature_votes
+38,MutualInformationSelection_PLSREstimator,20,20,27,1e-07,0.5,0.5017543859649123,0.0,1.2311480455524854e-05,[10 10 10 10 10 10 10 10 10 10 10 10 10]

@@ -1,0 +1,206 @@
+{
+  "data": [
+    [
+      [
+        1,
+        null,
+        0
+      ],
+      [
+        0.5,
+        3.7399890422821045,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        2,
+        null,
+        0
+      ],
+      [
+        0.5,
+        3.7796881198883057,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        3,
+        null,
+        0
+      ],
+      [
+        0.5,
+        3.8323569297790527,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        4,
+        null,
+        0
+      ],
+      [
+        0.5,
+        4.63427209854126,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        5,
+        null,
+        0
+      ],
+      [
+        0.5,
+        4.477025032043457,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        6,
+        null,
+        0
+      ],
+      [
+        0.5,
+        3.402163028717041,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        7,
+        null,
+        0
+      ],
+      [
+        0.5,
+        3.1807470321655273,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        8,
+        null,
+        0
+      ],
+      [
+        0.5,
+        3.3456289768218994,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ],
+    [
+      [
+        9,
+        null,
+        0
+      ],
+      [
+        0.5,
+        2317.8025810718536,
+        {
+          "__enum__": "StatusType.SUCCESS"
+        },
+        {}
+      ]
+    ]
+  ],
+  "config_origins": {
+    "1": "Default",
+    "2": "Random Search (sorted)",
+    "3": "Random Search",
+    "4": "Random Search",
+    "5": "Random Search",
+    "6": "Random Search",
+    "7": "Random Search (sorted)",
+    "8": "Random Search",
+    "9": "Random Search (sorted)"
+  },
+  "configs": {
+    "1": {
+      "MutualInformationSelection__num_features": 20,
+      "MutualInformationSelection__num_neighbors": 20,
+      "PLSREstimator__n_components": 27,
+      "PLSREstimator__tol": 1e-07
+    },
+    "2": {
+      "MutualInformationSelection__num_features": 68,
+      "MutualInformationSelection__num_neighbors": 69,
+      "PLSREstimator__n_components": 24,
+      "PLSREstimator__tol": 0.0006018717987358671
+    },
+    "3": {
+      "MutualInformationSelection__num_features": 26,
+      "MutualInformationSelection__num_neighbors": 15,
+      "PLSREstimator__n_components": 9,
+      "PLSREstimator__tol": 0.0005696942076701381
+    },
+    "4": {
+      "MutualInformationSelection__num_features": 63,
+      "MutualInformationSelection__num_neighbors": 14,
+      "PLSREstimator__n_components": 36,
+      "PLSREstimator__tol": 3.1500897708141344e-05
+    },
+    "5": {
+      "MutualInformationSelection__num_features": 68,
+      "MutualInformationSelection__num_neighbors": 73,
+      "PLSREstimator__n_components": 21,
+      "PLSREstimator__tol": 0.0005328693956067385
+    },
+    "6": {
+      "MutualInformationSelection__num_features": 12,
+      "MutualInformationSelection__num_neighbors": 13,
+      "PLSREstimator__n_components": 4,
+      "PLSREstimator__tol": 0.0002621498552356492
+    },
+    "7": {
+      "MutualInformationSelection__num_features": 99,
+      "MutualInformationSelection__num_neighbors": 22,
+      "PLSREstimator__n_components": 10,
+      "PLSREstimator__tol": 0.000554143398615207
+    },
+    "8": {
+      "MutualInformationSelection__num_features": 84,
+      "MutualInformationSelection__num_neighbors": 94,
+      "PLSREstimator__n_components": 15,
+      "PLSREstimator__tol": 0.00041116092285697296
+    },
+    "9": {
+      "MutualInformationSelection__num_features": 40,
+      "MutualInformationSelection__num_neighbors": 39,
+      "PLSREstimator__n_components": 16,
+      "PLSREstimator__tol": 0.0009300177184017281
+    }
+  }
+}

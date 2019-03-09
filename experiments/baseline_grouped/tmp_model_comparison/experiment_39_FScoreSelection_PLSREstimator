@@ -1,0 +1,2 @@
+exp_id,experiment_id,FScoreSelection__num_features,PLSREstimator__n_components,PLSREstimator__tol,test_score,train_score,test_score_variance,train_score_variance,feature_votes
+39,FScoreSelection_PLSREstimator,20,27,1e-07,0.5,0.5008928571428571,0.0,7.174744897959134e-06,[10 10 10 10 10 10 10 10 10 10 10 10 10]
