@@ -78,6 +78,7 @@ if __name__ == '__main__':
     np.random.seed(seed=0)
     random_states = np.random.choice(50, size=50)
 
+    # NBNBNB: Must slice X
     path_to_results = './50evals_50reps_grouplasso_dfs.csv'
     X = load_predictors('./../../../data_source/to_analysis/anomaly_filtered_concat.csv')
 
