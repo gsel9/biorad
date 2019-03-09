@@ -252,7 +252,8 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
             elif self.model.n_components < 1:
                 self.model.n_components = 1
             else:
-                raise RuntimeError('Invalid value of columns, {ncols}, in X')
+                #raise RuntimeError(f'Invalid value of columns, {ncols}, in X')
+                pass
 
         # NOTE: Limited to the number of selected features from previous steps.
         if self.num_features is None:
