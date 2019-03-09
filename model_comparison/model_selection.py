@@ -260,7 +260,6 @@ class SMACSearchCV:
             test_scores.append(
                 self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
-        print(1. - np.mean(test_scores))
         return 1.0 - np.mean(test_scores)
 
     @staticmethod
