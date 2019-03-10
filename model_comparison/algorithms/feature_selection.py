@@ -47,10 +47,13 @@ from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 from skfeature.function.similarity_based.fisher_score import fisher_score
 
-from . import base
+try:
+    from . import base
+except:
+    import base
 
 
-# TODO: Write in Cython.
+# TODO: Refactor to Cython.
 class GeneralizedFisherScore(base.BaseSelector):
 
     SEED = 0
@@ -61,19 +64,21 @@ class GeneralizedFisherScore(base.BaseSelector):
         num_features: int=None,
         num_classes=None,
         gamma=None,
+        max_iter=10,
         kernel='linear',
         error_handling: str='all'
     ):
         super().__init__(error_handling)
 
-        self.num_classes = num_classes
-        self.gamma = gamma
-        self.kernel = kernel
-
         self.num_features = num_features
+        self.num_classes = num_classes
+        self.max_iter = max_iter
+        self.kernel = kernel
+        self.gamma = gamma
 
         # NOTE: Attribute set with instance.
         self.support = None
+        self.omega = None
 
     def __name__(self):
 
@@ -82,74 +87,105 @@ class GeneralizedFisherScore(base.BaseSelector):
     def fit(self, X, y=None, **kwargs):
 
         if self.num_classes is None:
-            try:
-                self.num_classes = np.size(np.unique(y))
-            # Raise error
-            except:
-                pass
+            self.num_classes = np.unique(y)
 
-        nrows, _ = np.shape(X)
+        if self.gamma <= 0:
+            raise ValueError('Gamma parameter should be > 0!')
 
-        H = self.construct_H(X, y)
+        num_rows, num_cols = np.shape(X)
+        if self.num_features > num_cols:
+            print('Cannot select more than {num_cols} features. Attempted '
+                  '{self.num_features}')
 
-        # Setup.
-        V = 1 / nrows * np.ones((nrows, self.num_classes))
+        # Initializing.
+        V = 1 / num_rows * np.ones((num_rows, self.num_classes), dtype=np.float32)
         t = 1
+        # The most violated constraint.
+        self.omega = [self.violated_constraints(num_rows, num_cols, X, V)]
 
-        for _ in range(1):
+        H = self.construct_H(num_rows, X, y)
+
+        for _ in range(self.max_iter):
 
             # Initialize kernel weights.
-            _lambdas = 1 / t * np.ones(len(P))
+            lambdas = 1 / t * np.ones(len(self.omega), dtype=np.float32)
 
-            for _ in range(1):
-                V = self.solve_V(X, V, _lambdas, H)
-                _lambdas = self.solve_lambda(_lambda)
+            for _ in range(5):
+                V = self.update_V(num_rows, num_cols, lambdas, X, H)
+                lambdas = self.update_lambdas(num_cols, lambdas, X, V)
 
+            self.omega.append(self.violated_constraints(num_rows, num_cols, X, V))
             t = t + 1
+
+        _support = np.squeeze(np.where(self.omega[-1] != 0))
+        self.support = self.check_support(_support, X)
 
         return self
 
-    def get_intialize_P(self):
-        pass
 
-    def solve_V(self, X, V, _lambdas, H):
+    def violated_constraints(self, num_rows, num_cols, X, V):
+        """
+        See equation 26.
+        """
+        s = []
+        for col_num in range(num_cols):
+            x_dot_V = np.dot(X[:, col_num], V)
+            Vt_dot_xt = np.dot(np.transpose(V), np.transpose(X[:, col_num]))
+            s.append(np.dot(x_dot_V, Vt_dot_xt))
 
-        I = np.identity(nrows)
+        idx = np.argsort(s)[::-1][:self.num_features]
+        p = np.zeros(num_cols, dtype=int)
+        p[idx] = 1
 
-        V = 0
-        for t, p in enumerate(P):
-            core = 0
-            # NOTE: May replace dot(x, x) by arbitrary kernel function.
-            for j, x in enumerate(X):
-                core = core + p[j] * np.dot(x, x) + I
-            V = V + _lambda[t] * core
-        V = np.linalg.inv(1 / self.gamma * V) * H
+        return p
 
-        return V
-
-    def solve_lambda(self):
-
-        for t, p in enumerate(P):
-            core = 0
-            # NOTE: May replace dot(x, x) by arbitrary kernel function.
-            for j, x in enumerate(X):
-                core = core + p[j] * np.dot(x, x) * V
-            core = 1 / (2 * self.gamma) * np.trace(np.transpose(V) * core)
-            _lambda[t] = _lambda[t] + core
-
-        return _lambda
-
-    def construct_H(self, X, y):
-
-        num_rows, _ = np.shape(X)
+    def construct_H(self, num_rows, X, y):
 
         H = np.ones((num_rows, self.num_classes), dtype=np.float32)
-        for num in range(nclasses):
-            num_hits = np.sum(y == num)
-            H[np.squeeze(np.where(y == num)), num] = np.sqrt(num_rows / num_hits) - np.sqrt(num_hits / num_rows)
-            H[np.squeeze(np.where(y != num)), num] = -1.0 * np.sqrt(num_hits / num_rows)
+        for num in range(self.num_classes):
+            idx = np.squeeze(np.where(y == num))
+            num_hits = np.size(idx)
+            H[:, num] = H[:, num] * -1.0 * np.sqrt(num_hits / num_rows)
+            H[idx, num] = H[idx, num] * np.sqrt(num_rows / num_hits) - np.sqrt(num_hits / num_rows)
+
+        assert np.shape(H) == (num_rows, self.num_classes)
 
         return H
+
+    # NOTE: May replace dot(x.T, x) by arbitrary kernel function.
+    def update_V(self, num_rows, num_cols, lambdas, X, H):
+        """
+
+        Returns:
+            (array-like): The (n x c) replacement for the previous V matrix.
+
+        """
+        # Constructs (n x n) identity matrix.
+        I = np.identity(num_rows)
+
+        output = 0
+        for t, p_t in enumerate(self.omega):
+            core = 0
+            for num_col in range(num_cols):
+                x = np.copy(X[:, num_col])[np.newaxis]
+                core = core + p_t[num_col] * np.dot(np.transpose(x), x) + I
+            output = output + lambdas[t] * core
+        output = np.dot(np.linalg.inv(1 / self.gamma * output), H)
+
+        return output
+
+    def update_lambdas(self, num_cols, lambdas, X, V):
+
+        output = 0
+        for t, p_t in enumerate(self.omega):
+            core = 0
+            for num_col in range(num_cols):
+                x = np.copy(X[:, num_col])[np.newaxis]
+                core = core + p_t[num_col] * np.dot(np.dot(np.transpose(x), x), V)
+            lambda_gradient = -0.5 / self.gamma * np.trace(np.dot(np.transpose(V), core))
+            lambdas[t] = lambdas[t] - lambda_gradient
+
+        return lambdas
 
 class StudentTTestSelection(base.BaseSelector):
 
@@ -465,13 +501,13 @@ class ANOVAFvalueSelection(base.BaseSelector):
         return self
 
 
-class FScoreSelection(base.BaseSelector):
+class FisherScoreSelection(base.BaseSelector):
     """
 
     """
 
     SEED = 0
-    NAME = 'FScoreSelection'
+    NAME = 'FisherScoreSelection'
 
     def __init__(
         self,
@@ -951,10 +987,10 @@ class MutualInformationSelection(base.BaseSelector):
         return self
 
 
-class Chi2Selection(base.BaseSelector):
+class ChiSquareSelection(base.BaseSelector):
 
     SEED = 0
-    NAME = 'Chi2Selection'
+    NAME = 'ChiSquareSelection'
 
     def __init__(
         self,
@@ -1027,3 +1063,27 @@ class Chi2Selection(base.BaseSelector):
             self.num_features = int(self.num_features)
 
         return self
+
+
+if __name__ == '__main__':
+    from sklearn.datasets import load_iris
+    from sklearn.preprocessing import StandardScaler
+
+    iris = load_iris(return_X_y=False)
+
+    scaler = StandardScaler()
+
+    X, y = iris.data, iris.target
+    _X = np.zeros((150, 6))
+    _X[:, -4:] = X
+    _X[:, 1] = np.random.random(150)
+    _X[:, 0] = np.ones(150)
+
+    X_std = scaler.fit_transform(np.concatenate((_X, )))
+    print(X_std[:3, :])
+
+
+    GFS = GeneralizedFisherScore(num_classes=2, num_features=4, gamma=0.5)
+    GFS.fit(X_std, y)
+    U = GFS.transform(X_std)
+    print(U[:3, :])
