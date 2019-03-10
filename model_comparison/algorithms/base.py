@@ -14,12 +14,15 @@ __email__ = 'langberg91@gmail.com'
 
 import warnings
 
-from copy import deepcopy
 import numpy as np
+
+from copy import copy
+
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import TransformerMixin
 
+# TEMP:
 try:
     from . import sffs
 except:
@@ -65,23 +68,23 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             X = np.array(X, dtype=float)
 
         if np.ndim(X) > 2:
-            warnings.warn('Squeezeing X with shape: {}'.format(np.shape(X)))
+            warnings.warn('Squeezing X of shape {np.shape(X)}')
             X = np.squeeze(X)
 
-        # Scikit-learn recommendation: Reshape data with array.reshape(-1, 1)
-        # if data has a single feature, or array.reshape(1, -1) if it contains
-        # a single sample.
+        # Scikit-learn recommendation:
+        # Reshape data with array.reshape(-1, 1) if data has a single feature,
+        # or array.reshape(1, -1) if it contains a single sample.
         if np.ndim(X) < 2:
             nrows, ncols = np.shape(X)
             if nrows == 1:
-                warnings.warn('Reshaping X with shape: {}'.format(np.shape(X)))
+                warnings.warn('Reshaping X from {np.shape(X)}')
                 X = X.reshape(1, -1)
             if ncols == 1:
-                warnings.warn('Reshaping X with shape: {}'.format(np.shape(X)))
+                warnings.warn('Reshaping X from {np.shape(X)}')
                 X = X.reshape(-1, 1)
 
-        if not np.ndim(X) == 2:
-            raise RuntimeError('Error X ndim {}'.format(np.ndim(X_train)))
+        if np.ndim(X) != 2:
+            raise RuntimeError('Invalid dim of X: {}Error X ndim {np.ndim(X)}')
 
         return X
 
@@ -98,23 +101,12 @@ class BaseSelector(BaseEstimator, TransformerMixin):
         """
         if not isinstance(support, np.ndarray):
             support = np.array(support, dtype=int)
-        # Check if support is empty. Fall back to error mechanism if so.
-        if np.size(support) < 1:
-            warnings.warn('Error mechanism: {}'.format(self.error_handling))
-            if self.error_handling == 'all':
-                support = np.arange(X.shape[1], dtype=int)
-            elif self.error_handling == 'nan':
-                return np.nan
-            else:
-                raise RuntimeError('Cannot format support: {}'.format(support))
-        # Ensure correct support dimensionality.
+
+        # Ensure correct dimensionality of support.
         if np.ndim(support) > 1:
             support = np.squeeze(support)
         if np.ndim(support) < 1:
             support = support[np.newaxis]
-        # NOTE: Sanity check breaks if error handling returns NaN.
-        if self.error_handling != 'nan':
-            assert np.ndim(support) == 1
 
         return support
 
@@ -128,9 +120,6 @@ class BaseSelector(BaseEstimator, TransformerMixin):
             (array-like): The predictor subset matrix.
 
         """
-        if self.support is np.nan:
-            return X
-
         return self.check_subset(X[:, self.support])
 
 
@@ -184,14 +173,17 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         """
         return self.model.get_params(deep=deep)
 
+    # TODO: Make a decorator for wrapper algorithms accepting a model.
     def fit(self, X, y=None, **kwargs):
         """Train classifier with optional sequential feature selection to
         reduce in the input feature space.
 
         """
         self._check_params(X, y)
+        # TODO: Fix
         if self.with_selection:
-            model = deepcopy(self.model)
+            # NOTE: Cannot deepcopy Cython objects.
+            model = copy(self.model)
             selector = sffs.SequentialFeatureSelector(
                 estimator=model,
                 k_features=self.num_features,
@@ -243,26 +235,30 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
     def _check_params(self, X, y=None):
         # Validate model hyperparamter configuration for training.
 
-        _, ncols = np.shape(X)
+        _, num_cols = np.shape(X)
 
-        # NOTE: Limited to the number of selected features from previous steps.
+        # TEMP: Used only in sequential selection. May be removed after
+        # detaching.
+        # NOTE: Adjust the number of features to select according to the
+        # dimensionality of X.
+        if self.num_features is None:
+            return None
+
+        if self.num_features < 1:
+            self.num_features = 1
+        elif self.num_features > num_cols:
+            self.num_features = int(num_cols - 1)
+        else:
+            self.num_features = int(self.num_features)
+
+        # NOTE: Adjust the number of components according to the
+        # dimensionality of X.
         if 'n_components' in self.get_params():
-            if self.model.n_components > ncols:
-                self.model.n_components = int(ncols - 1)
+            if self.model.n_components > num_cols:
+                self.model.n_components = int(num_cols - 1)
             elif self.model.n_components < 1:
                 self.model.n_components = 1
             else:
-                #raise RuntimeError(f'Invalid value of columns, {ncols}, in X')
-                pass
-
-        # NOTE: Limited to the number of selected features from previous steps.
-        if self.num_features is None:
-            return
-        elif self.num_features < 1:
-            self.num_features = 1
-        elif self.num_features > ncols:
-            self.num_features = int(ncols - 1)
-        else:
-            self.num_features = int(self.num_features)
+                self.model.n_components = int(num_cols - 1)
 
         return self
