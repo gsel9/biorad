@@ -10,7 +10,6 @@ Work function for model selection experiments.
 __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
-# NOTE: Deep copy does not wotk with Cython (Tsetlin) objects.
 from copy import copy
 from collections import OrderedDict
 from datetime import datetime
@@ -59,7 +58,8 @@ def model_selection(
             start_time = datetime.now()
             print(f'Running experiment {random_state} with {experiment_id}')
 
-        # Unpack workflow elements and copy pipeline for fresh start.
+        # NOTE: Cannot deepcopy Cython objects. Unpack workflow elements and
+        # copy pipeline for fresh start.
         pipeline, hparam_space = workflow
         _pipeline = copy(pipeline)
         # Run hyperparameter optimization protocol.
@@ -78,7 +78,7 @@ def model_selection(
         optimizer.fit(X, y)
         # Include best hyperparameter config in output records.
         output.update(**optimizer.best_config)
-        # Copy pipeline for fresh start, and config with best hyperparameters.
+        # NOTE: Cannot deepcopy Cython objects.
         _pipeline = copy(pipeline)
         _pipeline.set_params(**optimizer.best_config)
         # Estimate average performance of best model in outer CV loop.
@@ -92,7 +92,7 @@ def model_selection(
         )
         output.update(results)
         if path_tmp_results is not None:
-            print('Writing results...')
+            print('Writing results temporary results.')
             utils.ioutil.write_prelim_results(path_case_file, output)
         if verbose > 0:
             duration = datetime.now() - start_time
@@ -153,7 +153,6 @@ class SMACSearchCV:
     Configuration (SMAC).
 
     """
-
     def __init__(
         self,
         cv: int=None,
@@ -191,6 +190,7 @@ class SMACSearchCV:
     @property
     def best_workflow(self):
         """Returns the optimally configures workflow."""
+        # NOTE: Cannot deepcopy Cython objects.
         workflow = copy(self.workflow)
         workflow.set_params(**self.best_config)
 
@@ -212,8 +212,7 @@ class SMACSearchCV:
         )
         if not os.path.isdir(search_mdata_dir):
             os.makedirs(search_mdata_dir)
-        # NOTE: See https://automl.github.io/SMAC3/dev/options.html for further
-        # options.
+        # NOTE: See https://automl.github.io/SMAC3/dev/options.html.
         scenario = Scenario(
             {
                 'use_ta_time': True,
@@ -251,12 +250,12 @@ class SMACSearchCV:
             X_train, X_test = self._X[train_idx], self._X[test_idx]
             y_train, y_test = self._y[train_idx], self._y[test_idx]
 
-            # Copy workflow for fresh start with each fold.
+            # NOTE: Cannot deepcopy Cython objects. Copy workflow for fresh
+            # start with each fold.
             workflow = copy(self.workflow)
             workflow.set_params(**hparams)
             workflow.fit(X_train, y_train)
-
-            # Include test scores as objective loss.
+            # Test scores as objective loss.
             test_scores.append(
                 self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
