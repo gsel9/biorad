@@ -96,8 +96,6 @@ def model_comparison(
 
     _write_results(path_final_results, results)
 
-    return None
-
 
 def config_tpe_experiment(procedure, random_state):
     """Setup experimental configurations:
@@ -152,11 +150,7 @@ def _write_results(path_final_results, results):
     # Write final results to disk.
     ioutil.write_final_results(path_final_results, results)
 
-    return None
-
 
 def _cleanup_prelim(path_tmp_results):
     # Remove temporary directory if process completed succesfully.
     ioutil.teardown_tempdir(path_tmp_results)
-
-    return None
