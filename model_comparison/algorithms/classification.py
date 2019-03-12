@@ -10,7 +10,7 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 # Shallow learners.
-from pyglmnet import GLM
+#from pyglmnet import GLM
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -65,12 +65,12 @@ class GroupLASSO(base.BaseClassifier):
     ):
 
         # Hack:
-        self.model = GLM(
-            distr='binomial',
-            tol=tol,
-            group=group_idx,
-            alpha=alpha
-        )
+        self.model = None,#GLM(
+        #    distr='binomial',
+        #    tol=tol,
+        #    group=group_idx,
+        #    alpha=alpha
+        #)
         super().__init__(
             model=self.model,
             with_selection=with_selection,
