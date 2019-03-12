@@ -66,6 +66,7 @@ def natural_keys(text):
     return [_typecheck(item) for item in re.split('(\d+)', text)]
 
 
+# NOTE: PyRadiomics is incompatble tih Path from pathlib.
 def relative_paths(path_to_dir, target_format=None):
     """Produce a list of relative paths to all files in directory."""
 
