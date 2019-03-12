@@ -61,16 +61,16 @@ class GeneralizedFisherScore(base.BaseSelector):
 
     def __init__(
         self,
-        num_features: int=None,
-        num_classes=None,
-        gamma=None,
+        feature_pairs: int=None,
+        num_classes: int=None,
+        gamma: float=None,
         max_iter=10,
         kernel='linear',
         error_handling: str='all'
     ):
         super().__init__(error_handling)
 
-        self.num_features = num_features
+        self.feature_pairs = feature_pairs
         self.num_classes = num_classes
         self.max_iter = max_iter
         self.kernel = kernel
@@ -84,6 +84,23 @@ class GeneralizedFisherScore(base.BaseSelector):
 
         return self.NAME
 
+    @property
+    def config_space(self):
+        """Returns the ANOVA F-value hyperparameter configuration space."""
+
+        feature_pairs = UniformIntegerHyperparameter(
+            'feature_pairs', lower=2, upper=50, default_value=20
+        )
+        gamma = UniformFloatHyperparameter(
+            'gamma', lower=1e-6, upper=20, default_value=0.5
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.SEED)
+        config.add_hyperparameters((feature_pairs, gamma))
+
+        return config
+
     def fit(self, X, y=None, **kwargs):
 
         if self.num_classes is None:
@@ -93,9 +110,8 @@ class GeneralizedFisherScore(base.BaseSelector):
             raise ValueError('Gamma parameter should be > 0!')
 
         num_rows, num_cols = np.shape(X)
-        if self.num_features > num_cols:
-            print('Cannot select more than {num_cols} features. Attempted '
-                  '{self.num_features}')
+        if self.feature_pairs > num_cols:
+            print(f'Cannot compare {num_cols} feature pairs.')
 
         # Initializing.
         V = 1 / num_rows * np.ones((num_rows, self.num_classes), dtype=np.float32)
@@ -110,16 +126,20 @@ class GeneralizedFisherScore(base.BaseSelector):
             # Initialize kernel weights.
             lambdas = 1 / t * np.ones(len(self.omega), dtype=np.float32)
 
-            for _ in range(5):
+            for _ in range(10):
                 V = self.update_V(num_rows, num_cols, lambdas, X, H)
                 lambdas = self.update_lambdas(num_cols, lambdas, X, V)
 
             self.omega.append(self.violated_constraints(num_rows, num_cols, X, V))
             t = t + 1
 
-        _support = np.squeeze(np.where(self.omega[-1] != 0))
-        self.support = self.check_support(_support, X)
+        _support = np.zeros(num_cols, dtype=bool)
+        for array in self.omega:
+            _support[np.where(array != 0)] = True
 
+        self.support = self.check_support(_support, X)
+        # TEMP:
+        print('FS complete!')
         return self
 
 
@@ -133,8 +153,8 @@ class GeneralizedFisherScore(base.BaseSelector):
             Vt_dot_xt = np.dot(np.transpose(V), np.transpose(X[:, col_num]))
             s.append(np.dot(x_dot_V, Vt_dot_xt))
 
-        idx = np.argsort(s)[::-1][:self.num_features]
         p = np.zeros(num_cols, dtype=int)
+        idx = np.argsort(s)[::-1][:self.feature_pairs]
         p[idx] = 1
 
         return p
@@ -1069,21 +1089,19 @@ if __name__ == '__main__':
     from sklearn.datasets import load_iris
     from sklearn.preprocessing import StandardScaler
 
-    iris = load_iris(return_X_y=False)
+    iris = load_iris()
+    _X, y = iris.data, iris.target
+
+    X = np.zeros((_X.shape[0], _X.shape[1] + 2))
+    X[:, 0] = np.ones(_X.shape[0])#np.random.random(_X.shape[0])
+    X[:, -1] = np.ones(_X.shape[0])#np.random.random(_X.shape[0])
+    X[:, 1:-1] = _X
 
     scaler = StandardScaler()
+    X_std = scaler.fit_transform(X)
 
-    X, y = iris.data, iris.target
-    _X = np.zeros((150, 6))
-    _X[:, -4:] = X
-    _X[:, 1] = np.random.random(150)
-    _X[:, 0] = np.ones(150)
-
-    X_std = scaler.fit_transform(np.concatenate((_X, )))
-    print(X_std[:3, :])
-
-
-    GFS = GeneralizedFisherScore(num_classes=2, num_features=4, gamma=0.5)
-    GFS.fit(X_std, y)
-    U = GFS.transform(X_std)
-    print(U[:3, :])
+    gfs = GeneralizedFisherScore(num_classes=2, feature_pairs=2, gamma=0.5)
+    print(X_std[:4, :])
+    gfs.fit(X_std, y)
+    X_sub = gfs.transform(X_std)
+    print(X_sub[:4, :])
