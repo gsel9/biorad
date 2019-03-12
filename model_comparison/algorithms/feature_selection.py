@@ -65,7 +65,7 @@ class GeneralizedFisherScore(base.BaseSelector):
         num_classes: int=None,
         gamma: float=None,
         max_iter=10,
-        kernel='linear',
+        learning_rate=0.01,
         error_handling: str='all'
     ):
         super().__init__(error_handling)
@@ -73,7 +73,7 @@ class GeneralizedFisherScore(base.BaseSelector):
         self.feature_pairs = feature_pairs
         self.num_classes = num_classes
         self.max_iter = max_iter
-        self.kernel = kernel
+        self.learning_rate = learning_rate
         self.gamma = gamma
 
         # NOTE: Attribute set with instance.
@@ -120,12 +120,12 @@ class GeneralizedFisherScore(base.BaseSelector):
         self.omega = [self.violated_constraints(num_rows, num_cols, X, V)]
 
         H = self.construct_H(num_rows, X, y)
-
+        # Iteratively solves a multiple kernel learning problem.
         for _ in range(self.max_iter):
-
             # Initialize kernel weights.
             lambdas = 1 / t * np.ones(len(self.omega), dtype=np.float32)
-
+            # Alternating optimization by multivariante ridge regression and
+            # projected gradient descent.
             for _ in range(10):
                 V = self.update_V(num_rows, num_cols, lambdas, X, H)
                 lambdas = self.update_lambdas(num_cols, lambdas, X, V)
@@ -202,8 +202,11 @@ class GeneralizedFisherScore(base.BaseSelector):
             for num_col in range(num_cols):
                 x = np.copy(X[:, num_col])[np.newaxis]
                 core = core + p_t[num_col] * np.dot(np.dot(np.transpose(x), x), V)
-            lambda_gradient = -0.5 / self.gamma * np.trace(np.dot(np.transpose(V), core))
-            lambdas[t] = lambdas[t] - lambda_gradient
+            lambda_gradient = 1 / (2 * self.gamma) * np.trace(np.dot(np.transpose(V), core))
+            # Update lambda by gradient descent.
+            lambdas[t] = lambdas[t] + self.learning_rate * lambda_gradient
+        # Make lambdas sum to 1.
+        lambdas = lambdas / np.sum(lambdas)
 
         return lambdas
 
