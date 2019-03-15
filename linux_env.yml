@@ -1,0 +1,15 @@
+name: biorad
+channels:
+- defaults
+dependencies:
+- python=3.6.2=0
+- pip
+- gxx_linux-64
+- gcc_linux-64
+- swig
+- setuptools=36.4.0=py36_1
+- tk=8.5.18=0
+- wheel=0.29.0=py36_0
+- bottleneck=1.2.1
+- pip:
+- -r requirements.txt
