@@ -1,5 +1,0 @@
-1. Create env file setting up the condo env for MAC
-2. Clean up modules + ass docstrings
-3. Run test on test functions for optimization
-4. Solve wrapper feature selection issue by moving sequential selectors outside of base classifier (use decorator or so).
-5. Include Generalized Fisher, Tsetlin machines and group LASSO among available models.
