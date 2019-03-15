@@ -1,0 +1,24 @@
+# -*- coding: utf-8 -*-
+#
+# Configuration setup file for PyRadiomics first order feature extraction.
+#
+# PyRadiomics version: 2.0.1
+#
+
+setting:
+  # Avoid Z-scoring to maintain image dynamics.
+  normalize: False
+  # Value of ROI in mask is binary where zero represents the background.
+  label: 1
+  # Gray level discretization: 128 bins calculated from image without Z-scoring.
+  binWidth: 0.1129
+  # Disable output of additional information from the extraction.
+  additionalInfo: False
+
+
+imageType:
+  Original: {}
+
+
+featureClass:
+  firstorder:

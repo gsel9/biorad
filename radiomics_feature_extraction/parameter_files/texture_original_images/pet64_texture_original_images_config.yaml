@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+#
+# Configuration setup file for PyRadiomics texture feature extraction.
+#
+# PyRadiomics version: 2.0.1
+#
+
+
+setting:
+  # Relaxing an eventual correlation between features and scanners due to
+  # inter-scanner variability.
+  normalize: False
+  # Distance to neighbour: Specifies the distances between the center voxel and
+  # the neighbor, for which angles should be generated. Only affects the GLCM
+  # and NGTDM feature classes. The GLSZM and GLRLM feature classes use a fixed
+  # distance of 1 (infinity norm) to define neighbours.
+  distances: [1]
+  # Gray level discretization: 64 bins.
+  binWidth: 0.2259
+  # Value of ROI in mask (is binary).
+  label: 1
+  # Disable output of additional information from the extraction.
+  additionalInfo: False
+
+
+imageType:
+  Original: {}
+
+
+featureClass:
+  glcm:
+  glrlm:
+  glszm:
+  gldm:
+  ngtdm:
