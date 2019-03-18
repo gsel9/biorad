@@ -42,6 +42,27 @@ from skfeature.function.similarity_based.fisher_score import fisher_score
 from . import base
 
 
+class DummySelector:
+
+    NAME = 'DummySelector'
+
+    def __init__(self):
+        pass
+
+    def get_params(self, deep=True):
+
+        return {}
+
+    def set_params(self, **params):
+        pass
+
+    def fit(self, X, y=None):
+        return X
+
+    def transform(self, X):
+        return X
+
+
 class GeneralizedFisherScore(base.BaseSelector):
 
     SEED = 0
@@ -203,7 +224,7 @@ class StudentTTestSelection(base.BaseSelector):
 
     NAME = 'StudentTTestSelection'
 
-    def __init__(self ,num_features: int=None, random_state: int=0):
+    def __init__(self, num_features: int=None, random_state: int=0):
 
         super().__init__()
 
