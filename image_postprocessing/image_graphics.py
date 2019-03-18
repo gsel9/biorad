@@ -11,13 +11,15 @@ __contact__ = 'langberg91@gmail.com'
 
 
 import nrrd
+import matplotlib
+matplotlib.use('TkAgg')
+matplotlib.verbose.level = 'debug'
 
+from PIL import Image
 from pathlib import Path
 
 import numpy as np
-
 import matplotlib.pyplot as plt
-from PIL import Image
 
 
 
@@ -35,21 +37,32 @@ def nrrd_to_ndarray(path_to_file, return_header=False):
         return np.array(data, dtype=float)
 
 
-def show_stack(stack, slice_dim=0):
+def show_ct_stack(stack, slice_dim=0):
+    """
+
+    Notes:
+        * vmin and vmax are set to 0 and 2e12, respectively.
+
+    """
 
     class IndexTracker:
         def __init__(self, ax, x, slice_dim):
-            self.ax = ax
 
+            self.ax = ax
             self.x = x
             self.slices = x.shape[slice_dim]
             self.slice_dim = slice_dim
-            self.ind = self.slices//2
+            self.ind = self.slices // 2
 
-            self.im = ax.imshow(self.x.take(
-                indices=self.ind,
-                axis=slice_dim,
-            ))
+            self.im = ax.imshow(
+                self.x.take(
+                    indices=self.ind,
+                    axis=slice_dim,
+                ),
+                cmap=plt.cm.gray,
+                vmin=0.0,
+                vmax=2**12
+            )
             self.update()
 
         def onscroll(self, event):
@@ -109,8 +122,8 @@ def img_dump(stack, dir: Path, base_name: str, slice_dim=0):
 
 if __name__ == '__main__':
     # Demo run.
-    path_to_stack = './../../../data_source/images/ct_nrrd/P008CT.nrrd'
-    path_to_mask = './../../../data_source/images/masks_nrrd/P008mask.nrrd'
+    path_to_stack = './../../data_source/images/ct_nrrd/P008CT.nrrd'
+    path_to_mask = './../../data_source/images/masks_nrrd/P008mask.nrrd'
 
     image = nrrd_to_ndarray(path_to_stack)
     mask = nrrd_to_ndarray(path_to_mask)
