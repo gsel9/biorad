@@ -16,7 +16,7 @@ setting:
   # distance of 1 (infinity norm) to define neighbours.
   distances: [1]
   # Gray level discretization: 128 bins.
-  binWidth: 0.1014
+  binWidth: 0.10140467171717171
   # Value of ROI in mask (is binary).
   label: 1
   # Disable output of additional information from the extraction.
