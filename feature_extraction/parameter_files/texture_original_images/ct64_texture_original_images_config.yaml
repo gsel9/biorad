@@ -16,7 +16,7 @@ setting:
   # distance of 1 (infinity norm) to define neighbours.
   distances: [1]
   # Gray level discretization: 64 bins.
-  binWidth: 0.29300820707070707
+  binWidth: 0.06755050505050506
   # Shifting gray level values > 0 due to normalization as required by some
   # texture features. Shift value is ceiling of average of global max across
   # all CT samples, which is the largest value used in zero-centering for
