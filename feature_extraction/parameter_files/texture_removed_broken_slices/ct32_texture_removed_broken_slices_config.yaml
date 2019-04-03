@@ -16,7 +16,7 @@ setting:
   # distance of 1 (infinity norm) to define neighbours.
   distances: [1]
   # Gray level discretization: 128 bins calculated from image without Z-scoring.
-  binWidth: 0.5787627551020408
+  binWidth: 0.13301701570680627
   # Disable output of additional information from the extraction.
   additionalInfo: False
   # Shifting gray level values > 0 due to normalization as required by some
