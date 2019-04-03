@@ -117,14 +117,12 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
     """
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, random_state=0):
 
         super().__init__()
 
         self.model = model
-
-        # NOTE: Attribute set with instance.
-        self.support = None
+        self.random_state = random_state
 
     def set_params(self, **params):
         """Update estimator hyperparamter configuration.
@@ -135,6 +133,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         """
         params = self.check_params(params)
         self.model.set_params(**params)
+
+        if hasattr(self.model, 'random_state'): 
+            self.model.random_state = self.random_state
 
         return self
 

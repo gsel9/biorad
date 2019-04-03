@@ -34,18 +34,20 @@ def nested_cross_validation_smac(
     experiment_id,
     workflow,
     score_func,
-    cv: int=10,
-    output_dir=None,
-    max_evals: int=100,
-    verbose: int=1,
-    shuffle: bool=True,
-    random_state=None,
-    path_tmp_results: str=None,
+    cv: int = 10,
+    output_dir = None,
+    max_evals: int = 100,
+    verbose: int = 1,
+    random_state = None,
+    path_tmp_results: str = None,
 ):
     """
     Nested cross-validtion model comparison.
 
     Args:
+
+    Returns:
+        (dict):
 
     """
     # Determine if should write prelim results, and if some results already
@@ -66,32 +68,30 @@ def nested_cross_validation_smac(
             print(f'Running experiment {random_state} with {experiment_id}')
         # Unpack workflow elements and copy pipeline for fresh start.
         pipeline, hparam_space = workflow
-        _pipeline = deepcopy(pipeline)
+        pipeline_cp = deepcopy(pipeline)
         # Run hyperparameter optimization protocol.
         optimizer = SMACSearchCV(
             cv=cv,
             experiment_id=experiment_id,
-            workflow=_pipeline,
+            workflow=pipeline_cp,
             hparam_space=hparam_space,
             max_evals=max_evals,
             score_func=score_func,
             random_state=random_state,
-            shuffle=shuffle,
             verbose=verbose,
             output_dir=output_dir
         )
         optimizer.fit(X, y)
         # Include best hyperparameter config in output records.
         output.update(**optimizer.best_config)
-        _pipeline = deepcopy(pipeline)
-        _pipeline.set_params(**optimizer.best_config)
+        pipeline_cp = deepcopy(pipeline)
+        pipeline_cp.set_params(**optimizer.best_config)
         # Estimate average performance of best model in outer CV loop.
         results = cross_val_score(
             X, y,
             cv,
-            shuffle,
             random_state,
-            _pipeline,
+            pipeline_cp,
             score_func
         )
         output.update(results)
@@ -109,16 +109,18 @@ def nested_cross_validation_smac(
 def cross_val_score(
     X, y,
     cv: int,
-    shuffle: bool,
     random_state: int,
     pipeline,
-    score_func
+    score_func,
+    shuffle: bool = True,
 ):
-    """Represents the outer K-fold cross-validation loop of a nested
+    """Represents the outer K-fold cross-validation (CV) loop of a nested CV
     scheme.
 
     Returns:
-        (collections.OrderedDict):
+        (collections.OrderedDict): The average and variance of training and
+            validation scores, and the number times each feature was
+            selected.
 
     """
     feature_votes = np.zeros(X.shape[1], dtype=int)
@@ -130,10 +132,8 @@ def cross_val_score(
         y_train, y_test = y[train_idx], y[test_idx]
 
         pipeline.fit(X_train, y_train)
-        # Count feature votes by utilizing the support attribute from
-        # BaseClassifier.
-        final_estimator = pipeline.steps[-1][-1]
-        feature_votes[final_estimator.support] += 1
+        # Count feature votes with the support attribute.
+        feature_votes[pipeline.steps[-2][-1].support] += 1
         test_scores.append(
             score_func(y_test, np.squeeze(pipeline.predict(X_test)))
         )
@@ -158,16 +158,16 @@ class SMACSearchCV:
     """
     def __init__(
         self,
-        cv: int=None,
-        experiment_id=None,
-        workflow=None,
-        hparam_space=None,
-        max_evals: int=None,
-        score_func=None,
-        random_state: int=None,
-        shuffle: bool=True,
-        output_dir: str=None,
-        verbose: int=0,
+        cv: int = None,
+        experiment_id = None,
+        workflow = None,
+        hparam_space = None,
+        max_evals: int = None,
+        score_func = None,
+        random_state: int = None,
+        shuffle: bool = True,
+        output_dir: str = None,
+        verbose: int = 0,
     ):
         self.cv = cv
         self.experiment_id = experiment_id
@@ -218,7 +218,7 @@ class SMACSearchCV:
         scenario = Scenario(
             {
                 'use_ta_time': True,
-                'wallclock_limit': float(1600),
+                'wallclock_limit': float(500),
                 'cs': self.hparam_space,
                 'output_dir': search_metadata_dir,
                 'runcount-limit': self.max_evals,
@@ -254,6 +254,7 @@ class SMACSearchCV:
             # Copy workflow for fresh start with each fold.
             workflow = deepcopy(self.workflow)
             workflow.set_params(**hparams)
+            print('Param config', hparams)
             workflow.fit(X_train, y_train)
             # Test scores as objective loss.
             test_scores.append(

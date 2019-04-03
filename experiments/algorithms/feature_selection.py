@@ -42,22 +42,24 @@ from skfeature.function.similarity_based.fisher_score import fisher_score
 from . import base
 
 
-class DummySelector:
+class DummySelection:
 
-    NAME = 'DummySelector'
+    NAME = 'DummySelection'
 
     def __init__(self):
-        pass
+        
+        self.support = None
 
     def get_params(self, deep=True):
-
         return {}
 
     def set_params(self, **params):
         pass
 
     def fit(self, X, y=None):
-        return X
+
+        self.support =np.arange(X.shape[1], dtype=int)
+        return self
 
     def transform(self, X):
         return X
@@ -65,7 +67,6 @@ class DummySelector:
 
 class GeneralizedFisherScore(base.BaseSelector):
 
-    SEED = 0
     NAME = 'GeneralizedFisherScore'
 
     def __init__(
@@ -442,7 +443,8 @@ class WilcoxonSelection(base.BaseSelector):
 
         return self
 
-    def wilcoxon_rank_sum(self, X, y):
+    @staticmethod
+    def wilcoxon_rank_sum(X, y):
         """The Wilcoxon rank sum test to determine if two measurements are
         drawn from the same distribution.
 
@@ -461,96 +463,6 @@ class WilcoxonSelection(base.BaseSelector):
             p_values.append(p_value)
 
         return np.array(p_values, dtype=float)
-
-
-class MRMRSelection(base.BaseSelector):
-    """Perform feature selection with the minimum redundancy maximum relevancy
-    algortihm.
-
-    Args:
-        k (int): Note that k > 0, but must be smaller than the smallest number
-            of observations for each individual class.
-        num_features (): If `auto`, the number of is determined based on the
-            amount of mutual information the previously selected features share
-            with the target classes.
-        error_handling (str, {`return_all`, `return_NaN`}):
-
-    Notes:
-        * Cloned from: https://github.com/danielhomola/mifs
-        * Use conda to install bottleneck V1.2.1 and pip to install local mifs clone.
-
-    """
-
-    NAME = 'MRMRSelection'
-
-    def __init__(
-        self,
-        num_features: int=None,
-        num_neighbors: int=None,
-        random_state: int=0
-    ):
-        super().__init__()
-
-        self.num_features = num_features
-        self.num_neighbors = num_neighbors
-        self.random_state = random_state
-
-        # NOTE: Attribute set with instance.
-        self.support = None
-
-    def __name__(self):
-        return self.NAME
-
-    @property
-    def config_space(self):
-        """Returns the MRMR hyperparameter configuration space."""
-
-        num_neighbors = UniformIntegerHyperparameter(
-            'num_neighbors', lower=2, upper=100, default_value=20
-        )
-        num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.random_state)
-        config.add_hyperparameters((num_neighbors, num_features))
-
-        return config
-
-    def fit(self, X, y=None):
-        """Perform feature selection.
-
-        """
-        # Ensures all elements of X > 0.
-        X, y = self.check_X_y(X, y)
-        self.check_params(X, y)
-
-        # NOTE: Categorical refers to the target variable data type.
-        selector = mifs.MutualInformationFeatureSelector(
-            method='MRMR',
-            categorical=True,
-            k=self.num_neighbors,
-            n_features=self.num_features,
-        )
-        selector.fit(X, y)
-
-        _support = np.squeeze(np.where(selector.support_))
-        self.support = self.check_support(_support)
-
-        return self
-
-    def check_params(self, X, y):
-
-        min_class_count = np.min(np.bincount(y))
-        if self.num_neighbors > min_class_count:
-            self.num_neighbors = int(min_class_count)
-
-        _, ncols = np.shape(X)
-        if self.num_features > ncols:
-            self.num_features = int(ncols - 1)
-
-        return self
 
 
 # pip install ReliefF from https://github.com/gitter-badger/ReliefF
