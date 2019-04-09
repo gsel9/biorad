@@ -107,7 +107,6 @@ def nested_cross_validation_smac(
     return output
 
 
-# TEMP: Dropped feature votes for group LASSO experiment.
 def cross_val_score(
     X, y,
     cv: int,
@@ -125,9 +124,9 @@ def cross_val_score(
             selected.
 
     """
-    feature_votes = np.zeros(X.shape[1], dtype=int)
-
     test_scores, train_scores = [], []
+
+    feature_votes = np.zeros(X.shape[1], dtype=int)
     kfolds = StratifiedKFold(cv, shuffle, random_state)
     for train_idx, test_idx in kfolds.split(X, y):
         X_train, X_test = X[train_idx], X[test_idx]
