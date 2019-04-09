@@ -100,10 +100,6 @@ def config_smac_experiment(procedure, random_state):
             hyperparameter space.
 
     """
-    if not isinstance(random_state, int):
-        raise ValueError(f'Random state should be <int>, not '
-                         '{type(random_state)}')
-
     config_space = ConfigurationSpace()
     config_space.seed(random_state)
     for name, algorithm in procedure:
