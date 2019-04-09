@@ -23,6 +23,9 @@ from utils import ioutil
 from comparison_schemes import nested_cross_validation_smac
 
 
+TIMEOUT = int(1e3)
+
+
 def model_comparison_fn(
     X,
     y,
@@ -53,6 +56,8 @@ def model_comparison_fn(
         path_final_results (str):
 
     """
+    global TIMEOUT
+
     # Assign the default number of available working CPUs.
     if n_jobs is None:
         n_jobs = cpu_count() - 1 if cpu_count() > 1 else 1
@@ -63,7 +68,7 @@ def model_comparison_fn(
     results = []
     for experiment_id, setup in experiments.items():
         results.extend(
-            Parallel(n_jobs=n_jobs, verbose=verbose)(
+            Parallel(n_jobs=n_jobs, verbose=verbose, timeout=TIMEOUT)(
                 delayed(nested_cross_validation_smac)(
                     X=X, y=y,
                     experiment_id=experiment_id,
