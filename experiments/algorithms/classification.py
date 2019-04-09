@@ -9,21 +9,16 @@ comparison experiments.
 """
 
 __author__ = 'Severin Langberg'
-__contact__ = 'langberg91@gmail.com'
-
-
-import numpy as np
-
-#from pyglmnet import GLM
+__email__ = 'langberg91@gmail.com'
 
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.tree import ExtraTreeClassifier
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import ElasticNet
-from sklearn.cross_decomposition import PLSRegression
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
@@ -37,6 +32,67 @@ from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 from . import base
 
 
+class QuadraticDiscriminantEstimator(base.BaseClassifier):
+    """A logistic regression wrapper."""
+
+    NAME = 'QuadraticDiscriminantEstimator'
+
+    def __init__(
+        self,
+        model=QuadraticDiscriminantAnalysis(),
+        random_state=0
+    ):
+        super().__init__(model=model, random_state=random_state)
+
+        self.random_state = random_state
+
+    @property
+    def config_space(self):
+        """Logistic regression hyperparameter space."""
+
+        reg_param = UniformFloatHyperparameter(
+            'reg_param', lower=1e-9, upper=1-1e-9, default_value=1e-3
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.random_state)
+        config.add_hyperparameter(reg_param)
+
+        return config
+
+
+class LinearDiscriminantEstimator(base.BaseClassifier):
+    """A logistic regression wrapper."""
+
+    NAME = 'LinearDiscriminantEstimator'
+
+    def __init__(
+        self,
+        model=LinearDiscriminantAnalysis(),
+        random_state=0
+    ):
+        super().__init__(model=model, random_state=random_state)
+
+        self.random_state = random_state
+
+    @property
+    def config_space(self):
+        """Logistic regression hyperparameter space."""
+
+        shrinkage = UniformFloatHyperparameter(
+            'shrinkage', lower=1e-9, upper=1-1e-9, default_value=0.5
+        )
+        n_components = UniformIntegerHyperparameter(
+            'n_components', lower=2, upper=50, default_value=10
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.random_state)
+        config.add_hyperparameters((shrinkage, n_components))
+
+        return config
+
+
 class GroupLASSOEstimator(base.BaseClassifier):
     """A logistic regression wrapper."""
 
@@ -44,12 +100,9 @@ class GroupLASSOEstimator(base.BaseClassifier):
 
     def __init__(
         self,
-        group_idx=None,
-        model=None,#GLM(max_iter=800),
+        model=None,
         random_state=0
     ):
-
-        model.group = group_idx
         super().__init__(model=model, random_state=random_state)
 
         self.random_state = random_state
@@ -58,65 +111,25 @@ class GroupLASSOEstimator(base.BaseClassifier):
     def config_space(self):
         """Logistic regression hyperparameter space."""
 
-        distr = CategoricalHyperparameter(
-            'distr', ['gaussian', 'binomial', 'poisson', 'softplus'],
-            default_value='poisson'
+        reg_lambda = UniformFloatHyperparameter(
+            'reg_lambda', lower=1e-8, upper=100, default_value=1e-3
         )
         alpha = UniformFloatHyperparameter(
-            'alpha', lower=0, upper=1, default_value=0.5
-        )
-        reg_lambda = UniformFloatHyperparameter(
-            'reg_lambda', lower=1e-10, upper=10-1e-10, default_value=1e-3
+            'alpha', lower=1e-8, upper=1-1e-8, default_value=1e-3
         )
         learning_rate = UniformFloatHyperparameter(
-            'learning_rate', lower=1e-10, upper=10-1e-10, default_value=0.01
+            'learning_rate', lower=1e-8, upper=10, default_value=0.01
+        )
+        # Binarizing continous outputs.
+        binarization = UniformFloatHyperparameter(
+            'binarization', lower=1e-8, upper=1-1e-8, default_value=0.5
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
         config.add_hyperparameters(
-            (distr, alpha, reg_lambda, learning_rate)
+            (learning_rate, alpha, reg_lambda, binarization)
         )
-        return config
-
-
-class ElasticNetEstimator(base.BaseClassifier):
-    """A logistic regression wrapper."""
-
-    NAME = 'ElasticNetEstimator'
-
-    def __init__(
-        self,
-        model=ElasticNet(
-            alpha=1.0,
-            fit_intercept=True,
-            normalize=False,
-            precompute=False,
-            max_iter=int(1e4),
-            positive=False,
-            selection='cyclic'
-        ),
-        random_state=0
-    ):
-        super().__init__(model=model, random_state=random_state)
-
-        self.random_state = random_state
-
-    @property
-    def config_space(self):
-        """Logistic regression hyperparameter space."""
-
-        tol = UniformFloatHyperparameter(
-            'tol', lower=1e-9, upper=1e-4, default_value=1e-7
-        )
-        l1_ratio = UniformFloatHyperparameter(
-            'l1_ratio', lower=0, upper=1, default_value=0.5
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.random_state)
-        config.add_hyperparameters((tol, l1_ratio))
-
         return config
 
 
@@ -252,15 +265,15 @@ class XGBoosting(base.BaseClassifier):
         return config
 
 
-class ExtraTreeEstimator(base.BaseClassifier):
+class ExtraTreesEstimator(base.BaseClassifier):
     """Extra-trees differ from classic decision trees in the way they are built.
     """
 
-    NAME = 'ExtraTreeEstimator'
+    NAME = 'ExtraTreesEstimator'
 
     def __init__(
         self,
-        model=ExtraTreeClassifier(class_weight='balanced'),
+        model=ExtraTreesClassifier(class_weight='balanced'),
         random_state=0
     ):
 
@@ -272,14 +285,17 @@ class ExtraTreeEstimator(base.BaseClassifier):
     def config_space(self):
         """Decision tree hyperparameter space."""
 
+        n_estimators = UniformIntegerHyperparameter(
+            'n_estimators', lower=10, upper=200, default_value=100
+        )
         criterion = CategoricalHyperparameter(
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
         max_depth = CategoricalHyperparameter(
-            'max_depth', [5, 10, 20, None], default_value=None
+            'max_depth', [5, 10, 20, 'none'], default_value='none'
         )
         max_features = CategoricalHyperparameter(
-            'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
+            'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
         )
         min_samples_leaf = UniformFloatHyperparameter(
             'min_samples_leaf', lower=1e-10, upper=0.3,
@@ -289,6 +305,7 @@ class ExtraTreeEstimator(base.BaseClassifier):
         config.seed(self.random_state)
         config.add_hyperparameters(
             (
+                n_estimators,
                 criterion,
                 max_depth,
                 max_features,
@@ -321,10 +338,10 @@ class DTreeEstimator(base.BaseClassifier):
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
         max_depth = CategoricalHyperparameter(
-            'max_depth', [5, 10, 20, None], default_value=None
+            'max_depth', [5, 10, 20, 'none'], default_value='none'
         )
         max_features = CategoricalHyperparameter(
-            'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
+            'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
         )
         min_samples_leaf = UniformFloatHyperparameter(
             'min_samples_leaf', lower=1e-10, upper=0.25,
@@ -354,6 +371,7 @@ class RFEstimator(base.BaseClassifier):
             n_jobs=-1,
             verbose=False,
             oob_score=False,
+            max_features=None,
             class_weight='balanced',
         ),
         random_state=0
@@ -364,7 +382,7 @@ class RFEstimator(base.BaseClassifier):
 
     @property
     def config_space(self):
-        """Random forest classifier hyperparameter space."""
+        """Decision tree hyperparameter space."""
 
         n_estimators = UniformIntegerHyperparameter(
             'n_estimators', lower=10, upper=1000, default_value=100
@@ -373,13 +391,10 @@ class RFEstimator(base.BaseClassifier):
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
         max_depth = CategoricalHyperparameter(
-            'max_depth', [5, 10, 20, None], default_value=None
+            'max_depth', [5, 10, 20, 'none'], default_value='none'
         )
         max_features = CategoricalHyperparameter(
-            'max_features', ['auto', 'sqrt', 'log2', None], default_value=None
-        )
-        bootstrap = CategoricalHyperparameter(
-            'bootstrap', [True, False], default_value=True
+            'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
         )
         min_samples_leaf = UniformFloatHyperparameter(
             'min_samples_leaf', lower=1e-10, upper=0.25,
@@ -393,46 +408,9 @@ class RFEstimator(base.BaseClassifier):
                 criterion,
                 max_depth,
                 max_features,
-                bootstrap,
                 min_samples_leaf
             )
         )
-        return config
-
-
-class PLSREstimator(base.BaseClassifier):
-    """A PLSR wrapper."""
-
-    NAME = 'PLSREstimator'
-
-    def __init__(
-        self,
-        model=PLSRegression(
-            scale=False,
-            copy=True,
-            max_iter=int(1e4)
-        ),
-        random_state=0
-    ):
-        super().__init__(model=model, random_state=random_state)
-
-        self.random_state = random_state
-
-    @property
-    def config_space(self):
-        """PLSR hyperparameter space."""
-
-        tol = UniformFloatHyperparameter(
-            'tol', lower=1e-9, upper=1e-4, default_value=1e-7
-        )
-        n_components = UniformIntegerHyperparameter(
-            'n_components', lower=1, upper=30, default_value=10
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.random_state)
-        config.add_hyperparameters((tol, n_components))
-
         return config
 
 
@@ -498,6 +476,7 @@ class SVCEstimator(base.BaseClassifier):
         self,
         model=SVC(
             class_weight='balanced',
+            gamma='auto',
             verbose=False,
             cache_size=1500,
             max_iter=int(3e4),
@@ -522,12 +501,6 @@ class SVCEstimator(base.BaseClassifier):
         kernel = CategoricalHyperparameter(
             'kernel', ['linear', 'rbf', 'poly', 'sigmoid'],
         )
-        gamma = CategoricalHyperparameter(
-            'gamma', ['auto', 'value'], default_value='auto'
-        )
-        gamma_value = UniformFloatHyperparameter(
-            'gamma_value', lower=1e-8, upper=10, default_value=1
-        )
         degree = UniformIntegerHyperparameter(
             'degree', lower=1, upper=5, default_value=2
         )
@@ -544,22 +517,14 @@ class SVCEstimator(base.BaseClassifier):
                 kernel,
                 degree,
                 coef0,
-                gamma,
-                gamma_value
             )
         )
         # Conditionals on hyperparameters specific to kernels.
         config.add_conditions(
             (
                 InCondition(child=degree, parent=kernel, values=['poly']),
-                InCondition(child=gamma_value, parent=gamma, values=['value']),
                 InCondition(
-                    child=coef0, parent=kernel,
-                    values=['poly', 'sigmoid']
-                ),
-                InCondition(
-                    child=gamma, parent=kernel,
-                    values=['rbf', 'poly', 'sigmoid']
+                    child=coef0, parent=kernel, values=['poly', 'sigmoid']
                 )
             )
         )

@@ -124,6 +124,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         self.model = model
         self.random_state = random_state
 
+        # NOTE: Threshold to binarize continous predictions.
+        self.binary_thresh = None
+
     def set_params(self, **params):
         """Update estimator hyperparamter configuration.
 
@@ -131,10 +134,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
             params (dict): Hyperparameter settings.
 
         """
-        params = self.check_params(params)
+        params = self.check_params(**params)
         self.model.set_params(**params)
-
-        if hasattr(self.model, 'random_state'): 
+        if hasattr(self.model, 'random_state'):
             self.model.random_state = self.random_state
 
         return self
@@ -159,27 +161,9 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
 
         """
         y_pred = np.squeeze(self.model.predict(X))
-
+        if self.binary_thresh:
+            return np.array(y_pred > self.binary_thresh, dtype=int)
         return np.array(y_pred, dtype=int)
-
-    @staticmethod
-    def check_params(params):
-        """Validate hyperparameter configuration."""
-
-        _params = {}
-        for key in params.keys():
-            if params[key] is None:
-                pass
-            else:
-                # Configure SVC gamma parameter conditionals.
-                if 'gamma' in key:
-                    if params['gamma'] == 'value':
-                        _params['gamma'] = params['gamma_value']
-                    else:
-                        _params['gamma'] = 'auto'
-                else:
-                    _params[key] = params[key]
-        return _params
 
     def check_model_config(self, X, y=None):
         """Validate model configuration."""
@@ -191,3 +175,15 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
                 self.model.n_components = int(num_cols - 1)
 
         return self
+
+    def check_params(self, **params):
+        _params = {}
+        for key, value in params.items():
+            if value == 'none':
+                _params[key] = None
+            elif key == 'binarization':
+                self.binary_thresh = value
+            else:
+                _params[key] = value
+
+        return _params

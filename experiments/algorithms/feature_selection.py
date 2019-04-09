@@ -47,7 +47,7 @@ class DummySelection:
     NAME = 'DummySelection'
 
     def __init__(self):
-        
+
         self.support = None
 
     def get_params(self, deep=True):
