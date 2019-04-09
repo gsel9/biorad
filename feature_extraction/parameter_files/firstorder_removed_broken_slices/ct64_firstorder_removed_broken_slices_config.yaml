@@ -11,7 +11,7 @@ setting:
   # Value of ROI in mask is binary where zero represents the background.
   label: 1
   # Gray level discretization: 128 bins calculated from image without Z-scoring.
-  binWidth: 20.33597840314136
+  binWidth: 19.53643048128342
   # Disable output of additional information from the extraction.
   additionalInfo: False
 
