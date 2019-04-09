@@ -148,7 +148,7 @@ def cross_val_score(
             ('train_score', np.mean(train_scores)),
             ('test_score_variance', np.var(test_scores)),
             ('train_score_variance', np.var(train_scores)),
-            ('weights', avg_weights)
+            ('feature_votes', feature_votes)
         ]
     )
 
