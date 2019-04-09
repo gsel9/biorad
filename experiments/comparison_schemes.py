@@ -84,10 +84,7 @@ def nested_cross_validation_smac(
         optimizer.fit(X, y)
         # Include best hyperparameter config in output records.
         output.update(**optimizer.best_config)
-        print('BEST CONFIG\n',
-                optimizer.best_config['learning_rate'],
-                optimizer.best_config['reg_lambda'],
-                optimizer.best_config['alpha'])
+
         pipeline_cp = deepcopy(pipeline)
         pipeline_cp.set_params(**optimizer.best_config)
         # Estimate average performance of best model in outer CV loop.
@@ -128,8 +125,7 @@ def cross_val_score(
             selected.
 
     """
-    #feature_votes = np.zeros(X.shape[1], dtype=int)
-    avg_weights = np.zeros(X.shape[1] + 1, dtype=np.float64)
+    feature_votes = np.zeros(X.shape[1], dtype=int)
 
     test_scores, train_scores = [], []
     kfolds = StratifiedKFold(cv, shuffle, random_state)
@@ -138,9 +134,7 @@ def cross_val_score(
         y_train, y_test = y[train_idx], y[test_idx]
 
         pipeline.fit(X_train, y_train)
-        #feature_votes[pipeline.steps[-2][-1].support] += 1
-        avg_weights[0] += pipeline.steps[-1][-1].model.beta0_
-        avg_weights[1:] += pipeline.steps[-1][-1].model.beta_
+        feature_votes[pipeline.steps[-2][-1].support] += 1
 
         test_scores.append(
             score_func(y_test, np.squeeze(pipeline.predict(X_test)))
@@ -148,8 +142,6 @@ def cross_val_score(
         train_scores.append(
             score_func(y_train, np.squeeze(pipeline.predict(X_train)))
         )
-    # Scale weights.
-    avg_weights = avg_weights / cv
     return OrderedDict(
         [
             ('test_score', np.mean(test_scores)),
@@ -267,11 +259,6 @@ class SMACSearchCV:
             test_scores.append(
                 self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
-        print('OBECJTIVE PARAMS:')
-        print(workflow.get_params()['GroupLASSOEstimator__reg_lambda'],
-              workflow.get_params()['GroupLASSOEstimator__alpha'],
-              workflow.get_params()['GroupLASSOEstimator__learning_rate'])
-        print(np.mean(test_scores))
         return 1.0 - np.mean(test_scores)
 
     @staticmethod
