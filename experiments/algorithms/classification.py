@@ -17,8 +17,11 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import RidgeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+from grouplasso import GroupLassoRegressor
 
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
@@ -30,6 +33,41 @@ from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 
 from . import base
+
+
+class RidgeClassifierEstimator(base.BaseClassifier):
+
+    NAME = 'RidgeClassifier'
+
+    def __init__(
+        self,
+        model=RidgeClassifier(class_weight='balanced'),
+        random_state=0
+    ):
+        super().__init__(model=model, random_state=random_state)
+
+        self.random_state = random_state
+
+    @property
+    def config_space(self):
+        """Logistic regression hyperparameter space."""
+
+        alpha = UniformFloatHyperparameter(
+            'alpha', lower=1e-8, upper=100, default_value=1.0
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.random_state)
+        config.add_hyperparameter(alpha)
+
+        return config
+
+
+# pip install grouplasso
+# See: https://github.com/AnchorBlues/GroupLasso
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2929880/
+class GroupLassoEstimator(base.BaseClassifier):
+    pass
 
 
 class QuadraticDiscriminantEstimator(base.BaseClassifier):
@@ -93,46 +131,6 @@ class LinearDiscriminantEstimator(base.BaseClassifier):
         return config
 
 
-class GroupLASSOEstimator(base.BaseClassifier):
-    """A logistic regression wrapper."""
-
-    NAME = 'GroupLASSOEstimator'
-
-    def __init__(
-        self,
-        model=None,
-        random_state=0
-    ):
-        super().__init__(model=model, random_state=random_state)
-
-        self.random_state = random_state
-
-    @property
-    def config_space(self):
-        """Logistic regression hyperparameter space."""
-
-        reg_lambda = UniformFloatHyperparameter(
-            'reg_lambda', lower=1e-8, upper=100, default_value=1e-3
-        )
-        alpha = UniformFloatHyperparameter(
-            'alpha', lower=1e-8, upper=1-1e-8, default_value=1e-3
-        )
-        learning_rate = UniformFloatHyperparameter(
-            'learning_rate', lower=1e-8, upper=10, default_value=0.01
-        )
-        # Binarizing continous outputs.
-        binarization = UniformFloatHyperparameter(
-            'binarization', lower=1e-8, upper=1-1e-8, default_value=0.5
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.random_state)
-        config.add_hyperparameters(
-            (learning_rate, alpha, reg_lambda, binarization)
-        )
-        return config
-
-
 class LightGBM(base.BaseClassifier):
     """A Light Gradient Boosting wrapper"""
 
@@ -177,9 +175,6 @@ class LightGBM(base.BaseClassifier):
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-8, upper=50, default_value=0.01
         )
-        min_data_in_leaf = UniformIntegerHyperparameter(
-            'min_data_in_leaf', lower=2, upper=10, default_value=5
-        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
@@ -189,8 +184,7 @@ class LightGBM(base.BaseClassifier):
                 max_depth,
                 reg_alpha,
                 reg_lambda,
-                learning_rate,
-                min_data_in_leaf
+                learning_rate
             )
         )
         return config
@@ -241,13 +235,6 @@ class XGBoosting(base.BaseClassifier):
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-8, upper=50, default_value=0.01
         )
-        min_data_in_leaf = UniformIntegerHyperparameter(
-            'min_data_in_leaf', lower=2, upper=10, default_value=5
-        )
-        # The minimum loss reduction required to make a split.
-        min_split_loss = UniformFloatHyperparameter(
-            'min_split_loss', lower=1e-10, upper=1e-4, default_value=1e-9
-        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
@@ -258,7 +245,6 @@ class XGBoosting(base.BaseClassifier):
                 reg_alpha,
                 reg_lambda,
                 learning_rate,
-                min_data_in_leaf,
                 min_split_loss
             )
         )
@@ -297,9 +283,6 @@ class ExtraTreesEstimator(base.BaseClassifier):
         max_features = CategoricalHyperparameter(
             'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
         )
-        min_samples_leaf = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1e-10, upper=0.3,
-        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
@@ -308,8 +291,7 @@ class ExtraTreesEstimator(base.BaseClassifier):
                 n_estimators,
                 criterion,
                 max_depth,
-                max_features,
-                min_samples_leaf
+                max_features
             )
         )
         return config
@@ -343,9 +325,6 @@ class DTreeEstimator(base.BaseClassifier):
         max_features = CategoricalHyperparameter(
             'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
         )
-        min_samples_leaf = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1e-10, upper=0.25,
-        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
@@ -353,8 +332,7 @@ class DTreeEstimator(base.BaseClassifier):
             (
                 criterion,
                 max_depth,
-                max_features,
-                min_samples_leaf
+                max_features
             )
         )
         return config
@@ -396,9 +374,6 @@ class RFEstimator(base.BaseClassifier):
         max_features = CategoricalHyperparameter(
             'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
         )
-        min_samples_leaf = UniformFloatHyperparameter(
-            'min_samples_leaf', lower=1e-10, upper=0.25,
-        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
@@ -407,8 +382,7 @@ class RFEstimator(base.BaseClassifier):
                 n_estimators,
                 criterion,
                 max_depth,
-                max_features,
-                min_samples_leaf
+                max_features
             )
         )
         return config
@@ -416,9 +390,6 @@ class RFEstimator(base.BaseClassifier):
 
 # * The n_jobs > 1 does not have any effect when solver
 #   is set to 'liblinear'.
-# * Should explicitly specify penalty since this param depends
-#   on the selected solver. Using L1 enables dim reduction in high
-#   dim classification problems.
 # * The `liblinear` solver allows for binary classification with L1 and L2
 #   regularization, is robust to unscaled data sets, penalize the intercept
 #   term, but is not faster for larger data sets.
