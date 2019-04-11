@@ -65,162 +65,6 @@ class DummySelection:
         return X
 
 
-class GeneralizedFisherScore(base.BaseSelector):
-
-    NAME = 'GeneralizedFisherScore'
-
-    def __init__(
-        self,
-        feature_pairs: int=None,
-        num_classes: int=None,
-        gamma: float=None,
-        max_iter=10,
-        learning_rate=0.01,
-        error_handling: str='all'
-    ):
-        super().__init__(error_handling)
-
-        self.feature_pairs = feature_pairs
-        self.num_classes = num_classes
-        self.max_iter = max_iter
-        self.learning_rate = learning_rate
-        self.gamma = gamma
-
-        # NOTE: Attribute set with instance.
-        self.support = None
-        self.omega = None
-
-    def __name__(self):
-
-        return self.NAME
-
-    @property
-    def config_space(self):
-        """Returns the ANOVA F-value hyperparameter configuration space."""
-
-        feature_pairs = UniformIntegerHyperparameter(
-            'feature_pairs', lower=2, upper=50, default_value=20
-        )
-        gamma = UniformFloatHyperparameter(
-            'gamma', lower=1e-6, upper=20, default_value=0.5
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.SEED)
-        config.add_hyperparameters((feature_pairs, gamma))
-
-        return config
-
-    def fit(self, X, y=None, **kwargs):
-
-        if self.num_classes is None:
-            self.num_classes = np.unique(y)
-
-        if self.gamma <= 0:
-            raise ValueError('Gamma parameter should be > 0!')
-
-        num_rows, num_cols = np.shape(X)
-        if self.feature_pairs > num_cols:
-            print(f'Cannot compare {num_cols} feature pairs.')
-
-        # Initializing.
-        V = 1 / num_rows * np.ones((num_rows, self.num_classes), dtype=np.float32)
-        t = 1
-        # The most violated constraint.
-        self.omega = [self.violated_constraints(num_rows, num_cols, X, V)]
-
-        H = self.construct_H(num_rows, X, y)
-        # Iteratively solves a multiple kernel learning problem.
-        for _ in range(self.max_iter):
-            # Initialize kernel weights.
-            lambdas = 1 / t * np.ones(len(self.omega), dtype=np.float32)
-            # Alternating optimization by multivariante ridge regression and
-            # projected gradient descent.
-            for _ in range(10):
-                V = self.update_V(num_rows, num_cols, lambdas, X, H)
-                lambdas = self.update_lambdas(num_cols, lambdas, X, V)
-
-            self.omega.append(self.violated_constraints(num_rows, num_cols, X, V))
-            t = t + 1
-
-        _support = np.zeros(num_cols, dtype=bool)
-        for array in self.omega:
-            _support[np.where(array != 0)] = True
-
-        self.support = self.check_support(_support, X)
-        # TEMP:
-        print('FS complete!')
-        return self
-
-
-    def violated_constraints(self, num_rows, num_cols, X, V):
-        """
-        See equation 26.
-        """
-        s = []
-        for col_num in range(num_cols):
-            x_dot_V = np.dot(X[:, col_num], V)
-            Vt_dot_xt = np.dot(np.transpose(V), np.transpose(X[:, col_num]))
-            s.append(np.dot(x_dot_V, Vt_dot_xt))
-
-        p = np.zeros(num_cols, dtype=int)
-        idx = np.argsort(s)[::-1][:self.feature_pairs]
-        p[idx] = 1
-
-        return p
-
-    def construct_H(self, num_rows, X, y):
-
-        H = np.ones((num_rows, self.num_classes), dtype=np.float32)
-        for num in range(self.num_classes):
-            idx = np.squeeze(np.where(y == num))
-            num_hits = np.size(idx)
-            H[:, num] = H[:, num] * -1.0 * np.sqrt(num_hits / num_rows)
-            H[idx, num] = H[idx, num] * np.sqrt(num_rows / num_hits) - np.sqrt(num_hits / num_rows)
-
-        assert np.shape(H) == (num_rows, self.num_classes)
-
-        return H
-
-    # NOTE: May replace dot(x.T, x) by arbitrary kernel function.
-    def update_V(self, num_rows, num_cols, lambdas, X, H):
-        """
-
-        Returns:
-            (array-like): The (n x c) replacement for the previous V matrix.
-
-        """
-        # Constructs (n x n) identity matrix.
-        I = np.identity(num_rows)
-
-        output = 0
-        for t, p_t in enumerate(self.omega):
-            core = 0
-            for num_col in range(num_cols):
-                x = np.copy(X[:, num_col])[np.newaxis]
-                core = core + p_t[num_col] * np.dot(np.transpose(x), x) + I
-            output = output + lambdas[t] * core
-        output = np.dot(np.linalg.inv(1 / self.gamma * output), H)
-
-        return output
-
-    def update_lambdas(self, num_cols, lambdas, X, V):
-
-        output = 0
-        for t, p_t in enumerate(self.omega):
-            core = 0
-            for num_col in range(num_cols):
-                x = np.copy(X[:, num_col])[np.newaxis]
-                core = core + p_t[num_col] * np.dot(np.dot(np.transpose(x), x), V)
-            lambda_gradient = 1 / (2 * self.gamma) * np.trace(np.dot(np.transpose(V), core))
-            # Update lambda by gradient descent.
-            lambdas[t] = lambdas[t] + self.learning_rate * lambda_gradient
-        # Make lambdas sum to 1.
-        lambdas = lambdas / np.sum(lambdas)
-
-        return lambdas
-
-
 class StudentTTestSelection(base.BaseSelector):
 
     NAME = 'StudentTTestSelection'
@@ -340,7 +184,7 @@ class FisherScoreSelection(base.BaseSelector):
 
     NAME = 'FisherScoreSelection'
 
-    def __init__(self, num_features: int=None, random_state: int=0):
+    def __init__(self, num_features: int = None, random_state: int = 0):
 
         super().__init__()
 
@@ -465,7 +309,7 @@ class WilcoxonSelection(base.BaseSelector):
         return np.array(p_values, dtype=float)
 
 
-# pip install ReliefF from https://github.com/gitter-badger/ReliefF
+# Install from scikit-rebate.
 class ReliefFSelection(base.BaseSelector):
     """
 
@@ -474,9 +318,10 @@ class ReliefFSelection(base.BaseSelector):
             recommended default value is ten [3], [4].
         num_features (int)
 
-    Note:
-    - The algorithm is notably sensitive to feature interactions [1], [2].
-    - It is recommended that each feature is scaled to the interval [0, 1].
+    Notes:
+    - There are no missing values in the dependent variable.
+    - For ReliefF, the setting of k is <= to the number of instances that have
+      the least frequent class label.
 
     Robnik-Sikonja and Kononenko (2003) showed that ReliefF’sestimates of
     informative attribute are deteriorating with increasing number of nearest
@@ -503,9 +348,9 @@ class ReliefFSelection(base.BaseSelector):
 
     def __init__(
         self,
-        num_neighbors: int=None,
-        num_features: int=None,
-        random_state: int=0
+        num_neighbors: int = None,
+        num_features: int = None,
+        random_state: int = 0
     ):
 
         super().__init__()
@@ -556,15 +401,25 @@ class ReliefFSelection(base.BaseSelector):
 
     def check_params(self, X, y):
 
-        # Satisfying check in sklearn KDTree.
-        nrows, ncols = np.shape(X)
+        minority = np.argmin(np.bincount(y))
+        nrows = sum(y == minority)
         if self.num_neighbors > nrows:
-            self.num_neighbors = int(nrows - 1)
+            self.num_neighbors = int(nrows)
 
+        _, ncols = np.shape(X)
         if self.num_features > ncols:
-            self.num_features = int(ncols - 1)
+            self.num_features = int(ncols)
 
         return self
+
+    @staticmethod
+    def check_X_y(X, y):
+        # A wrapper around the sklearn formatter function.
+        X, y = check_X_y(X, y)
+
+
+
+        return X_scaled, y
 
 
 class MutualInformationSelection(base.BaseSelector):
