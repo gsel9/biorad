@@ -1,7 +1,7 @@
+import warnings
+
 import numpy as np
 import pandas as pd
-
-from scipy.stats import spearmanr
 
 
 def mean_squared_residue(bicluster):
@@ -18,12 +18,14 @@ def mean_squared_residue(bicluster):
 
     nrows, ncols = np.shape(bicluster)
 
-    bic_avg = np.mean(bicluster.flatten())
-    avg_rows = np.mean(bicluster, axis=1)[:, np.newaxis]
-    avg_cols = np.mean(bicluster, axis=0)[np.newaxis, :]
+    bic_avg = np.mean(bicluster)
+    avg_across_cols = np.mean(bicluster, axis=0)[np.newaxis, :]
+    avg_across_rows = np.mean(bicluster, axis=1)[:, np.newaxis]
+    avg_bic = avg_across_cols - avg_across_rows + bic_avg
+    # Sanity check.
+    assert np.shape(avg_bic) == np.shape(bicluster)
 
-    msr_values = (bicluster - (avg_rows - avg_cols + bic_avg)) ** 2
-
+    msr_values = (bicluster - avg_bic) ** 2
     return np.sum(msr_values) / (nrows * ncols)
 
 
@@ -42,14 +44,17 @@ def scaled_mean_squared_residue(bicluster):
 
     nrows, ncols = np.shape(bicluster)
 
-    bic_avg = np.mean(bicluster.flatten())
-    avg_rows = np.mean(bicluster, axis=1)[:, np.newaxis]
-    avg_cols = np.mean(bicluster, axis=0)[np.newaxis, :]
+    bic_avg = np.mean(bicluster)
+    avg_across_cols = np.mean(bicluster, axis=0)[np.newaxis, :]
+    avg_across_rows = np.mean(bicluster, axis=1)[:, np.newaxis]
+    avg_bic = avg_across_cols - avg_across_rows + bic_avg
+    # Sanity check.
+    assert np.shape(avg_bic) == np.shape(bicluster)
 
-    msr_values = (bicluster - (avg_rows - avg_cols + bic_avg)) ** 2
-    smsr_values = msr_values / (avg_rows ** 2 * avg_cols ** 2)
+    msr_values = (bicluster - avg_bic) ** 2
+    smsr_values = msr_values / (avg_across_cols ** 2 * avg_across_rows ** 2 + 1e-20)
 
-    return np.sum(smsr_values / (nrows * ncols))
+    return np.sum(smsr_values / (nrows * ncols + 1e-20))
 
 
 def virtual_error(bicluster):
@@ -69,14 +74,14 @@ def virtual_error(bicluster):
 
     avg_cols = np.mean(bicluster, axis=0)
     try:
-        avg_cols_std = (avg_cols - np.mean(avg_cols)) / np.std(avg_cols)
+        avg_cols_std = (avg_cols - np.mean(avg_cols)) / (np.std(avg_cols) + 1e-20)
     except:
         avg_cols_std = (avg_cols - np.mean(avg_cols))
 
     bic_std = _standardize_bicluster(bicluster)
     virt_error_values = np.absolute(bic_std - avg_cols_std)
 
-    return np.sum(virt_error_values) / (nrows * ncols)
+    return np.sum(virt_error_values) / (nrows * ncols + 1e-20)
 
 
 def transposed_virtual_error(bicluster):
@@ -93,45 +98,6 @@ def transposed_virtual_error(bicluster):
     """
 
     return virtual_error(np.transpose(bicluster))
-
-
-def avg_spearmans_rho(bicluster):
-    """Compute the Average Spearman's Rho for a bicluster. A lower result
-    close to 1 or -1 indicates a better bicluster.
-    Ref.:
-    Ayadi, W., Elloumi, M., & Hao, J. K. (2009). A biclustering algorithm based
-    on a Bicluster Enumeration Tree: application to DNA microarray data.
-    BioData mining, 2(1), 9.
-    Args:
-        bicluster (array-like): The bicluster data values.
-    Returns:
-        (float): The average spearman's rho score value.
-    """
-
-    nrows, ncols = np.shape(bicluster)
-
-    row_corrs, _ = spearmanr(bicluster, axis=0)
-    col_corrs, _ = spearmanr(bicluster, axis=1)
-
-    if nrows <= 1 or ncols <= 1:
-        return 0.0
-    else:
-        _genes, _samples = 0, 0
-        for prev_row in range(nrows - 1):
-            for next_row in range(prev_row + 1, nrows):
-
-                corr, _ = spearmanr(bicluster[prev_row, :], bicluster[next_row, :])
-                _genes += corr
-
-        for prev_col in range(ncols - 1):
-            for next_col in range(prev_col + 1, ncols):
-                corr, _ = spearmanr(bicluster[:, prev_col], bicluster[:, next_col])
-                _samples += corr
-
-        genes = _genes / (nrows * (nrows - 1))
-        samples = _samples / (ncols * (ncols - 1))
-
-        return 2.0 * max(genes, samples)
 
 
 def _standardize_bicluster(bicluster):
@@ -151,11 +117,9 @@ def _standardize_bicluster(bicluster):
     _bicluster = np.copy(bicluster)
 
     row_std = np.std(_bicluster, axis=0)
-    row_std[row_std == 0] = 1
-
     row_mean = np.mean(_bicluster, axis=0)
 
-    return (_bicluster - row_mean) / row_std
+    return (_bicluster - row_mean) / (row_std + 1e-10)
 
 
 def _external_metrics(indicators, nbiclusters, data):
@@ -168,19 +132,20 @@ def _external_metrics(indicators, nbiclusters, data):
 
         _row_cluster = data[row_idx[num], :]
         cluster = _row_cluster[:, col_idx[num]]
+        
         if np.any(cluster):
             scores[num] = {
                 #'smr': mean_squared_residue(cluster),
                 #'smsr': scaled_mean_squared_residue(cluster),
                 #'vr': virtual_error(cluster),
                 'tvr': transposed_virtual_error(cluster),
-                #'asr': avg_spearmans_rho(cluster),
             }
         else:
-            pass
+            warnings.warn('Detected empty bicluster when calculating metrics.', Warning)
+            scores[num] = {'tvr': np.nan}
 
     df_scores = pd.DataFrame(scores).T
-    df_scores.index.name = 'num'
+    df_scores.index.name = 'ClusterID'
 
     return df_scores
 
