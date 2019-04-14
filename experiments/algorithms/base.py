@@ -181,8 +181,6 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
         for key, value in params.items():
             if value == 'none':
                 _params[key] = None
-            elif key == 'binarization':
-                self.binary_thresh = value
             else:
                 _params[key] = value
 
