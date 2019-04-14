@@ -21,8 +21,6 @@ from sklearn.linear_model import RidgeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-from grouplasso import GroupLassoRegressor
-
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 
@@ -63,13 +61,6 @@ class RidgeClassifierEstimator(base.BaseClassifier):
         return config
 
 
-# pip install grouplasso
-# See: https://github.com/AnchorBlues/GroupLasso
-# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2929880/
-class GroupLassoEstimator(base.BaseClassifier):
-    pass
-
-
 class QuadraticDiscriminantEstimator(base.BaseClassifier):
     """A logistic regression wrapper."""
 
@@ -100,7 +91,14 @@ class QuadraticDiscriminantEstimator(base.BaseClassifier):
 
 
 class LinearDiscriminantEstimator(base.BaseClassifier):
-    """A logistic regression wrapper."""
+    """Linear Discriminant Analysis.
+
+    Notes:
+        * Using the SVD solver does not allow for shrinkage because it does
+          not require computing the co-varaiance matrix rendering the SVD
+          solver recommended for high-dimensional data.
+
+    """
 
     NAME = 'LinearDiscriminantEstimator'
 
@@ -117,16 +115,13 @@ class LinearDiscriminantEstimator(base.BaseClassifier):
     def config_space(self):
         """Logistic regression hyperparameter space."""
 
-        shrinkage = UniformFloatHyperparameter(
-            'shrinkage', lower=1e-9, upper=1-1e-9, default_value=0.5
-        )
         n_components = UniformIntegerHyperparameter(
             'n_components', lower=2, upper=50, default_value=10
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
-        config.add_hyperparameters((shrinkage, n_components))
+        config.add_hyperparameters(n_components)
 
         return config
 
@@ -175,11 +170,15 @@ class LightGBM(base.BaseClassifier):
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-8, upper=50, default_value=0.01
         )
+        min_data_in_leaf = UniformIntegerHyperparameter(
+            'min_data_in_leaf', lower=2, upper=5, default_value=100
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
         config.add_hyperparameters(
             (
+                min_data_in_leaf,
                 n_estimators,
                 max_depth,
                 reg_alpha,
@@ -244,8 +243,7 @@ class XGBoosting(base.BaseClassifier):
                 max_depth,
                 reg_alpha,
                 reg_lambda,
-                learning_rate,
-                min_split_loss
+                learning_rate
             )
         )
         return config
@@ -319,11 +317,16 @@ class DTreeEstimator(base.BaseClassifier):
         criterion = CategoricalHyperparameter(
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
+        # NOTE: Default value = 'none' is translated to None in base class.
+        # ConfigSpace does not allow for None values as default.
         max_depth = CategoricalHyperparameter(
             'max_depth', [5, 10, 20, 'none'], default_value='none'
         )
+        # NOTE: Default value = 'none' is translated to None in base class.
+        # ConfigSpace does not allow for None values as default.
         max_features = CategoricalHyperparameter(
-            'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
+            'max_features', ['auto', 'sqrt', 'log2', 'none'],
+            default_value='none'
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -363,16 +366,21 @@ class RFEstimator(base.BaseClassifier):
         """Decision tree hyperparameter space."""
 
         n_estimators = UniformIntegerHyperparameter(
-            'n_estimators', lower=10, upper=1000, default_value=100
+            'n_estimators', lower=10, upper=800, default_value=100
         )
         criterion = CategoricalHyperparameter(
             'criterion', ['gini', 'entropy'], default_value='gini'
         )
+        # NOTE: Default value = 'none' is translated to None in base class.
+        # ConfigSpace does not allow for None values as default.
         max_depth = CategoricalHyperparameter(
             'max_depth', [5, 10, 20, 'none'], default_value='none'
         )
+        # NOTE: Default value = 'none' is translated to None in base class.
+        # ConfigSpace does not allow for None values as default.
         max_features = CategoricalHyperparameter(
-            'max_features', ['auto', 'sqrt', 'log2', 'none'], default_value='none'
+            'max_features', ['auto', 'sqrt', 'log2', 'none'],
+            default_value='none'
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
@@ -464,7 +472,7 @@ class SVCEstimator(base.BaseClassifier):
         """SVC hyperparameter space."""
 
         C_param = UniformFloatHyperparameter(
-            'C', lower=1e-8, upper=1000.0, default_value=1.0
+            'C', lower=1e-8, upper=100.0, default_value=1.0
         )
         shrinking = CategoricalHyperparameter(
             'shrinking', [True, False], default_value=True
@@ -520,10 +528,10 @@ class KNNEstimator(base.BaseClassifier):
         """KNN hyperparameter space."""
 
         n_neighbors = UniformIntegerHyperparameter(
-            'n_neighbors', 1, 100, default_value=5
+            'n_neighbors', lower=1, upper=100, default_value=5
         )
         leaf_size = UniformIntegerHyperparameter(
-            'leaf_size', 1, 100, default_value=20
+            'leaf_size', lower=1, upper=100, default_value=20
         )
         metric = CategoricalHyperparameter(
             'metric',
