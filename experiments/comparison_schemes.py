@@ -126,12 +126,19 @@ def cross_val_score(
     """
     test_scores, train_scores = [], []
 
-    feature_votes = np.zeros(X.shape[1], dtype=int)
+    target_test_support = np.zeros(2, dtype=np.int32)
+    target_train_support = np.zeros(2, dtype=np.int32)
+    feature_votes = np.zeros(X.shape[1], dtype=np.int32)
+
     kfolds = StratifiedKFold(cv, shuffle, random_state)
     for train_idx, test_idx in kfolds.split(X, y):
+
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
+        target_train_support += np.bincount(y_test)
+        target_train_support += np.bincount(y_train)
+        print('Training outer')
         pipeline.fit(X_train, y_train)
         feature_votes[pipeline.steps[-2][-1].support] += 1
 
@@ -147,7 +154,9 @@ def cross_val_score(
             ('train_score', np.mean(train_scores)),
             ('test_score_variance', np.var(test_scores)),
             ('train_score_variance', np.var(train_scores)),
-            ('feature_votes', feature_votes)
+            ('feature_votes', feature_votes),
+            ('target_test_support', target_test_support),
+            ('target_train_support', target_train_support)
         ]
     )
 
@@ -218,7 +227,7 @@ class SMACSearchCV:
         scenario = Scenario(
             {
                 'use_ta_time': True,
-                'wallclock_limit': float(500),
+                'wallclock_limit': float(800),
                 'cs': self.hparam_space,
                 'output_dir': search_metadata_dir,
                 'runcount-limit': self.max_evals,
@@ -253,11 +262,13 @@ class SMACSearchCV:
             # Copy workflow for fresh start with each fold.
             workflow = deepcopy(self.workflow)
             workflow.set_params(**hparams)
+            print('Training inner')
             workflow.fit(X_train, y_train)
             # Test scores as objective loss.
             test_scores.append(
                 self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
+        print(np.mean(test_scores))
         return 1.0 - np.mean(test_scores)
 
     @staticmethod
