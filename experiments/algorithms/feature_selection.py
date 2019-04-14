@@ -16,18 +16,17 @@ Notes:
 __author__ = 'Severin Langberg'
 __contact__ = 'langberg91@gmail.com'
 
-import mifs
+from mifs import MutualInformationFeatureSelector
 
 import numpy as np
 
-from scipy.stats import ranksums
-from scipy.stats import ttest_ind
+from scipy.stats import rankdata
 
-from ReliefF import ReliefF
+from skrebate import ReliefF
+from skrebate import MultiSURFstar
 
 from sklearn.utils import check_X_y
 from sklearn.feature_selection import chi2
-from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import mutual_info_classif
 
@@ -58,123 +57,11 @@ class DummySelection:
 
     def fit(self, X, y=None):
 
-        self.support =np.arange(X.shape[1], dtype=int)
+        self.support = np.arange(X.shape[1], dtype=np.int32)
         return self
 
     def transform(self, X):
         return X
-
-
-class StudentTTestSelection(base.BaseSelector):
-
-    NAME = 'StudentTTestSelection'
-
-    def __init__(self, num_features: int=None, random_state: int=0):
-
-        super().__init__()
-
-        self.num_features = num_features
-        self.random_state = random_state
-
-        # NOTE: Attribute set with instance.
-        self.support = None
-
-    def __name__(self):
-        return self.NAME
-
-    def check_params(self, X):
-        _, ncols = np.shape(X)
-        if self.num_features > ncols:
-            self.num_features = int(ncols - 1)
-
-        return self
-
-    @property
-    def config_space(self):
-        """Student t-test hyperparameter space."""
-
-        num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.random_state)
-        config.add_hyperparameter(num_features)
-        return config
-
-    def fit(self, X, y=None):
-        """Perform feature selection.
-
-        """
-        X, y = self.check_X_y(X, y)
-        self.check_params(X)
-
-        selector = SelectKBest(self.t_test_selection, k=self.num_features)
-        selector.fit(X, y)
-        _support = selector.get_support(indices=True)
-        self.support = self.check_support(_support)
-        return self
-
-    @staticmethod
-    def t_test_selection(X, y):
-        # Wrapping scipy stats t-test enabling parameter configuration.
-        return ttest_ind(X, y, equal_var=False)
-
-
-class ANOVAFvalueSelection(base.BaseSelector):
-    """
-
-    """
-
-    NAME = 'ANOVAFvalueSelection'
-
-    def __init__(self, num_features: int=None, random_state: int=0):
-
-        super().__init__()
-
-        self.num_features = num_features
-        self.random_state = random_state
-
-        # NOTE: Attribute set with instance.
-        self.support = None
-
-    def __name__(self):
-        return self.NAME
-
-    @property
-    def config_space(self):
-        """Returns the ANOVA F-value hyperparameter configuration space."""
-
-        num_features = UniformIntegerHyperparameter(
-            'num_features', lower=2, upper=50, default_value=20
-        )
-        # Add hyperparameters to config space.
-        config = ConfigurationSpace()
-        config.seed(self.random_state)
-        config.add_hyperparameter(num_features)
-        return config
-
-    def fit(self, X, y=None):
-        """Perform feature selection.
-
-        """
-        X, y = self.check_X_y(X, y)
-        self.check_params(X)
-
-        selector = SelectKBest(f_classif, k=self.num_features)
-        selector.fit(X, y)
-
-        _support = selector.get_support(indices=True)
-        self.support = self.check_support(_support)
-        return self
-
-    def check_params(self, X):
-
-        _, ncols = np.shape(X)
-        if self.num_features > ncols:
-            self.num_features = int(ncols - 1)
-
-        return self
 
 
 class FisherScoreSelection(base.BaseSelector):
@@ -247,7 +134,7 @@ class WilcoxonSelection(base.BaseSelector):
 
     NAME = 'WilcoxonSelection'
 
-    def __init__(self, num_features: int=None, random_state: int=0):
+    def __init__(self, num_features: int = None, random_state: int = 0):
 
         super().__init__()
 
@@ -255,6 +142,7 @@ class WilcoxonSelection(base.BaseSelector):
         self.random_state = random_state
 
         # NOTE: Attribute set with instance.
+        self.duplicates_in_X = False
         self.support = None
 
     def __name__(self):
@@ -280,48 +168,56 @@ class WilcoxonSelection(base.BaseSelector):
         """
         X, y = self.check_X_y(X, y)
 
-        p_values = self.wilcoxon_rank_sum(X, y)
+        scores = self.wilcoxon_selection(X, y)
 
-        _support = np.argsort(p_values)[:self.num_features]
+        _support = np.argsort(scores)[:self.num_features]
         self.support = self.check_support(_support)
 
         return self
 
     @staticmethod
-    def wilcoxon_rank_sum(X, y):
-        """The Wilcoxon rank sum test to determine if two measurements are
-        drawn from the same distribution.
+    def wilcoxon_selection(X, y):
 
-        Args:
-            X (array-like): Predictor matrix.
-            y (array-like): Target variable.
+        if np.size(np.unique(y)) != 2:
+            raise ValueError(f'Dependent variable should be binary. Recieved'
+                             f'{np.unique(y)} classes.')
 
-        Returns:
-            (numpy.ndarray): Support indicators.
+        N, ncols = np.shape(X)
+        n0, n1 = np.bincount(y)
 
-        """
-        _, ncols = np.shape(X)
-        p_values = []
+        scores = []
         for num in range(ncols):
-            _, p_value = ranksums(X[:, num], y)
-            p_values.append(p_value)
+            r = rankdata(X[:, num])
+            r0 = rankdata(X[y == 0, num])
+            r1 = rankdata(X[y == 1, num])
 
-        return np.array(p_values, dtype=float)
+            mu_r = np.mean(r)
+            mu_r0 = np.mean(r0)
+            mu_r1 = np.mean(r1)
+
+            num = n0 * (mu_r0 - mu_r) ** 2 + n1 * (mu_r1 - mu_r) ** 2
+            denom = sum((r0 - mu_r) ** 2) + sum((r1 - mu_r) ** 2)
+            scores.append(num / denom)
+
+        scores = np.array(scores, dtype=np.float64)
+
+        return (N - 1) * scores
 
 
-# Install from scikit-rebate.
 class ReliefFSelection(base.BaseSelector):
-    """
+    """A wrapper for the scikit-rebate implementation of the ReliefF
+    algorithm.
 
     Args:
-        num_neighbors (int)): Controls the locality of the estimates. The
+        num_neighbors (int): Controls the locality of the estimates. The
             recommended default value is ten [3], [4].
-        num_features (int)
+        num_features (int):
 
     Notes:
     - There are no missing values in the dependent variable.
     - For ReliefF, the setting of k is <= to the number of instances that have
       the least frequent class label.
+    - Algorithm is not stochastic (no randoms state required).
 
     Robnik-Sikonja and Kononenko (2003) showed that ReliefF’sestimates of
     informative attribute are deteriorating with increasing number of nearest
@@ -390,11 +286,11 @@ class ReliefFSelection(base.BaseSelector):
 
         selector = ReliefF(
             n_neighbors=self.num_neighbors,
-            n_features_to_keep=self.num_features
+            n_features_to_select=self.num_features,
         )
         selector.fit(X, y)
 
-        _support = selector.top_features[:self.num_features]
+        _support = selector.top_features_[:self.num_features]
         self.support = self.check_support(_support)
 
         return self
@@ -412,14 +308,65 @@ class ReliefFSelection(base.BaseSelector):
 
         return self
 
-    @staticmethod
-    def check_X_y(X, y):
-        # A wrapper around the sklearn formatter function.
-        X, y = check_X_y(X, y)
 
+class MultiSURFstarSelection(base.BaseSelector):
 
+    NAME = 'MultiSURFstarSelection'
 
-        return X_scaled, y
+    def __init__(
+        self,
+        num_features: int = None,
+        random_state: int = 0
+    ):
+
+        super().__init__()
+
+        self.num_features = num_features
+        self.random_state = random_state
+
+        # NOTE: Attributes set with instance.
+        self.support = None
+        self.scaler = None
+
+    def __name__(self):
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the ReliefF hyperparameter configuration space."""
+
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.random_state)
+        config.add_hyperparameter(num_features)
+
+        return config
+
+    def fit(self, X, y=None, **kwargs):
+
+        X, y = self.check_X_y(X, y)
+        self.check_params(X, y)
+
+        selector = MultiSURFstar(
+            n_features_to_select=self.num_features,
+        )
+        selector.fit(X, y)
+
+        _support = selector.top_features_[:self.num_features]
+        self.support = self.check_support(_support)
+
+        return self
+
+    def check_params(self, X, y):
+
+        _, ncols = np.shape(X)
+        if self.num_features > ncols:
+            self.num_features = int(ncols)
+
+        return self
 
 
 class MutualInformationSelection(base.BaseSelector):
@@ -463,7 +410,6 @@ class MutualInformationSelection(base.BaseSelector):
 
     def fit(self, X, y, **kwargs):
         """
-
         """
         X, y = self.check_X_y(X, y)
         self.check_params(X, y)
@@ -481,10 +427,89 @@ class MutualInformationSelection(base.BaseSelector):
         # Satisfying check in sklearn KDTree.
         nrows, ncols = np.shape(X)
         if self.num_neighbors > nrows:
-            self.num_neighbors = int(nrows - 1)
+            self.num_neighbors = int(nrows)
 
         if self.num_features > ncols:
-            self.num_features = int(ncols - 1)
+            self.num_features = int(ncols)
+
+        return self
+
+    def mutual_info_selection(self, X, y):
+        # Wrapping sklearn mutual info clf enabling parameter config.
+        return mutual_info_classif(
+            X, y,
+            discrete_features=False,
+            n_neighbors=self.num_neighbors,
+            random_state=self.random_state
+)
+
+
+class MultiSURFstar(base.BaseSelector):
+
+    NAME = 'JointMutualInformationSelection'
+
+    def __init__(
+        self,
+        num_neighbors: int = None,
+        num_features: int = None,
+        random_state: int = 0
+    ):
+        super().__init__()
+
+        self.num_features = num_features
+        self.num_neighbors = num_neighbors
+        self.random_state = random_state
+
+        # NOTE: Attributes set with instance.
+        self.support = None
+
+    def __name__(self):
+
+        return self.NAME
+
+    @property
+    def config_space(self):
+        """Returns the MI hyperparameter configuration space."""
+
+        num_neighbors = UniformIntegerHyperparameter(
+            'num_neighbors', lower=10, upper=100, default_value=20
+        )
+        num_features = UniformIntegerHyperparameter(
+            'num_features', lower=2, upper=50, default_value=20
+        )
+        config = ConfigurationSpace()
+        config.seed(self.random_state)
+        config.add_hyperparameters((num_neighbors, num_features))
+
+        return config
+
+    def fit(self, X, y, **kwargs):
+        """
+
+        """
+        X, y = self.check_X_y(X, y)
+        self.check_params(X, y)
+
+        selector = MutualInformationFeatureSelector(
+            method='JMI',
+            k=self.num_neighbors,
+            n_features=self.num_features,
+            categorical=True,
+        )
+        selector.fit(X, y)
+        self.support = self.check_support(selector.support_)
+
+        return self
+
+    def check_params(self, X, y):
+
+        # Satisfying check in sklearn KDTree.
+        nrows, ncols = np.shape(X)
+        if self.num_neighbors > nrows:
+            self.num_neighbors = int(nrows)
+
+        if self.num_features > ncols:
+            self.num_features = int(ncols)
 
         return self
 
@@ -499,6 +524,12 @@ class MutualInformationSelection(base.BaseSelector):
 
 
 class ChiSquareSelection(base.BaseSelector):
+    """
+    Notes:
+        - Requires non-negative feature values. Features, x, are shifted by
+          x := x + abs(min(x)) + 1.
+
+    """
 
     NAME = 'ChiSquareSelection'
 
@@ -548,10 +579,8 @@ class ChiSquareSelection(base.BaseSelector):
     def _check_X_y(X, y):
         # A wrapper around sklearn formatter.
         X, y = check_X_y(X, y)
-        # Assumes X is already Z-score transformed rendering all features on
-        # comparable scales such that a shift of all individ. feature values
-        # renders all features > 0, whilst on comparable scales.
-        X_nonegative = X + np.abs(np.min(X)) + 1
+        # NOTE: Requires all features to be non-negative.
+        X_nonegative = X + np.abs(np.min(X, axis=0)) + 1
 
         return X_nonegative, y
 
@@ -566,22 +595,3 @@ class ChiSquareSelection(base.BaseSelector):
 
 if __name__ == '__main__':
     pass
-    #from sklearn.datasets import load_iris
-    #from sklearn.preprocessing import StandardScaler
-
-    #iris = load_iris()
-    #_X, y = iris.data, iris.target
-
-    #X = np.zeros((_X.shape[0], _X.shape[1] + 2))
-    #X[:, 0] = np.ones(_X.shape[0])#np.random.random(_X.shape[0])
-    #X[:, -1] = np.ones(_X.shape[0])#np.random.random(_X.shape[0])
-    #X[:, 1:-1] = _X
-
-    #scaler = StandardScaler()
-    #X_std = scaler.fit_transform(X)
-
-    #gfs = GeneralizedFisherScore(num_classes=2, feature_pairs=2, gamma=0.5)
-    #print(X_std[:4, :])
-    #gfs.fit(X_std, y)
-    #X_sub = gfs.transform(X_std)
-    #print(X_sub[:4, :])
