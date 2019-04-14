@@ -1,17 +1,17 @@
-"""Python implementation of elastic-net regularized GLMs."""
-
 import numpy as np
 
 from copy import deepcopy
 
 from scipy.special import expit
-from scipy.stats import norm
 
 from sklearn.base import BaseEstimator
 from sklearn.base import RegressorMixin
 
+from smac.configspace import ConfigurationSpace
+from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 
-class GroupLASSO(BaseEstimator):
+
+class GroupLASSO(BaseEstimator, RegressorMixin):
     """
     Reference:
         Friedman, Hastie, Tibshirani (2010). Regularization Paths for Generalized
@@ -20,7 +20,6 @@ class GroupLASSO(BaseEstimator):
     """
     def __init__(
         self,
-        alpha=0.5,
         group_idx=None,
         reg_lambda=0.005,
         learning_rate=0.005,
@@ -29,7 +28,6 @@ class GroupLASSO(BaseEstimator):
         random_state=0
     ):
 
-        self.alpha = alpha
         self.reg_lambda = reg_lambda
         self.group_idx = group_idx
         self.learning_rate = learning_rate
@@ -46,26 +44,41 @@ class GroupLASSO(BaseEstimator):
     def copy(self):
         return deepcopy(self)
 
+    @property
+    def config_space(self):
+        """LightGBM hyperparameter space."""
+
+        # L2 regularization term on weights.
+        reg_lambda = UniformFloatHyperparameter(
+            'reg_lambda', lower=1e-8, upper=100, default_value=1e-3
+        )
+        learning_rate = UniformFloatHyperparameter(
+            'learning_rate', lower=1e-8, upper=50, default_value=0.01
+        )
+        # Add hyperparameters to config space.
+        config = ConfigurationSpace()
+        config.seed(self.random_state)
+        config.add_hyperparameters((reg_lambda, learning_rate))
+
+        return config
+
     def _grad_L2loss(self, X, y):
         """The gradient."""
 
         num_samples, num_features = np.shape(X)
-        num_coeffs = np.size(self.beta_)
-
-        inv_cov = np.dot(np.eye(num_coeffs).T, np.eye(num_coeffs))
-        inv_cov_beta = np.dot(inv_cov, self.beta_)
+        scale = 1.0 / num_samples
 
         z = self.beta0_ + np.dot(X, self.beta_)
-        grad_beta0 = np.sum(expit(z) - y) / num_samples
-        grad_beta = np.dot((expit(z) - y).T, X).T / num_samples
+        grad_beta0 = np.sum(expit(z) - y) * scale
+        grad_beta = np.dot((expit(z) - y).T, X).T * scale
 
-        grad_beta += self.reg_lambda * (1 - self.alpha) * inv_cov_beta
+        grad_beta = grad_beta + self.reg_lambda
 
-        grad = np.zeros(num_features + 1, dtype=np.float64)
-        grad[0] = grad_beta0
-        grad[1:] = grad_beta
+        gradient = np.zeros(num_features + 1, dtype=np.float64)
+        gradient[0] = grad_beta0
+        gradient[1:] = grad_beta
 
-        return grad
+        return gradient
 
     def _lambda(self, X):
         """Conditional intensity function."""
@@ -107,7 +120,6 @@ class GroupLASSO(BaseEstimator):
                              f'{np.size(self.group_idx)}.')
 
         # Initialize parameters.
-        beta = np.zeros(num_features + 1, dtype=np.float64)
         if self.beta0_ is None and self.beta_ is None:
             rng = np.random.RandomState(self.random_state)
             self.beta0_ = 1 / (num_features + 1) * rng.normal(0.0, 1.0, 1)
@@ -128,9 +140,8 @@ class GroupLASSO(BaseEstimator):
             self.beta0_ = self.beta0_ - self.learning_rate * grad[0]
 
             # Apply proximal operator.
-            self.beta_ = self._proximal_op(
-                self.beta_, self.reg_lambda * self.alpha
-            )
+            self.beta_ = self._proximal_op(self.beta_, self.reg_lambda)
+
         # Update the estimated variables.
         self.ynull_ = np.mean(y)
 
@@ -139,3 +150,9 @@ class GroupLASSO(BaseEstimator):
     def predict(self, X):
 
         return self._lambda(X)
+
+
+if __name__ == '__main__':
+    m = GroupLASSO()
+    m.set_params(**{'reg_lambda': 0.01})
+    print(m.get_params())
