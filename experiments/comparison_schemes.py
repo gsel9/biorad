@@ -66,36 +66,59 @@ def nested_cross_validation_smac(
         if verbose > 0:
             start_time = datetime.now()
             print(f'Running experiment {random_state} with {experiment_id}')
-        # Unpack workflow elements and copy pipeline for fresh start.
-        pipeline, hparam_space = workflow
-        pipeline_cp = deepcopy(pipeline)
-        # Run hyperparameter optimization protocol.
-        optimizer = SMACSearchCV(
-            cv=cv,
-            experiment_id=experiment_id,
-            workflow=pipeline_cp,
-            hparam_space=hparam_space,
-            max_evals=max_evals,
-            score_func=score_func,
-            random_state=random_state,
-            verbose=verbose,
-            output_dir=output_dir
-        )
-        optimizer.fit(X, y)
-        # Include best hyperparameter config in output records.
-        output.update(**optimizer.best_config)
 
-        pipeline_cp = deepcopy(pipeline)
-        pipeline_cp.set_params(**optimizer.best_config)
-        # Estimate average performance of best model in outer CV loop.
-        results = cross_val_score(
-            X, y,
-            cv,
-            random_state,
-            pipeline_cp,
-            score_func
+        pipeline, hparam_space = workflow
+        # Record model training and validation performance.
+        test_scores, train_scores = [], []
+        # Record feature votes.
+        feature_votes = np.zeros(X.shape[1], dtype=np.int32)
+        # Outer K-folds.
+        kfolds = StratifiedKFold(cv, shuffle=True, random_state=random_state)
+        for (train_idx, test_idx) in kfolds.split(X, y):
+            # Split training and validation sets.
+            X_train, X_test = X[train_idx], X[test_idx]
+            y_train, y_test = y[train_idx], y[test_idx]
+            # Copy model for fresh start.
+            pipeline_inner = deepcopy(pipeline)
+            # Run hyperparameter optimization protocol including inner K-folds.
+            optimizer = SMACSearchCV(
+                cv=cv,
+                experiment_id=experiment_id,
+                workflow=pipeline_inner,
+                hparam_space=hparam_space,
+                max_evals=max_evals,
+                score_func=score_func,
+                random_state=random_state,
+                verbose=verbose,
+                output_dir=output_dir
+            )
+            optimizer.fit(X_train, y_train)
+            # Include best hyperparameter config in output records.
+            output.update(**optimizer.best_config)
+            # Copy model for fresh start, assign parameters and train.
+            pipeline_outer = deepcopy(pipeline)
+            pipeline_outer.set_params(**optimizer.best_config)
+            pipeline_outer.fit(X_train, y_train)
+            # Update feature votes.
+            feature_votes[pipeline_outer.steps[-2][-1].support] += 1
+            # Record training and validation performance.
+            test_scores.append(
+                score_func(y_test, np.squeeze(pipeline_outer.predict(X_test)))
+            )
+            train_scores.append(
+                score_func(y_train, np.squeeze(pipeline_outer.predict(X_train)))
+            )
+        output.update(
+            OrderedDict(
+                [
+                    ('test_score', np.mean(test_scores)),
+                    ('train_score', np.mean(train_scores)),
+                    ('test_score_variance', np.var(test_scores)),
+                    ('train_score_variance', np.var(train_scores)),
+                    ('feature_votes', feature_votes)
+                ]
+            )
         )
-        output.update(results)
         if path_tmp_results is not None:
             print('Writing results temporary results.')
             ioutil.write_prelim_results(path_case_file, output)
@@ -103,62 +126,7 @@ def nested_cross_validation_smac(
             duration = datetime.now() - start_time
             print(f'Experiment {random_state} completed in {duration}')
             output['exp_duration'] = duration
-
     return output
-
-
-def cross_val_score(
-    X, y,
-    cv: int,
-    random_state: int,
-    pipeline,
-    score_func,
-    shuffle: bool = True,
-):
-    """Represents the outer K-fold cross-validation (CV) loop of a nested CV
-    scheme.
-
-    Returns:
-        (collections.OrderedDict): The average and variance of training and
-            validation scores, and the number times each feature was
-            selected.
-
-    """
-    test_scores, train_scores = [], []
-
-    target_test_support = np.zeros(2, dtype=np.int32)
-    target_train_support = np.zeros(2, dtype=np.int32)
-    feature_votes = np.zeros(X.shape[1], dtype=np.int32)
-
-    kfolds = StratifiedKFold(cv, shuffle, random_state)
-    for train_idx, test_idx in kfolds.split(X, y):
-
-        X_train, X_test = X[train_idx], X[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
-
-        target_train_support += np.bincount(y_test)
-        target_train_support += np.bincount(y_train)
-        print('Training outer')
-        pipeline.fit(X_train, y_train)
-        feature_votes[pipeline.steps[-2][-1].support] += 1
-
-        test_scores.append(
-            score_func(y_test, np.squeeze(pipeline.predict(X_test)))
-        )
-        train_scores.append(
-            score_func(y_train, np.squeeze(pipeline.predict(X_train)))
-        )
-    return OrderedDict(
-        [
-            ('test_score', np.mean(test_scores)),
-            ('train_score', np.mean(train_scores)),
-            ('test_score_variance', np.var(test_scores)),
-            ('train_score_variance', np.var(train_scores)),
-            ('feature_votes', feature_votes),
-            ('target_test_support', target_test_support),
-            ('target_train_support', target_train_support)
-        ]
-    )
 
 
 class SMACSearchCV:
@@ -227,7 +195,7 @@ class SMACSearchCV:
         scenario = Scenario(
             {
                 'use_ta_time': True,
-                'wallclock_limit': float(800),
+                'wallclock_limit': float(700),
                 'cs': self.hparam_space,
                 'output_dir': search_metadata_dir,
                 'runcount-limit': self.max_evals,

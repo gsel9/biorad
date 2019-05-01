@@ -168,11 +168,14 @@ class BaseClassifier(BaseEstimator, ClassifierMixin):
     def check_model_config(self, X, y=None):
         """Validate model configuration."""
 
-        _, num_cols = np.shape(X)
+        num_rows, num_cols = np.shape(X)
         # Check in number of components to use exceeds number of features.
-        if 'n_components' in self.get_params():
+        if hasattr(self.model, 'n_components'):
             if self.model.n_components > num_cols:
                 self.model.n_components = int(num_cols - 1)
+        if hasattr(self.model, 'n_neighbors'):
+            if self.model.n_neighbors >= num_rows:
+                self.model.n_neighbors = int(num_rows - 1)
 
         return self
 

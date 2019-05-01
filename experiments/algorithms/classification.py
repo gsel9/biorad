@@ -121,7 +121,7 @@ class LinearDiscriminantEstimator(base.BaseClassifier):
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
-        config.add_hyperparameters(n_components)
+        config.add_hyperparameter(n_components)
 
         return config
 
@@ -171,15 +171,15 @@ class LightGBM(base.BaseClassifier):
             'learning_rate', lower=1e-8, upper=50, default_value=0.01
         )
         min_data_in_leaf = UniformIntegerHyperparameter(
-            'min_data_in_leaf', lower=2, upper=5, default_value=100
+            'min_data_in_leaf', lower=2, upper=5, default_value=3
         )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
         config.add_hyperparameters(
             (
-                min_data_in_leaf,
                 n_estimators,
+                min_data_in_leaf,
                 max_depth,
                 reg_alpha,
                 reg_lambda,
@@ -234,12 +234,16 @@ class XGBoosting(base.BaseClassifier):
         learning_rate = UniformFloatHyperparameter(
             'learning_rate', lower=1e-8, upper=50, default_value=0.01
         )
+        min_data_in_leaf = UniformIntegerHyperparameter(
+            'min_data_in_leaf', lower=2, upper=5, default_value=3
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
         config.add_hyperparameters(
             (
                 n_estimators,
+                min_data_in_leaf,
                 max_depth,
                 reg_alpha,
                 reg_lambda,
@@ -328,6 +332,9 @@ class DTreeEstimator(base.BaseClassifier):
             'max_features', ['auto', 'sqrt', 'log2', 'none'],
             default_value='none'
         )
+        min_samples_leaf = UniformIntegerHyperparameter(
+            'min_samples_leaf', lower=2, upper=5, default_value=3
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
@@ -335,7 +342,8 @@ class DTreeEstimator(base.BaseClassifier):
             (
                 criterion,
                 max_depth,
-                max_features
+                max_features,
+                min_samples_leaf
             )
         )
         return config
@@ -382,11 +390,15 @@ class RFEstimator(base.BaseClassifier):
             'max_features', ['auto', 'sqrt', 'log2', 'none'],
             default_value='none'
         )
+        min_samples_leaf = UniformIntegerHyperparameter(
+            'min_samples_leaf', lower=2, upper=5, default_value=3
+        )
         # Add hyperparameters to config space.
         config = ConfigurationSpace()
         config.seed(self.random_state)
         config.add_hyperparameters(
             (
+                min_samples_leaf,
                 n_estimators,
                 criterion,
                 max_depth,

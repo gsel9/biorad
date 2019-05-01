@@ -23,7 +23,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 from skrebate import ReliefF
-from skrebate import MultiSURFstar
+from skrebate import MultiSURF
 
 from sklearn.utils import check_X_y
 from sklearn.feature_selection import chi2
@@ -304,14 +304,14 @@ class ReliefFSelection(base.BaseSelector):
 
         _, ncols = np.shape(X)
         if self.num_features > ncols:
-            self.num_features = int(ncols)
+            self.num_features = int(ncols - 1)
 
         return self
 
 
-class MultiSURFstarSelection(base.BaseSelector):
+class MultiSURFSelection(base.BaseSelector):
 
-    NAME = 'MultiSURFstarSelection'
+    NAME = 'MultiSURFSelection'
 
     def __init__(
         self,
@@ -350,7 +350,7 @@ class MultiSURFstarSelection(base.BaseSelector):
         X, y = self.check_X_y(X, y)
         self.check_params(X, y)
 
-        selector = MultiSURFstar(
+        selector = MultiSURF(
             n_features_to_select=self.num_features,
         )
         selector.fit(X, y)
@@ -364,7 +364,7 @@ class MultiSURFstarSelection(base.BaseSelector):
 
         _, ncols = np.shape(X)
         if self.num_features > ncols:
-            self.num_features = int(ncols)
+            self.num_features = int(ncols - 1)
 
         return self
 
@@ -425,12 +425,14 @@ class MutualInformationSelection(base.BaseSelector):
     def check_params(self, X, y):
 
         # Satisfying check in sklearn KDTree.
-        nrows, ncols = np.shape(X)
-        if self.num_neighbors > nrows:
-            self.num_neighbors = int(nrows)
+        
+        k_thresh = min(np.bincount(y))
+        if self.num_neighbors > k_thresh:
+            self.num_neighbors = int(k_thresh)
 
+        _, ncols = np.shape(X)
         if self.num_features > ncols:
-            self.num_features = int(ncols)
+            self.num_features = int(ncols - 1)
 
         return self
 
@@ -444,7 +446,7 @@ class MutualInformationSelection(base.BaseSelector):
 )
 
 
-class MultiSURFstar(base.BaseSelector):
+class JointMutualInformationSelection(base.BaseSelector):
 
     NAME = 'JointMutualInformationSelection'
 
@@ -504,12 +506,14 @@ class MultiSURFstar(base.BaseSelector):
     def check_params(self, X, y):
 
         # Satisfying check in sklearn KDTree.
-        nrows, ncols = np.shape(X)
-        if self.num_neighbors > nrows:
-            self.num_neighbors = int(nrows)
+        
+        k_thresh = min(np.bincount(y))
+        if self.num_neighbors > k_thresh:
+            self.num_neighbors = int(k_thresh - 1)
 
+        _, ncols = np.shape(X)
         if self.num_features > ncols:
-            self.num_features = int(ncols)
+            self.num_features = int(ncols - 1)
 
         return self
 
