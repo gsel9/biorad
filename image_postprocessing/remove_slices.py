@@ -37,7 +37,7 @@ def gl_window(image, num_neighbors):
 
     center = np.nanmedian(_image)
     upper_thresh = center + 100
-    lower_thresh = center + 100
+    lower_thresh = center - 100
 
     _, _, num_slices = np.shape(image)
 
