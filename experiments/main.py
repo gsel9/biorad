@@ -27,8 +27,8 @@ from algorithms import classification
 from utils import ioutil
 
 
-def build_pipeline(estimators, selectors=None):
-    """Build modeling pipeline.
+def prep_pipeline(estimators, selectors=None):
+    """Prepare modeling pipeline.
 
     Returns:
         (dict): A dictionary holding all elements of the modelling pipeline.
@@ -101,7 +101,7 @@ def experiment():
     random_states = np.random.choice(40, size=NUM_REPS)
 
     model_comparison_fn(
-        experiments=build_pipeline(estimators, selectors),
+        experiments=prep_pipeline(estimators, selectors),
         path_final_results=path_to_results,
         output_dir='./parameter_search',
         random_states=random_states,
