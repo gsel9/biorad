@@ -1,15 +1,5 @@
 numpy==1.16.1
 scipy==1.2.1
-psutil==5.3.1
 pandas==0.24.1
-Bottleneck==1.2.1
-pynrrd
-natsort==6.0.0
-matplotlib
 joblib==0.13.2
-Cython==0.24
-#xgboost==0.82
-#lightgbm==2.2.3
-ReliefF==0.1.2
 scikit-learn==0.20.3
-#smac==0.10.0
