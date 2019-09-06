@@ -98,7 +98,7 @@ def experiment():
     X = ioutil.load_predictors_to_ndarray(path_to_predictors)
 
     np.random.seed(seed=0)
-    random_states = np.random.choice(40, size=NUM_REPS)
+    random_states = np.random.choice(1000, size=NUM_REPS)
 
     model_comparison_fn(
         experiments=prep_pipeline(estimators, selectors),

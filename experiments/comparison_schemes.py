@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #
-# comparison_schemesn.py
+# comparison_schemes.py
 #
 
 """
-Schemes of model comparison experiments.
+Schemes for model comparison experiments.
 """
 
 __author__ = 'Severin Langberg'
@@ -12,6 +12,8 @@ __email__ = 'langberg91@gmail.com'
 
 
 import os
+
+from typing import Tuple, Callable
 
 from copy import deepcopy
 from collections import OrderedDict
@@ -29,38 +31,49 @@ import numpy as np
 from utils import ioutil
 
 
-def nested_cross_validation_smac(
-    X, y,
-    experiment_id,
-    workflow,
-    score_func,
-    cv: int = 10,
-    output_dir = None,
-    max_evals: int = 100,
-    verbose: int = 1,
-    random_state = None,
-    path_tmp_results: str = None,
-):
+def nested_cross_validation_smac(X: np.ndarray, 
+                                 y: np.ndarray,
+                                 experiment_id: str,
+                                 workflow: Tuple,
+                                 score_func: Callable,
+                                 cv: int = 10,
+                                 output_dir = None,
+                                 max_evals: int = 100,
+                                 verbose: int = 1,
+                                 random_state = None,
+                                 path_tmp_results: str = None):
     """
     Nested cross-validtion model comparison.
 
     Args:
+        X: Feature matrix (n samples x n features).
+        y: Ground truth vector (n samples).
+        experiment_id: A unique name for the experiment.
+        workflow: A scikit-learn pipeline or model and the associated 
+            hyperparameter space.
+        score_func: Optimisation objective.
+        cv (int): The number of cross-validation folds.
+        random_states: A list of seed values for pseudo-random number
+            generator.
+        output_dir: Directory to store SMAC output.
+        path_tmp_results: Reference to preliminary experimental results.
 
     Returns:
         (dict):
 
     """
-    # Determine if should write prelim results, and if some results already
-    # exists and needs to be reloaded into memory for output results inclusion.
+
     if path_tmp_results is None:
         path_case_file = ''
     else:
         path_case_file = os.path.join(
             path_tmp_results, f'experiment_{random_state}_{experiment_id}'
         )
+        
     if os.path.isfile(path_case_file):
         output = ioutil.read_prelim_result(path_case_file)
         print(f'Reloading results from: {path_case_file}')
+        
     else:
         output = {'exp_id': random_state, 'experiment_id': experiment_id}
         if verbose > 0:
@@ -68,18 +81,22 @@ def nested_cross_validation_smac(
             print(f'Running experiment {random_state} with {experiment_id}')
 
         pipeline, hparam_space = workflow
+        
         # Record model training and validation performance.
         test_scores, train_scores = [], []
         # Record feature votes.
         feature_votes = np.zeros(X.shape[1], dtype=np.int32)
+        
         # Outer K-folds.
         kfolds = StratifiedKFold(cv, shuffle=True, random_state=random_state)
         for (train_idx, test_idx) in kfolds.split(X, y):
-            # Split training and validation sets.
+        
             X_train, X_test = X[train_idx], X[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
+            
             # Copy model for fresh start.
             pipeline_inner = deepcopy(pipeline)
+            
             # Run hyperparameter optimization protocol including inner K-folds.
             optimizer = SMACSearchCV(
                 cv=cv,
@@ -93,14 +110,17 @@ def nested_cross_validation_smac(
                 output_dir=output_dir
             )
             optimizer.fit(X_train, y_train)
-            # Include best hyperparameter config in output records.
+
             output.update(**optimizer.best_config)
+            
             # Copy model for fresh start, assign parameters and train.
             pipeline_outer = deepcopy(pipeline)
             pipeline_outer.set_params(**optimizer.best_config)
             pipeline_outer.fit(X_train, y_train)
+            
             # Update feature votes.
             feature_votes[pipeline_outer.steps[-2][-1].support] += 1
+            
             # Record training and validation performance.
             test_scores.append(
                 score_func(y_test, np.squeeze(pipeline_outer.predict(X_test)))
@@ -120,12 +140,14 @@ def nested_cross_validation_smac(
             )
         )
         if path_tmp_results is not None:
-            print('Writing results temporary results.')
+            print('Writing temporary results.')
             ioutil.write_prelim_results(path_case_file, output)
-        if verbose > 0:
-            duration = datetime.now() - start_time
-            print(f'Experiment {random_state} completed in {duration}')
-            output['exp_duration'] = duration
+
+            if verbose > 0:
+                duration = datetime.now() - start_time
+                print(f'Experiment {random_state} completed in {duration}')
+                output['exp_duration'] = duration
+            
     return output
 
 
@@ -134,19 +156,18 @@ class SMACSearchCV:
     Configuration (SMAC).
 
     """
-    def __init__(
-        self,
-        cv: int = None,
-        experiment_id = None,
-        workflow = None,
-        hparam_space = None,
-        max_evals: int = None,
-        score_func = None,
-        random_state: int = None,
-        shuffle: bool = True,
-        output_dir: str = None,
-        verbose: int = 0,
-    ):
+    def __init__(self,
+                 cv: int = None,
+                 experiment_id = None,
+                 workflow = None,
+                 hparam_space = None,
+                 max_evals: int = None,
+                 score_func = None,
+                 random_state: int = None,
+                 shuffle: bool = True,
+                 output_dir: str = None,
+                 verbose: int = 0):
+       
         self.cv = cv
         self.experiment_id = experiment_id
         self.workflow = workflow
@@ -166,13 +187,16 @@ class SMACSearchCV:
     @property
     def best_config(self):
         """Returns the optimal workflow configuration."""
+        
         return self._best_config
 
     @property
     def best_workflow(self):
         """Returns the optimally configures workflow."""
+
         workflow = deepcopy(self.workflow)
         workflow.set_params(**self.best_config)
+        
         return workflow
 
     def fit(self, X, y):
@@ -210,7 +234,6 @@ class SMACSearchCV:
             tae_runner=self.cv_objective_fn
         )
         self._best_config = smac.optimize()
-        return self
 
     def cv_objective_fn(self, hparams):
         """Optimization objective function.
@@ -227,16 +250,18 @@ class SMACSearchCV:
         for train_idx, test_idx in kfolds.split(self._X, self._y):
             X_train, X_test = self._X[train_idx], self._X[test_idx]
             y_train, y_test = self._y[train_idx], self._y[test_idx]
+            
             # Copy workflow for fresh start with each fold.
             workflow = deepcopy(self.workflow)
             workflow.set_params(**hparams)
-            print('Training inner')
+            
             workflow.fit(X_train, y_train)
+            
             # Test scores as objective loss.
             test_scores.append(
                 self.score_func(y_test, np.squeeze(workflow.predict(X_test)))
             )
-        print(np.mean(test_scores))
+            
         return 1.0 - np.mean(test_scores)
 
     @staticmethod

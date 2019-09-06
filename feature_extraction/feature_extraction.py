@@ -39,19 +39,11 @@ from radiomics.featureextractor import RadiomicsFeaturesExtractor
 
 
 # Time limit limit for each task to complete.
-TIMEOUT = int(1e3)
+TIMEOUT = int(1e4)
 
 # Names of directories storing errors and temporary results.
 ERROR_DIR = 'errors'
 TMP_FEATURE_DIR = 'tmp_feature_extraction'
-
-REDUNDANT_COLUMNS = [
-        'Image',
-        'Mask',
-        'Patient',
-        'Reader',
-        'label'
-    ]
 
 threading.current_thread().name = 'Main'
 
@@ -115,8 +107,6 @@ def feature_extractor(
             verbose=verbose
         ) for path_to_images_and_masks in paths_to_images_and_masks
     )
-    # Remove failed or low variance features.
-    results = _check_results(results, drop_missing, variance_thresh)
     # Write extracted features to disk.
     utils.write_final_results(path_to_results, results)
     # Clean up temporary directory after procedure is complete.
@@ -171,33 +161,3 @@ def _extract_features(param_file, case, path_tempdir, verbose=0):
         ptLogger.error('Feature extraction failed!', exc_info=True)
 
     return features
-
-
-def _check_results(results, drop_missing=False, variance_thresh=None):
-    # Check if features have missing values or too low variance.
-    
-    global ERROR_DIR, REDUNDANT_COLUMNS
-    
-    results = pd.DataFrame([result for result in results])
-    # Remove redundant columns.
-    results.drop(REDUNDANT_COLUMNS, axis=1, inplace=True)
-    
-    errors = []
-    if drop_missing:
-        to_drop = list(results.columns[results.isnull().any()])
-        if len(to_drop) > 0:
-            results.drop(to_drop, axis=1, inplace=True)
-            errors.append(to_drop)
-            
-    if variance_thresh is not None:
-        to_drop = list(results.columns[results.var() <= variance_thresh])
-        if len(to_drop) > 0:
-            results.drop(to_drop, axis=1, inplace=True)
-            errors.append(to_drop)
-          
-    if len(errors) > 0:
-        path_to_errordir = utils.setup_tempdir(ERROR_DIR)
-        path_to_file = os.path.join(path_to_errordir, 'errors.txt')
-        pd.Series(errors).to_csv(path_to_file)
-        
-    return results
