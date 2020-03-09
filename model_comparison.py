@@ -11,19 +11,15 @@ __author__ = 'Severin Langberg'
 __email__ = 'langberg91@gmail.com'
 
 
-from typing import Callable, List, Dict
-
-from tqdm import tqdm
-import numpy as np
-
 from multiprocessing import cpu_count
-from joblib import Parallel
-from joblib import delayed
+from typing import Callable, Dict, List
 
-# Local imports.
-from utils import ioutil
+import numpy as np
+from joblib import Parallel, delayed
+from tqdm import tqdm
+from pandas import DataFrame
 from comparison_schemes import nested_cross_validation
-
+from utils import ioutil
 
 def model_comparison_experiment(X: np.ndarray,
                                 y: np.ndarray,
@@ -32,6 +28,8 @@ def model_comparison_experiment(X: np.ndarray,
                                 score_func: Callable,
                                 cv: int,
                                 max_evals: int,
+                                df: DataFrame,
+                                selector: str,
                                 random_states: List = None,
                                 n_jobs: int = None,
                                 path_final_results: str = None):
@@ -56,28 +54,30 @@ def model_comparison_experiment(X: np.ndarray,
     results = []
     for model_name, model in tqdm(models.items()):
 
-        # Get hyperparameters for this model.
+        # Get hyper-parameters for this model.
         model_hparams = hparams[model_name]
-
-        results.extend(
-            Parallel(n_jobs=n_jobs)(
-                delayed(nested_cross_validation)(
-                    X=X, y=y,
-                    model=model,
-                    experiment_id=model_name,
-                    hparams=model_hparams,
-                    cv=cv,
-                    score_func=score_func,
-                    max_evals=max_evals,
-                    random_state=random_state,
-                    path_tmp_results=path_tmp_results,
+        for random_state in random_states:
+            result, df = (
+                (nested_cross_validation)(
+                        X=X, y=y,
+                        model=model,
+                        experiment_id=model_name,
+                        hparams=model_hparams,
+                        cv=cv,
+                        score_func=score_func,
+                        max_evals=max_evals,
+                        random_state=random_state,
+                        path_tmp_results=path_tmp_results,
+                        df=df,
+                        selector=selector
+                    )
                 )
-                for random_state in random_states
-            )
-        )
-
+            results.append(result)
+    #  todo extend the list of results for multiple random states
+    print(df)
     # Remove temporary directory.
     ioutil.teardown_tempdir(path_tmp_results)
-
+    print(results)
     # Write final results to disk.
     ioutil.write_final_results(path_final_results, results)
+    return df

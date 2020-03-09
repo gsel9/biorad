@@ -12,15 +12,12 @@ __email__ = 'langberg91@gmail.com'
 
 
 import os
-
-from typing import Tuple, Callable
-
 from collections import OrderedDict
 from datetime import datetime
-
-from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
-
+from typing import Callable, Tuple
+from pandas import DataFrame
 import numpy as np
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 
 # Local imports.
 from utils import ioutil
@@ -30,8 +27,10 @@ def nested_cross_validation(X: np.ndarray,
                             y: np.ndarray,
                             experiment_id: str,
                             model: str,
-                            hparams: Tuple,
+                            hparams: dict,
                             score_func: Callable,
+                            df: DataFrame,
+                            selector: str,
                             cv: int = 10,
                             output_dir = None,
                             max_evals: int = 100,
@@ -96,7 +95,7 @@ def nested_cross_validation(X: np.ndarray,
             X_train, X_test = X[train_idx], X[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
 
-            # Find optimal hyperparameters and run inner K-folds.
+            # Find optimal hyper-parameters and run inner K-folds.
             optimizer = RandomizedSearchCV(
                 estimator=model,
                 param_distributions=hparams,
@@ -107,9 +106,8 @@ def nested_cross_validation(X: np.ndarray,
             )
             optimizer.fit(X_train, y_train)
 
-            # Include the optimal hyperparameters in the output.
+            # Include the optimal hyper-parameters in the output.
             output.update(**optimizer.best_params_)
-
             best_model = optimizer.best_estimator_
             best_model.fit(X_train, y_train)
 
@@ -131,6 +129,7 @@ def nested_cross_validation(X: np.ndarray,
                 ]
             )
         )
+        df.at[experiment_id, selector] = np.mean(test_scores)
         if path_tmp_results is not None:
             ioutil.write_prelim_results(path_case_file, output)
 
@@ -138,5 +137,4 @@ def nested_cross_validation(X: np.ndarray,
                 duration = datetime.now() - start_time
                 print(f'Experiment {random_state} completed in {duration}')
                 output['exp_duration'] = duration
-
-    return output
+    return output, df
