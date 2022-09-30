@@ -6,7 +6,7 @@ Bottleneck==1.2.1
 pynrrd
 natsort==6.0.0
 matplotlib
-joblib==0.13.2
+joblib==1.2.0
 Cython==0.24
 #xgboost==0.82
 #lightgbm==2.2.3
